@@ -1,3 +1,4 @@
+import { cloneElement, isValidElement } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
@@ -23,8 +24,16 @@ const buttonVariants = cva(
   },
 )
 
-function Button({ className, variant, size, ...props }) {
-  return <button className={cn(buttonVariants({ variant, size, className }))} {...props} />
+function Button({ asChild = false, className, variant, size, ...props }) {
+  const classes = cn(buttonVariants({ variant, size, className }))
+
+  if (asChild && isValidElement(props.children)) {
+    return cloneElement(props.children, {
+      className: cn(classes, props.children.props.className),
+    })
+  }
+
+  return <button className={classes} {...props} />
 }
 
 export { Button }

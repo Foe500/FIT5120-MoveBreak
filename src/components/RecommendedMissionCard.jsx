@@ -1,14 +1,17 @@
 import { Link } from 'react-router-dom'
 import { CalendarDays, Clock3, MapPin, Play } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 function RecommendedMissionCard() {
   return (
-    <article className="mission-recommendation">
+    <Card className="mission-recommendation">
       <div className="park-art" aria-hidden="true">
         <span className="path-line"></span>
       </div>
       <div className="recommendation-copy">
-        <span className="recommend-badge">Recommended</span>
+        <Badge className="recommend-badge" variant="success">Recommended</Badge>
         <h2>Green Space Reset</h2>
         <p>A calming loop through greenery to reset your mind and body.</p>
 
@@ -26,17 +29,21 @@ function RecommendedMissionCard() {
         </div>
 
         <div className="recommendation-actions">
-          <Link className="blue-button" to="/mission">
-            <Play size={16} fill="currentColor" />
-            Start Break
-          </Link>
-          <Link className="outline-button" to="/explore">
-            <MapPin size={16} />
-            View on Map
-          </Link>
+          <Button asChild size="sm">
+            <Link to="/mission">
+              <Play size={16} fill="currentColor" />
+              Start Break
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/explore">
+              <MapPin size={16} />
+              View on Map
+            </Link>
+          </Button>
         </div>
       </div>
-    </article>
+    </Card>
   )
 }
 

@@ -1,6 +1,8 @@
 .app-shell {
   min-height: 100vh;
-  background: #ffffff;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(224, 244, 255, 0.9), transparent 28rem),
+    linear-gradient(180deg, #f8fbff 0%, #ffffff 45%);
 }
 
 .topbar {
@@ -13,8 +15,9 @@
   min-height: 4.55rem;
   padding: 0.65rem 4.25rem;
   border-bottom: 1px solid #dce8f8;
-  background: #ffffff;
-  box-shadow: 0 4px 16px rgba(38, 86, 145, 0.1);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 28px rgba(38, 86, 145, 0.08);
+  backdrop-filter: blur(14px);
 }
 
 .brand {
@@ -30,10 +33,11 @@
   width: 2.35rem;
   height: 2.35rem;
   place-items: center;
-  border: 1px solid #cce8d5;
+  border: 1px solid #bde8cc;
   border-radius: 999px;
   color: #1f9d55;
-  background: #eefaf2;
+  background: linear-gradient(135deg, #effaf3, #ffffff);
+  box-shadow: inset 0 0 0 4px rgba(47, 158, 68, 0.08);
 }
 
 .brand strong,
@@ -112,15 +116,15 @@ main {
 .break-card,
 .map-card,
 .mini-card {
-  border: 1px solid #dce8f8;
-  border-radius: 0.72rem;
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(42, 90, 150, 0.08);
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 36px rgba(42, 90, 150, 0.09);
 }
 
 .break-card {
-  padding: 1.12rem;
-  background: #f8fcff;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(248, 252, 255, 0.98), rgba(255, 255, 255, 0.96));
 }
 
 .break-hero {
@@ -139,7 +143,7 @@ main {
   border-radius: 999px;
   color: #249956;
   background: #ffffff;
-  box-shadow: 0 5px 14px rgba(35, 96, 156, 0.12);
+  box-shadow: 0 12px 24px rgba(35, 96, 156, 0.12);
 }
 
 .break-hero h1 {
@@ -158,15 +162,16 @@ main {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   width: min(100%, 23rem);
-  margin: 1rem 0 0 6.55rem;
+  margin: 1.15rem 0 0 6.55rem;
   overflow: hidden;
-  border: 1px solid #d5dfea;
-  border-radius: 0.42rem;
+  border: 1px solid #cfdff1;
+  border-radius: 0.7rem;
   background: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(20, 45, 84, 0.04);
 }
 
 .duration-tabs button {
-  min-height: 2.18rem;
+  min-height: 2.35rem;
   border: 0;
   border-right: 1px solid #e4eaf4;
   color: #4d5e7a;
@@ -179,9 +184,9 @@ main {
 }
 
 .duration-tabs .selected {
-  color: #0b66df;
-  background: #ffffff;
-  box-shadow: inset 0 0 0 2px #1d75e8;
+  color: #ffffff;
+  background: #0b66df;
+  box-shadow: none;
 }
 
 .blue-button,
@@ -213,20 +218,29 @@ main {
 }
 
 .generate-button {
-  width: 13.5rem;
-  margin: 0.82rem 0 0 6.55rem;
+  width: 15rem;
+  margin: 0.95rem 0 0 6.55rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
+  box-shadow: 0 14px 24px rgba(9, 105, 218, 0.22);
+}
+
+.generate-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
 .time-note {
-  margin: 0.65rem 0 0 6.55rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  margin: 0.75rem 0 0 6.55rem;
   color: #687892;
   font-size: 0.83rem;
 }
 
 .time-note::before {
-  content: '◷';
-  margin-right: 0.36rem;
-  color: #f5a400;
+  content: none;
 }
 
 .mission-recommendation {
@@ -234,17 +248,17 @@ main {
   grid-template-columns: 10.15rem 1fr;
   gap: 1.1rem;
   padding: 0.9rem;
-  border: 1px solid #dce8f8;
-  border-radius: 0.68rem;
+  border-color: rgba(190, 213, 242, 0.8);
+  border-radius: 1rem;
   background: #ffffff;
-  box-shadow: 0 6px 14px rgba(42, 90, 150, 0.07);
+  box-shadow: 0 16px 36px rgba(42, 90, 150, 0.09);
 }
 
 .park-art {
   position: relative;
   min-height: 10.05rem;
   overflow: hidden;
-  border-radius: 0.52rem;
+  border-radius: 0.8rem;
   background:
     linear-gradient(140deg, rgba(88, 176, 230, 0.18), transparent 52%),
     linear-gradient(27deg, #8fcea5 0%, #cdebd5 34%, #eef7ff 58%, #b9ddff 100%);
@@ -289,10 +303,8 @@ main {
 .recommend-badge {
   display: inline-flex;
   margin-bottom: 0.18rem;
-  padding: 0.18rem 0.45rem;
-  border-radius: 0.25rem;
-  color: #2f9e44;
-  background: #dcf8e3;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -345,9 +357,24 @@ main {
 
 .recommendation-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(9.5rem, 1fr) minmax(9.5rem, 1fr);
   gap: 0.55rem;
   margin-top: 0.9rem;
+}
+
+.recommendation-actions a:first-child {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
+  box-shadow: 0 12px 20px rgba(9, 105, 218, 0.2);
+}
+
+.recommendation-actions a:first-child:hover {
+  color: #ffffff;
+}
+
+.recommendation-actions a:last-child {
+  color: #0757c2;
+  background: #ffffff;
 }
 
 .recommendation-actions .blue-button,
@@ -427,7 +454,7 @@ main {
   min-height: 20.6rem;
   overflow: hidden;
   border: 1px solid #dce8f8;
-  border-radius: 0.68rem;
+  border-radius: 0.9rem;
   background:
     linear-gradient(22deg, transparent 0 45%, rgba(255, 255, 255, 0.86) 45% 47%, transparent 47% 100%),
     linear-gradient(153deg, transparent 0 47%, rgba(255, 255, 255, 0.8) 47% 49%, transparent 49% 100%),
@@ -882,7 +909,15 @@ main {
   width: fit-content;
   min-height: 2.05rem;
   padding: 0 0.9rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
   font-size: 0.78rem;
+  box-shadow: 0 12px 20px rgba(9, 105, 218, 0.2);
+}
+
+.quick-break-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
 .desk-stretch-art {

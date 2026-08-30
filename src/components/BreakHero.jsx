@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
-import { Footprints, Sparkles } from 'lucide-react'
+import { Footprints, Sparkles, TimerReset } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 const breakOptions = [5, 10, 15]
 
@@ -24,12 +25,17 @@ function BreakHero() {
         ))}
       </div>
 
-      <Link className="blue-button generate-button" to="/mission">
-        <Sparkles size={17} />
-        Generate Mission
-      </Link>
+      <Button className="generate-button" asChild>
+        <Link to="/mission">
+          <Sparkles size={17} />
+          Generate Mission
+        </Link>
+      </Button>
 
-      <p className="time-note">All missions are time-safe and easy to return from.</p>
+      <p className="time-note">
+        <TimerReset size={15} />
+        All missions are time-safe and easy to return from.
+      </p>
     </>
   )
 }

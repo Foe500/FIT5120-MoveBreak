@@ -1,5 +1,5 @@
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
-import { CalendarDays, HomeIcon, MapPinned, PlayCircle, RouteIcon, Sparkles } from 'lucide-react'
+import { CalendarDays, HomeIcon, MapPinned, Sprout, Sparkles, StretchHorizontal } from 'lucide-react'
 import './App.css'
 import Home from './pages/Home.jsx'
 import Mission from './pages/Mission.jsx'
@@ -11,7 +11,7 @@ const navItems = [
   { to: '/', label: 'Home', icon: HomeIcon },
   { to: '/mission', label: 'Mission', icon: Sparkles },
   { to: '/explore', label: 'Explore Map', icon: MapPinned },
-  { to: '/activities', label: 'Activities', icon: RouteIcon },
+  { to: '/activities', label: 'Activities', icon: StretchHorizontal },
   { to: '/planner', label: 'Break Planner', icon: CalendarDays },
 ]
 
@@ -21,7 +21,7 @@ function App() {
       <header className="topbar">
         <Link className="brand" to="/" aria-label="MoveBreak Melbourne home">
           <span className="brand-mark">
-            <PlayCircle size={24} strokeWidth={2.4} />
+            <Sprout size={24} strokeWidth={2.4} />
           </span>
           <span>
             <strong>MoveBreak</strong>
