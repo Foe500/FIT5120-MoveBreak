@@ -1,4 +1,5 @@
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
+import { CalendarDays, HomeIcon, MapPinned, PlayCircle, RouteIcon, Sparkles } from 'lucide-react'
 import './App.css'
 import Home from './pages/Home.jsx'
 import Mission from './pages/Mission.jsx'
@@ -7,11 +8,11 @@ import ActivityLibrary from './pages/ActivityLibrary.jsx'
 import Planner from './pages/Planner.jsx'
 
 const navItems = [
-  { to: '/', label: 'Home' },
-  { to: '/mission', label: 'Mission' },
-  { to: '/explore', label: 'Explore Map' },
-  { to: '/activities', label: 'Activities' },
-  { to: '/planner', label: 'Planner' },
+  { to: '/', label: 'Home', icon: HomeIcon },
+  { to: '/mission', label: 'Mission', icon: Sparkles },
+  { to: '/explore', label: 'Explore Map', icon: MapPinned },
+  { to: '/activities', label: 'Activities', icon: RouteIcon },
+  { to: '/planner', label: 'Break Planner', icon: CalendarDays },
 ]
 
 function App() {
@@ -19,16 +20,26 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <Link className="brand" to="/" aria-label="MoveBreak Melbourne home">
-          <strong>MoveBreak</strong>
-          <span>Melbourne</span>
+          <span className="brand-mark">
+            <PlayCircle size={24} strokeWidth={2.4} />
+          </span>
+          <span>
+            <strong>MoveBreak</strong>
+            <small>Melbourne</small>
+          </span>
         </Link>
 
         <nav className="nav-links" aria-label="Main navigation">
-          {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to}>
-              {item.label}
-            </NavLink>
-          ))}
+          {navItems.map((item) => {
+            const Icon = item.icon
+
+            return (
+              <NavLink key={item.to} to={item.to}>
+                <Icon size={17} aria-hidden="true" />
+                {item.label}
+              </NavLink>
+            )
+          })}
         </nav>
       </header>
 
