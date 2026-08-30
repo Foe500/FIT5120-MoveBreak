@@ -2025,6 +2025,327 @@ main {
   font-weight: 800;
 }
 
+.planner-page {
+  padding-top: 1.25rem;
+}
+
+.planner-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.planner-heading h1 {
+  color: #10275b;
+  font-size: 1.95rem;
+  line-height: 1.05;
+}
+
+.planner-heading p {
+  margin-top: 0.38rem;
+  max-width: 42rem;
+  color: #5f6f8a;
+  font-size: 0.92rem;
+}
+
+.planner-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  color: #344662;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.planner-heading-actions span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.planner-heading-actions button {
+  border: 0;
+  color: #0b66df;
+  background: transparent;
+  font: inherit;
+}
+
+.planner-board-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  gap: 1rem;
+  align-items: start;
+}
+
+.day-plan-card,
+.activity-add-panel {
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 36px rgba(42, 90, 150, 0.08);
+}
+
+.day-plan-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.day-plan-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e8eff8;
+  color: #344662;
+  font-size: 0.86rem;
+}
+
+.day-plan-summary svg {
+  color: #0b66df;
+}
+
+.day-plan-summary span {
+  color: #60708b;
+}
+
+.planner-day-section {
+  padding: 1rem;
+}
+
+.planner-day-section + .planner-day-section {
+  border-top: 1px solid #eef3f8;
+}
+
+.planner-day-section h2 {
+  margin-bottom: 0.72rem;
+  color: #132a57;
+  font-size: 0.9rem;
+}
+
+.planner-row {
+  display: grid;
+  grid-template-columns: 3.8rem 1fr;
+  gap: 0.65rem;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.planner-row-time {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  color: #132a57;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.planner-row-time i {
+  display: block;
+  width: 0.78rem;
+  height: 0.78rem;
+  border: 1.5px solid #9cb1cd;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.planner-row-time i.completed {
+  border-color: #42a85a;
+  background: #42a85a;
+}
+
+.planner-row-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  gap: 0.72rem;
+  align-items: center;
+  min-height: 3.95rem;
+  padding: 0.65rem 0.72rem;
+  border: 1px solid #e1e9f4;
+  border-radius: 0.72rem;
+  background: #ffffff;
+}
+
+.planner-row-icon {
+  display: grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  border: 1px solid #d6e7fb;
+  border-radius: 0.5rem;
+  color: #0b66df;
+  background: #f8fbff;
+}
+
+.planner-row-card h3 {
+  color: #132a57;
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.planner-row-card .badge {
+  margin-top: 0.25rem;
+}
+
+.planner-duration {
+  color: #344662;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.planner-row-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.planner-row-actions button {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 0;
+  color: #4f607d;
+  background: transparent;
+}
+
+.add-slot-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  width: calc(100% - 4.45rem);
+  min-height: 3rem;
+  margin-left: 4.45rem;
+  border: 1px dashed #d5e1f0;
+  border-radius: 0.72rem;
+  color: #0b66df;
+  background: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.activity-add-panel {
+  padding: 1rem;
+}
+
+.activity-add-panel h2 {
+  color: #132a57;
+  font-size: 1rem;
+}
+
+.planner-segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin-top: 0.85rem;
+  overflow: hidden;
+  border: 1px solid #d4e0f1;
+  border-radius: 0.48rem;
+}
+
+.planner-segmented-control button {
+  min-height: 2.25rem;
+  border: 0;
+  color: #4d5e7a;
+  background: #ffffff;
+  font-weight: 800;
+}
+
+.planner-segmented-control .selected {
+  color: #ffffff;
+  background: #0b66df;
+}
+
+.activity-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.55rem;
+  margin-top: 0.85rem;
+  padding: 0 0.75rem;
+  border: 1px solid #d8e5f6;
+  border-radius: 0.55rem;
+  color: #7a8799;
+  background: #ffffff;
+}
+
+.planner-tag-row {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.planner-tag-row span {
+  padding: 0.4rem 0.62rem;
+  border: 1px solid #dce8f8;
+  border-radius: 999px;
+  color: #60708b;
+  background: #f8fbff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.suggestion-list article {
+  display: grid;
+  grid-template-columns: 4.1rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.72rem;
+  border: 1px solid #e1e9f4;
+  border-radius: 0.72rem;
+  background: #ffffff;
+}
+
+.suggestion-thumb {
+  display: grid;
+  width: 4.1rem;
+  height: 3.6rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  color: #0b66df;
+  background: #f8fbff;
+}
+
+.suggestion-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.suggestion-list h3 {
+  color: #132a57;
+  font-size: 0.84rem;
+  line-height: 1.2;
+}
+
+.suggestion-list p {
+  margin-top: 0.25rem;
+  color: #60708b;
+  font-size: 0.74rem;
+}
+
+.added-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: #2f9e44;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.browse-activities-button {
+  width: 100%;
+  margin-top: 1rem;
+}
+
 .hero-copy,
 .today-panel,
 .activity-card,
@@ -2275,14 +2596,27 @@ main {
   .mission-shell,
   .library-layout,
   .activity-library-grid,
+  .planner-board-layout,
   .movement-choice-grid,
   .need-chip-row {
     grid-template-columns: 1fr;
   }
 
-  .activities-heading {
+  .activities-heading,
+  .planner-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .planner-row,
+  .planner-row-card,
+  .suggestion-list article {
+    grid-template-columns: 1fr;
+  }
+
+  .add-slot-button {
+    width: 100%;
+    margin-left: 0;
   }
 
   .break-hero,
