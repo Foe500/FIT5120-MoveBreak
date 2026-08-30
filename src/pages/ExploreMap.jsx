@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
+import { Icon } from 'leaflet'
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
   Building2,
   Clock3,
   Crosshair,
-  Footprints,
   Landmark,
   Leaf,
   MapPin,
@@ -16,6 +17,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
+const melbourneCenter = [-37.8136, 144.9631]
+
 const categories = ['All', 'Green space', 'Quiet space', 'Landmark', 'Waterfront']
 
 const mapPlaces = [
@@ -27,7 +30,8 @@ const mapPlaces = [
     status: 'Best match',
     marker: '1',
     markerTone: 'green',
-    className: 'map-marker-flagstaff',
+    position: [-37.8101, 144.955],
+    address: 'William Street, West Melbourne',
   },
   {
     icon: Leaf,
@@ -37,7 +41,8 @@ const mapPlaces = [
     status: 'Open now',
     marker: '2',
     markerTone: 'gold',
-    className: 'map-marker-docklands',
+    position: [-37.8217, 144.9475],
+    address: 'Harbour Esplanade, Docklands',
   },
   {
     icon: Building2,
@@ -47,7 +52,8 @@ const mapPlaces = [
     status: 'Low noise',
     marker: '3',
     markerTone: 'blue',
-    className: 'map-marker-library',
+    position: [-37.8098, 144.9652],
+    address: '328 Swanston Street, Melbourne',
   },
   {
     icon: Landmark,
@@ -57,38 +63,61 @@ const mapPlaces = [
     status: 'Outdoor',
     marker: '4',
     markerTone: 'gold',
-    className: 'map-marker-fed',
+    position: [-37.8179, 144.9691],
+    address: 'Swanston Street, Melbourne',
   },
 ]
+
+const markerColors = {
+  green: '#08713f',
+  gold: '#f28c22',
+  blue: '#0b66df',
+}
+
+function createMarkerIcon(marker, tone) {
+  const color = markerColors[tone]
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42"><path fill="${color}" stroke="white" stroke-width="3" d="M21 3c8.3 0 15 6.4 15 14.4 0 10.6-15 21.6-15 21.6S6 28 6 17.4C6 9.4 12.7 3 21 3Z"/><text x="21" y="23" text-anchor="middle" fill="white" font-family="Arial" font-size="15" font-weight="700">${marker}</text></svg>`
+
+  return new Icon({
+    iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+    iconSize: [42, 42],
+    iconAnchor: [21, 38],
+    popupAnchor: [0, -36],
+  })
+}
 
 function ExploreMap() {
   const selectedPlace = mapPlaces[0]
 
   return (
     <section className="explore-workspace">
-      <div className="full-map" aria-label="Melbourne nearby breaks map">
-        <div className="map-river-large"></div>
-        <div className="major-road road-east"></div>
-        <div className="major-road road-west"></div>
-        <div className="major-road road-south"></div>
-        <span className="map-district district-cbd">Melbourne</span>
-        <span className="map-district district-north">Carlton</span>
-        <span className="map-district district-east">Fitzroy</span>
-        <span className="map-district district-south">Southbank</span>
+      <MapContainer
+        center={melbourneCenter}
+        className="leaflet-workspace-map"
+        scrollWheelZoom
+        zoom={14}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
         {mapPlaces.map((place) => (
-          <span
-            className={`numbered-marker ${place.markerTone} ${place.className}`}
-            data-marker={place.marker}
+          <Marker
+            icon={createMarkerIcon(place.marker, place.markerTone)}
             key={place.name}
+            position={place.position}
           >
-          </span>
+            <Popup>
+              <strong>{place.name}</strong>
+              <br />
+              {place.type}
+              <br />
+              {place.distance}
+            </Popup>
+          </Marker>
         ))}
-
-        <span className="user-location-marker">
-          <Footprints size={20} />
-        </span>
-      </div>
+      </MapContainer>
 
       <Card className="map-control-panel">
         <h1>Explore nearby breaks</h1>
@@ -114,11 +143,15 @@ function ExploreMap() {
           ))}
         </div>
 
+        <p className="sample-data-note">
+          Sample locations for Iteration 1. Later this can be replaced with Open Data.
+        </p>
+
         <div className="nearby-results-heading">Nearby break spots</div>
 
         <div className="map-result-list">
           {mapPlaces.map((place) => {
-            const Icon = place.icon
+            const PlaceIcon = place.icon
 
             return (
               <article key={place.name}>
@@ -132,14 +165,14 @@ function ExploreMap() {
                   </small>
                 </div>
                 <Badge variant="secondary">{place.status}</Badge>
-                <Icon className="result-icon" size={18} />
+                <PlaceIcon className="result-icon" size={18} />
               </article>
             )
           })}
         </div>
 
         <div className="panel-footer-row">
-          <span>Showing 4 nearby options</span>
+          <span>Showing 4 sample options</span>
           <Link to="/mission">View mission options</Link>
         </div>
       </Card>
@@ -162,7 +195,7 @@ function ExploreMap() {
         <div className="selected-detail-list">
           <span>
             <MapPin size={16} />
-            William Street, West Melbourne
+            {selectedPlace.address}
           </span>
           <span>
             <Navigation size={16} />
