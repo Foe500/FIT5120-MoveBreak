@@ -3,13 +3,16 @@ import { CalendarDays, Clock3, MapPin, Play } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 
 function RecommendedMissionCard() {
   return (
     <Card className="mission-recommendation">
-      <div className="park-art" aria-hidden="true">
-        <span className="path-line"></span>
-      </div>
+      <img
+        className="park-art"
+        src={greenSpaceImage}
+        alt="Tree-lined walking path beside Melbourne city"
+      />
       <div className="recommendation-copy">
         <Badge className="recommend-badge" variant="success">Recommended</Badge>
         <h2>Green Space Reset</h2>

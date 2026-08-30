@@ -2,6 +2,7 @@ import { Clock3, Play } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
 function QuickIndoorBreakCard() {
   return (
@@ -20,12 +21,11 @@ function QuickIndoorBreakCard() {
         </Button>
       </div>
 
-      <div className="desk-stretch-art" aria-hidden="true">
-        <span className="person person-left"></span>
-        <span className="person person-right"></span>
-        <span className="motion motion-left"></span>
-        <span className="motion motion-right"></span>
-      </div>
+      <img
+        className="desk-stretch-art"
+        src={shoulderReleaseImage}
+        alt="Person demonstrating a shoulder release stretch"
+      />
     </Card>
   )
 }
