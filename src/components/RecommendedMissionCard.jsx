@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 
-function RecommendedMissionCard() {
+function RecommendedMissionCard({ duration }) {
   return (
     <Card className="mission-recommendation">
       <img
@@ -21,7 +21,7 @@ function RecommendedMissionCard() {
         <div className="recommendation-meta">
           <span>
             <Clock3 size={18} />
-            <strong>10 min</strong>
+            <strong>{duration} min</strong>
             Duration
           </span>
           <span>

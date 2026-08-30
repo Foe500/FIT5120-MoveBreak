@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 
 const breakOptions = [5, 10, 15]
 
-function BreakHero() {
+function BreakHero({ selectedDuration, onDurationChange }) {
   return (
     <>
       <div className="break-hero">
@@ -19,7 +19,12 @@ function BreakHero() {
 
       <div className="duration-tabs" aria-label="Choose break duration">
         {breakOptions.map((option) => (
-          <button className={option === 5 ? 'selected' : ''} key={option} type="button">
+          <button
+            className={option === selectedDuration ? 'selected' : ''}
+            key={option}
+            onClick={() => onDurationChange(option)}
+            type="button"
+          >
             {option} min
           </button>
         ))}
