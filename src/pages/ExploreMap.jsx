@@ -74,10 +74,6 @@ function ExploreMap() {
           ))}
         </div>
 
-        <p className="sample-data-note">
-          Sample locations for Iteration 1. Later this can be replaced with Open Data.
-        </p>
-
         <div className="nearby-results-heading">Nearby break spots</div>
 
         <div className="map-result-list">
@@ -103,7 +99,7 @@ function ExploreMap() {
         </div>
 
         <div className="panel-footer-row">
-          <span>Showing 4 sample options</span>
+          <span>Showing 4 nearby options</span>
           <Link to="/mission">View mission options</Link>
         </div>
       </Card>

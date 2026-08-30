@@ -8,7 +8,6 @@ import {
   Pencil,
   Plus,
   Search,
-  ShieldCheck,
   Trash2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -170,10 +169,6 @@ function Planner() {
         </div>
 
         <div className="planner-heading-actions">
-          <span>
-            <ShieldCheck size={16} />
-            Session only
-          </span>
           <button type="button">Clear plan</button>
         </div>
       </div>
