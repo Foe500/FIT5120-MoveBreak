@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Armchair,
@@ -20,15 +21,34 @@ import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
 const durationOptions = [5, 10, 15]
 
+const movementOptions = [
+  {
+    label: 'Indoor',
+    description: 'Guided activities you can do at your desk',
+    image: shoulderReleaseImage,
+    imageAlt: 'Person stretching beside a desk',
+  },
+  {
+    label: 'Outdoor',
+    description: 'Nearby walks and outdoor resets',
+    image: greenSpaceImage,
+    imageAlt: 'Tree-lined walking path beside Melbourne city',
+  },
+]
+
 const needOptions = [
   { icon: Eye, label: 'Eyes tired' },
   { icon: Armchair, label: 'Stiff shoulders' },
-  { icon: Zap, label: 'Low energy', selected: true },
+  { icon: Zap, label: 'Low energy' },
   { icon: Leaf, label: 'Feeling stressed' },
   { icon: Footprints, label: 'General movement' },
 ]
 
 function Mission() {
+  const [duration, setDuration] = useState(10)
+  const [movementType, setMovementType] = useState('Outdoor')
+  const [need, setNeed] = useState('Low energy')
+
   return (
     <section className="page mission-page">
       <div className="mission-shell">
@@ -47,8 +67,9 @@ function Mission() {
               <div className="mission-duration-tabs" aria-label="Choose break duration">
                 {durationOptions.map((option) => (
                   <button
-                    className={option === 10 ? 'selected' : ''}
+                    className={option === duration ? 'selected' : ''}
                     key={option}
+                    onClick={() => setDuration(option)}
                     type="button"
                   >
                     {option} min
@@ -64,23 +85,18 @@ function Mission() {
               </div>
 
               <div className="movement-choice-grid">
-                <button className="movement-card" type="button">
-                  <img
-                    src={shoulderReleaseImage}
-                    alt="Person stretching beside a desk"
-                  />
-                  <strong>Indoor</strong>
-                  <small>Guided activities you can do at your desk</small>
-                </button>
-
-                <button className="movement-card selected" type="button">
-                  <img
-                    src={greenSpaceImage}
-                    alt="Tree-lined walking path beside Melbourne city"
-                  />
-                  <strong>Outdoor</strong>
-                  <small>Nearby walks and outdoor resets</small>
-                </button>
+                {movementOptions.map((option) => (
+                  <button
+                    className={option.label === movementType ? 'movement-card selected' : 'movement-card'}
+                    key={option.label}
+                    onClick={() => setMovementType(option.label)}
+                    type="button"
+                  >
+                    <img src={option.image} alt={option.imageAlt} />
+                    <strong>{option.label}</strong>
+                    <small>{option.description}</small>
+                  </button>
+                ))}
               </div>
 
               <Button className="surprise-button" size="sm" variant="outline" type="button">
@@ -101,8 +117,9 @@ function Mission() {
 
                   return (
                     <button
-                      className={option.selected ? 'selected' : ''}
+                      className={option.label === need ? 'selected' : ''}
                       key={option.label}
+                      onClick={() => setNeed(option.label)}
                       type="button"
                     >
                       <Icon size={15} />
@@ -129,14 +146,14 @@ function Mission() {
           <div className="preview-panel">
             <h3>Flagstaff Fresh-Air Loop</h3>
             <div className="preview-tags">
-              <Badge variant="success">Outdoor</Badge>
+              <Badge variant="success">{movementType}</Badge>
               <Badge variant="secondary">
                 <Clock3 size={13} />
-                10 min
+                {duration} min
               </Badge>
               <Badge variant="secondary">
                 <BatteryCharging size={13} />
-                Low energy
+                {need}
               </Badge>
             </div>
 
@@ -172,9 +189,14 @@ function Mission() {
                 Open in Explore Map
               </Link>
             </Button>
-            <Button className="preview-secondary-button" variant="outline" type="button">
+            <Button
+              className="preview-secondary-button"
+              onClick={() => setMovementType(movementType === 'Indoor' ? 'Outdoor' : 'Indoor')}
+              variant="outline"
+              type="button"
+            >
               <Armchair size={17} />
-              Try indoor instead
+              Try {movementType === 'Indoor' ? 'outdoor' : 'indoor'} instead
             </Button>
 
             <p className="return-note">
