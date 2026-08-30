@@ -1,26 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  Building2,
-  Footprints,
-  HeartPulse,
-  Landmark,
-  Leaf,
-  Map,
-} from 'lucide-react'
+import { HeartPulse, Map } from 'lucide-react'
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import BreakHero from '../components/BreakHero.jsx'
 import RecommendedMissionCard from '../components/RecommendedMissionCard.jsx'
 import QuickIndoorBreakCard from '../components/home/QuickIndoorBreakCard.jsx'
 import SessionBadgesCard from '../components/home/SessionBadgesCard.jsx'
 import TodayPlanCard from '../components/home/TodayPlanCard.jsx'
-
-const mapLabels = [
-  { icon: Leaf, text: 'Flagstaff Gardens', className: 'pin-flagstaff' },
-  { icon: Leaf, text: 'Docklands Park', className: 'pin-docklands' },
-  { icon: Building2, text: 'State Library Victoria', className: 'pin-library' },
-  { icon: Landmark, text: 'Federation Square', className: 'pin-fed' },
-  { icon: Building2, text: 'Queen Victoria Market', className: 'pin-market' },
-]
+import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
+import { createMarkerIcon } from '@/lib/mapMarkers'
 
 function Home() {
   const [selectedDuration, setSelectedDuration] = useState(5)
@@ -51,24 +39,39 @@ function Home() {
             </div>
           </div>
 
-          <Link className="mock-map" to="/explore" aria-label="Open Explore Map">
-            <div className="map-roads road-a"></div>
-            <div className="map-roads road-b"></div>
-            <div className="map-roads road-c"></div>
-            <div className="map-river"></div>
-            <div className="map-zone zone-15"></div>
-            <div className="map-zone zone-10"></div>
-            <div className="map-zone zone-5"></div>
-            <div className="center-person">
-              <Footprints size={26} />
-            </div>
-            {mapLabels.map((label) => (
-              <span className={`map-place ${label.className}`} key={label.text}>
-                <label.icon size={17} />
-                {label.text}
-              </span>
-            ))}
-          </Link>
+          <div className="home-leaflet-map-wrap">
+            <MapContainer
+              center={melbourneCenter}
+              className="home-leaflet-map"
+              dragging={false}
+              scrollWheelZoom={false}
+              zoom={14}
+              zoomControl={false}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+
+              {mapPlaces.map((place) => (
+                <Marker
+                  icon={createMarkerIcon(place.marker, place.markerTone)}
+                  key={place.name}
+                  position={place.position}
+                >
+                  <Popup>
+                    <strong>{place.name}</strong>
+                    <br />
+                    {place.distance}
+                  </Popup>
+                </Marker>
+              ))}
+            </MapContainer>
+
+            <Link className="open-map-overlay" to="/explore">
+              Open Explore Map
+            </Link>
+          </div>
         </section>
       </div>
 

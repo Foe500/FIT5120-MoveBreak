@@ -1,12 +1,8 @@
 import { Link } from 'react-router-dom'
-import { Icon } from 'leaflet'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
-  Building2,
   Clock3,
   Crosshair,
-  Landmark,
-  Leaf,
   MapPin,
   Navigation,
   Route,
@@ -16,75 +12,10 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-
-const melbourneCenter = [-37.8136, 144.9631]
+import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
+import { createMarkerIcon } from '@/lib/mapMarkers'
 
 const categories = ['All', 'Green space', 'Quiet space', 'Landmark', 'Waterfront']
-
-const mapPlaces = [
-  {
-    icon: Leaf,
-    name: 'Flagstaff Gardens',
-    type: 'Green space',
-    distance: '4 min walk',
-    status: 'Best match',
-    marker: '1',
-    markerTone: 'green',
-    position: [-37.8101, 144.955],
-    address: 'William Street, West Melbourne',
-  },
-  {
-    icon: Leaf,
-    name: 'Docklands Park',
-    type: 'Waterfront green space',
-    distance: '9 min walk',
-    status: 'Open now',
-    marker: '2',
-    markerTone: 'gold',
-    position: [-37.8217, 144.9475],
-    address: 'Harbour Esplanade, Docklands',
-  },
-  {
-    icon: Building2,
-    name: 'State Library Victoria',
-    type: 'Quiet public space',
-    distance: '11 min walk',
-    status: 'Low noise',
-    marker: '3',
-    markerTone: 'blue',
-    position: [-37.8098, 144.9652],
-    address: '328 Swanston Street, Melbourne',
-  },
-  {
-    icon: Landmark,
-    name: 'Federation Square',
-    type: 'Open public square',
-    distance: '14 min walk',
-    status: 'Outdoor',
-    marker: '4',
-    markerTone: 'gold',
-    position: [-37.8179, 144.9691],
-    address: 'Swanston Street, Melbourne',
-  },
-]
-
-const markerColors = {
-  green: '#08713f',
-  gold: '#f28c22',
-  blue: '#0b66df',
-}
-
-function createMarkerIcon(marker, tone) {
-  const color = markerColors[tone]
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42"><path fill="${color}" stroke="white" stroke-width="3" d="M21 3c8.3 0 15 6.4 15 14.4 0 10.6-15 21.6-15 21.6S6 28 6 17.4C6 9.4 12.7 3 21 3Z"/><text x="21" y="23" text-anchor="middle" fill="white" font-family="Arial" font-size="15" font-weight="700">${marker}</text></svg>`
-
-  return new Icon({
-    iconUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
-    iconSize: [42, 42],
-    iconAnchor: [21, 38],
-    popupAnchor: [0, -36],
-  })
-}
 
 function ExploreMap() {
   const selectedPlace = mapPlaces[0]

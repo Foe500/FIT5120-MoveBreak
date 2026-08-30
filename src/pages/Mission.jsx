@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
   Armchair,
   BatteryCharging,
@@ -16,6 +17,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
+import { createMarkerIcon } from '@/lib/mapMarkers'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
@@ -48,6 +51,7 @@ function Mission() {
   const [duration, setDuration] = useState(10)
   const [movementType, setMovementType] = useState('Outdoor')
   const [need, setNeed] = useState('Low energy')
+  const selectedPlace = mapPlaces[0]
 
   return (
     <section className="page mission-page">
@@ -157,12 +161,30 @@ function Mission() {
               </Badge>
             </div>
 
-            <div className="preview-map" aria-label="Route preview map">
-              <div className="preview-grid"></div>
-              <div className="preview-park"></div>
-              <div className="route-line"></div>
-              <span className="route-user">You</span>
-              <span className="route-destination">Flagstaff Gardens</span>
+            <div className="preview-map">
+              <MapContainer
+                center={melbourneCenter}
+                className="mission-preview-leaflet-map"
+                dragging={false}
+                scrollWheelZoom={false}
+                zoom={14}
+                zoomControl={false}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Marker
+                  icon={createMarkerIcon(selectedPlace.marker, selectedPlace.markerTone)}
+                  position={selectedPlace.position}
+                >
+                  <Popup>
+                    <strong>{selectedPlace.name}</strong>
+                    <br />
+                    {selectedPlace.distance}
+                  </Popup>
+                </Marker>
+              </MapContainer>
             </div>
 
             <div className="route-breakdown">
