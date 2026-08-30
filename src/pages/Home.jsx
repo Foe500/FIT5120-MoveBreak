@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Building2,
@@ -22,14 +23,19 @@ const mapLabels = [
 ]
 
 function Home() {
+  const [selectedDuration, setSelectedDuration] = useState(5)
+
   return (
     <section className="home-dashboard">
       <div className="dashboard-main">
         <div className="break-column">
           <section className="break-card">
-            <BreakHero />
+            <BreakHero
+              selectedDuration={selectedDuration}
+              onDurationChange={setSelectedDuration}
+            />
           </section>
-          <RecommendedMissionCard />
+          <RecommendedMissionCard duration={selectedDuration} />
         </div>
 
         <section className="map-card">
