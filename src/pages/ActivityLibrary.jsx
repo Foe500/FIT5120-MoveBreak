@@ -1,188 +1,198 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Armchair,
-  BatteryCharging,
+  CalendarPlus,
   Clock3,
+  Dumbbell,
   Eye,
   Footprints,
-  Leaf,
+  Hand,
   Play,
-  RotateCcw,
+  Search,
+  SlidersHorizontal,
   Sparkles,
   Wind,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
-const categories = ['All', 'Indoor', 'Outdoor', 'Eye reset', 'Stretch']
+const filters = ['2-5 min', '5-10 min', 'Any']
+const postureFilters = ['Seated', 'Standing', 'Low intensity', 'Step-free']
 
 const activities = [
   {
-    id: 'desk-shoulder-release',
-    title: 'Desk shoulder release',
-    category: 'Stretch',
-    setting: 'Indoor',
-    duration: 3,
-    energy: 'Low energy',
-    description: 'Loosen neck and shoulder tension without leaving your desk.',
-    icon: Armchair,
-  },
-  {
-    id: 'eye-distance-reset',
-    title: '20-20 eye reset',
-    category: 'Eye reset',
-    setting: 'Indoor',
+    id: 'eye-reset',
+    area: 'Eyes',
+    title: '20-20-20 eye reset',
+    description: 'Give your eyes a distance break.',
     duration: 2,
-    energy: 'Low energy',
-    description: 'Look away from the screen and relax your eyes with a short distance focus.',
+    posture: 'Seated',
     icon: Eye,
   },
   {
-    id: 'green-space-loop',
-    title: 'Green space loop',
-    category: 'Outdoor',
-    setting: 'Outdoor',
-    duration: 10,
-    energy: 'Medium energy',
-    description: 'Take a calm walk through a nearby green space and return on time.',
-    icon: Leaf,
+    id: 'desk-shoulder-release',
+    area: 'Shoulders',
+    title: 'Desk shoulder release',
+    description: 'Ease tension without leaving your chair.',
+    duration: 3,
+    posture: 'Seated',
+    image: shoulderReleaseImage,
   },
   {
-    id: 'fresh-air-block',
-    title: 'Fresh air block',
-    category: 'Outdoor',
-    setting: 'Outdoor',
+    id: 'seated-breathing',
+    area: 'Breathing',
+    title: 'Seated breathing reset',
+    description: 'Slow down with a guided breathing rhythm.',
     duration: 5,
-    energy: 'Low energy',
-    description: 'Step outside briefly, reset your breathing and come back clearer.',
+    posture: 'Seated',
     icon: Wind,
   },
   {
-    id: 'posture-reset',
-    title: 'Posture reset',
-    category: 'Stretch',
-    setting: 'Indoor',
-    duration: 4,
-    energy: 'Low energy',
-    description: 'Reset your sitting posture with a few gentle movement cues.',
-    icon: RotateCcw,
+    id: 'wrist-hand-reset',
+    area: 'Wrists',
+    title: 'Wrist and hand reset',
+    description: 'Gentle movement after keyboard work.',
+    duration: 3,
+    posture: 'Seated',
+    icon: Hand,
   },
   {
-    id: 'movement-boost',
-    title: 'Movement boost',
-    category: 'Indoor',
-    setting: 'Indoor',
-    duration: 5,
-    energy: 'Medium energy',
-    description: 'Add light movement when you feel your focus dropping.',
+    id: 'standing-posture',
+    area: 'Posture',
+    title: 'Standing posture reset',
+    description: 'Reset your stance and upper body.',
+    duration: 4,
+    posture: 'Standing',
     icon: Footprints,
+  },
+  {
+    id: 'low-impact-energy',
+    area: 'Whole body',
+    title: 'Low-impact energy boost',
+    description: 'A short movement break for low energy.',
+    duration: 5,
+    posture: 'Standing',
+    icon: Dumbbell,
   },
 ]
 
 function ActivityLibrary() {
-  const [selectedCategory, setSelectedCategory] = useState('All')
-  const visibleActivities =
-    selectedCategory === 'All'
-      ? activities
-      : activities.filter(
-          (activity) =>
-            activity.category === selectedCategory || activity.setting === selectedCategory,
-        )
+  const [selectedTime, setSelectedTime] = useState('2-5 min')
+  const [selectedPosture, setSelectedPosture] = useState('Seated')
 
   return (
     <section className="page activities-page">
       <div className="activities-heading">
         <div>
-          <h1>Activity library</h1>
-          <p>Browse short breaks for focus, posture, energy and outdoor reset moments.</p>
+          <h1>Indoor activity library</h1>
+          <p>Short guided breaks for your desk or workspace.</p>
         </div>
 
-        <Badge className="library-count" variant="secondary">
-          {visibleActivities.length} activities
-        </Badge>
+        <Button asChild variant="outline">
+          <Link to="/planner">
+            <CalendarPlus size={17} />
+            Open planner
+          </Link>
+        </Button>
       </div>
 
-      <div className="library-layout">
-        <div>
-          <div className="library-filter-row" aria-label="Activity category filters">
-            {categories.map((category) => (
-              <button
-                className={category === selectedCategory ? 'selected' : ''}
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                type="button"
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+      <Card className="activity-filter-bar">
+        <label className="activity-search-field">
+          <Search size={17} />
+          <span>Search activities</span>
+        </label>
 
-          <div className="activity-library-grid">
-            {visibleActivities.map((activity) => {
-              const Icon = activity.icon
+        <button className="area-filter" type="button">
+          All areas
+          <SlidersHorizontal size={15} />
+        </button>
 
-              return (
-                <Card className="library-activity-card" key={activity.id}>
-                  <div className="activity-icon">
-                    <Icon size={24} />
-                  </div>
-
-                  <div>
-                    <div className="activity-card-topline">
-                      <Badge variant={activity.setting === 'Outdoor' ? 'success' : 'secondary'}>
-                        {activity.setting}
-                      </Badge>
-                      <span>
-                        <Clock3 size={14} />
-                        {activity.duration} min
-                      </span>
-                    </div>
-
-                    <h2>{activity.title}</h2>
-                    <p>{activity.description}</p>
-
-                    <div className="activity-card-footer">
-                      <span>
-                        <BatteryCharging size={14} />
-                        {activity.energy}
-                      </span>
-                      <Button size="sm" type="button">
-                        <Play size={14} fill="currentColor" />
-                        Start
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
+        <div className="activity-pill-group" aria-label="Duration filters">
+          {filters.map((filter) => (
+            <button
+              className={filter === selectedTime ? 'selected' : ''}
+              key={filter}
+              onClick={() => setSelectedTime(filter)}
+              type="button"
+            >
+              {filter}
+            </button>
+          ))}
         </div>
 
-        <aside className="library-side-panel">
-          <Card className="library-plan-card">
-            <div className="title-with-icon">
-              <Sparkles size={18} />
-              <h2>Suggested set</h2>
-            </div>
-            <p>Use a gentle mix of eye, stretch and outdoor breaks during a study day.</p>
+        <div className="activity-pill-group" aria-label="Posture filters">
+          {postureFilters.map((filter) => (
+            <button
+              className={filter === selectedPosture ? 'selected' : ''}
+              key={filter}
+              onClick={() => setSelectedPosture(filter)}
+              type="button"
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
 
-            <div className="suggested-stack">
-              <span>Eye reset</span>
-              <span>Desk shoulder release</span>
-              <span>Green space loop</span>
-            </div>
-          </Card>
+        <button className="clear-filter-button" type="button">
+          Clear filters
+        </button>
+      </Card>
 
-          <Card className="library-plan-card">
-            <div className="title-with-icon">
-              <Leaf size={18} />
-              <h2>Outdoor focus</h2>
-            </div>
-            <p>Outdoor activities can later connect with open space and walking distance data.</p>
-          </Card>
-        </aside>
+      <div className="activity-toolbar-row">
+        <strong>{activities.length} activities</strong>
+        <span>Recommended</span>
       </div>
+
+      <div className="indoor-activity-grid">
+        {activities.map((activity) => {
+          const Icon = activity.icon
+
+          return (
+            <Card className="indoor-activity-card" key={activity.id}>
+              <div className="activity-illustration">
+                {activity.image ? (
+                  <img src={activity.image} alt="" />
+                ) : (
+                  <Icon size={46} strokeWidth={1.35} />
+                )}
+              </div>
+
+              <div className="indoor-activity-copy">
+                <span className="activity-area">{activity.area}</span>
+                <h2>{activity.title}</h2>
+                <p>{activity.description}</p>
+
+                <div className="activity-meta-row">
+                  <span>
+                    <Clock3 size={14} />
+                    {activity.duration} min
+                  </span>
+                  <span>
+                    <Armchair size={14} />
+                    {activity.posture}
+                  </span>
+                </div>
+
+                <Button className="activity-start-button" size="sm" type="button">
+                  <Play size={14} fill="currentColor" />
+                  Start now
+                </Button>
+                <Button className="activity-add-button" size="sm" type="button" variant="outline">
+                  <CalendarPlus size={14} />
+                  Add to planner
+                </Button>
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      <aside className="activity-safety-note">
+        <Sparkles size={16} />
+        <span>Move gently and stop if something feels uncomfortable.</span>
+      </aside>
     </section>
   )
 }

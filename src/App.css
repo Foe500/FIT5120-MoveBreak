@@ -1888,141 +1888,187 @@ main {
   font-size: 0.92rem;
 }
 
-.library-count {
-  flex: 0 0 auto;
-}
-
-.library-layout {
+.activity-filter-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 18rem;
-  gap: 1rem;
-  align-items: start;
+  grid-template-columns: minmax(12rem, 1.2fr) 7.5rem auto auto auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 0.72rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(42, 90, 150, 0.07);
 }
 
-.library-filter-row {
-  display: flex;
-  gap: 0.55rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.library-filter-row button {
+.activity-search-field,
+.area-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   min-height: 2.45rem;
-  border: 1px solid #d8e5f6;
-  border-radius: 999px;
-  padding: 0 0.9rem;
-  color: #344662;
+  border: 1px solid #d6e7fb;
+  border-radius: 0.45rem;
+  padding: 0 0.75rem;
+  color: #7a8799;
   background: #ffffff;
-  box-shadow: 0 8px 18px rgba(42, 90, 150, 0.06);
   font-size: 0.8rem;
+}
+
+.area-filter {
+  justify-content: space-between;
+  color: #344662;
   font-weight: 800;
 }
 
-.library-filter-row .selected {
-  border-color: #0b66df;
-  color: #ffffff;
-  background: #0b66df;
-}
-
-.activity-library-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.library-activity-card,
-.library-plan-card {
-  border: 1px solid rgba(190, 213, 242, 0.8);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 16px 36px rgba(42, 90, 150, 0.08);
-}
-
-.library-activity-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.9rem;
-  padding: 1rem;
-}
-
-.activity-icon {
-  display: grid;
-  width: 3.1rem;
-  height: 3.1rem;
-  place-items: center;
-  border: 1px solid #d6e7fb;
-  border-radius: 999px;
-  color: #0b66df;
-  background: #edf7ff;
-}
-
-.activity-card-topline,
-.activity-card-footer {
+.activity-pill-group {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  overflow: hidden;
+  border: 1px solid #d6e7fb;
+  border-radius: 0.45rem;
 }
 
-.activity-card-topline span,
-.activity-card-footer span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.28rem;
-  color: #60708b;
+.activity-pill-group button {
+  min-height: 2.45rem;
+  border: 0;
+  border-right: 1px solid #e4eaf4;
+  padding: 0 0.8rem;
+  color: #344662;
+  background: #ffffff;
   font-size: 0.76rem;
   font-weight: 800;
 }
 
-.library-activity-card h2 {
-  margin-top: 0.72rem;
+.activity-pill-group button:last-child {
+  border-right: 0;
+}
+
+.activity-pill-group .selected {
+  color: #ffffff;
+  background: #0b66df;
+}
+
+.clear-filter-button {
+  min-height: 2.45rem;
+  border: 0;
+  color: #0b66df;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.activity-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0 0.55rem;
+  color: #334662;
+  font-size: 0.82rem;
+}
+
+.activity-toolbar-row span {
+  color: #4f607d;
+  font-weight: 800;
+}
+
+.indoor-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.indoor-activity-card {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0.85rem;
+  min-height: 13rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 0.72rem;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(42, 90, 150, 0.07);
+}
+
+.activity-illustration {
+  display: grid;
+  min-height: 10.8rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 0.55rem;
+  color: #2c3e57;
+  background: #f8fafc;
+}
+
+.activity-illustration img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.activity-area {
+  color: #0b66df;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.indoor-activity-copy h2 {
+  margin-top: 0.15rem;
   color: #132a57;
-  font-size: 1.05rem;
+  font-size: 1rem;
   line-height: 1.2;
 }
 
-.library-activity-card p {
-  margin-top: 0.38rem;
-  min-height: 3.2rem;
+.indoor-activity-copy p {
+  margin-top: 0.4rem;
+  min-height: 2.45rem;
   color: #5f6f8a;
-  font-size: 0.86rem;
-  line-height: 1.45;
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
-.activity-card-footer {
-  margin-top: 0.9rem;
+.activity-meta-row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-top: 0.55rem;
 }
 
-.library-side-panel {
-  display: grid;
-  gap: 1rem;
+.activity-meta-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: #344662;
+  font-size: 0.75rem;
+  font-weight: 800;
 }
 
-.library-plan-card {
-  padding: 1rem;
+.activity-start-button,
+.activity-add-button {
+  width: 100%;
+  margin-top: 0.55rem;
 }
 
-.library-plan-card p {
-  margin-top: 0.75rem;
-  color: #5f6f8a;
-  font-size: 0.86rem;
-  line-height: 1.45;
+.activity-start-button {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
 }
 
-.suggested-stack {
-  display: grid;
+.activity-start-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0757c2, #064aa5);
+}
+
+.activity-safety-note {
+  display: flex;
+  align-items: center;
   gap: 0.55rem;
   margin-top: 1rem;
-}
-
-.suggested-stack span {
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #dce8f8;
-  border-radius: 0.55rem;
-  color: #1b315d;
-  background: #f8fbff;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d6e7fb;
+  border-radius: 0.5rem;
+  color: #527092;
+  background: #f3f9ff;
   font-size: 0.82rem;
-  font-weight: 800;
 }
 
 .planner-page {
@@ -2594,8 +2640,9 @@ main {
   .map-layout,
   .planner-board,
   .mission-shell,
-  .library-layout,
-  .activity-library-grid,
+  .activity-filter-bar,
+  .indoor-activity-grid,
+  .indoor-activity-card,
   .planner-board-layout,
   .movement-choice-grid,
   .need-chip-row {
