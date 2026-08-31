@@ -8,7 +8,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Stretch",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/desk-shoulder-release.png"
   },
   {
     "id": "seated-neck-roll",
@@ -19,7 +20,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Stretch",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/seated-neck-roll.png"
   },
   {
     "id": "standing-spine-twist",
@@ -30,7 +32,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Stretch",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/standing-spine-twist.png"
   },
   {
     "id": "chair-hip-flexor-stretch",
@@ -41,7 +44,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Stretch",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/chair-hip-flexor-stretch.png"
   },
   {
     "id": "wrist-and-finger-release",
@@ -52,7 +56,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Mobility",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/wrist-and-finger-release.png"
   },
   {
     "id": "20-20-20-eye-reset",
@@ -63,7 +68,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Mindfulness",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/20-20-20-eye-reset.png"
   },
   {
     "id": "box-breathing-reset",
@@ -74,7 +80,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Breathing",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/box-breathing-reset.png"
   },
   {
     "id": "standing-desk-mobility-flow",
@@ -85,7 +92,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Mobility",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/standing-desk-mobility-flow.png"
   },
   {
     "id": "calf-raise-set",
@@ -96,7 +104,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Strength",
-    "intensity": "Moderate"
+    "intensity": "Moderate",
+    "imageUrl": "/activity-images/calf-raise-set.png"
   },
   {
     "id": "wall-push-up-set",
@@ -107,7 +116,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Strength",
-    "intensity": "Moderate"
+    "intensity": "Moderate",
+    "imageUrl": "/activity-images/wall-push-up-set.png"
   },
   {
     "id": "seated-cat-cow-stretch",
@@ -118,7 +128,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Stretch",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/seated-cat-cow-stretch.png"
   },
   {
     "id": "shoulder-and-chest-opener",
@@ -129,7 +140,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Stretch",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/shoulder-and-chest-opener.png"
   },
   {
     "id": "guided-mindful-breathing",
@@ -140,7 +152,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Mindfulness",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/guided-mindful-breathing.png"
   },
   {
     "id": "office-stair-step-ups",
@@ -151,7 +164,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Strength",
-    "intensity": "Moderate"
+    "intensity": "Moderate",
+    "imageUrl": "/activity-images/office-stair-step-ups.png"
   },
   {
     "id": "posture-reset-routine",
@@ -162,7 +176,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Mobility",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/posture-reset-routine.png"
   },
   {
     "id": "full-body-desk-circuit",
@@ -173,7 +188,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Strength",
-    "intensity": "Moderate"
+    "intensity": "Moderate",
+    "imageUrl": "/activity-images/full-body-desk-circuit.png"
   },
   {
     "id": "extended-mobility-flow",
@@ -184,7 +200,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Mobility",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/extended-mobility-flow.png"
   },
   {
     "id": "indoor-brisk-walk-loop",
@@ -195,7 +212,8 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Strength",
-    "intensity": "Moderate"
+    "intensity": "Moderate",
+    "imageUrl": "/activity-images/indoor-brisk-walk-loop.png"
   },
   {
     "id": "meditation-and-breathwork",
@@ -206,7 +224,8 @@
     "posture": "Seated",
     "setting": "Indoor",
     "category": "Mindfulness",
-    "intensity": "Low"
+    "intensity": "Low",
+    "imageUrl": "/activity-images/meditation-and-breathwork.png"
   },
   {
     "id": "lower-body-strength-set",
@@ -217,6 +236,7 @@
     "posture": "Standing",
     "setting": "Indoor",
     "category": "Strength",
-    "intensity": "Moderate"
+    "intensity": "Moderate",
+    "imageUrl": "/activity-images/lower-body-strength-set.png"
   }
 ]
