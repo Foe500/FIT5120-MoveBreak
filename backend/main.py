@@ -36,3 +36,8 @@ def health_check():
 @app.get("/activities")
 def get_activities():
     return load_json_file("activities.json")
+
+
+@app.get("/places")
+def get_places():
+    return load_json_file("places.json")
