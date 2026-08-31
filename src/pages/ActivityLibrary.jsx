@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Armchair,
@@ -17,70 +17,47 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
+import { API_BASE_URL } from '@/lib/api'
 
 const filters = ['2-5 min', '5-10 min', 'Any']
 const postureFilters = ['Seated', 'Standing', 'Low intensity', 'Step-free']
 
-const activities = [
-  {
-    id: 'eye-reset',
-    area: 'Eyes',
-    title: '20-20-20 eye reset',
-    description: 'Give your eyes a distance break.',
-    duration: 2,
-    posture: 'Seated',
-    icon: Eye,
-  },
-  {
-    id: 'desk-shoulder-release',
-    area: 'Shoulders',
-    title: 'Desk shoulder release',
-    description: 'Ease tension without leaving your chair.',
-    duration: 3,
-    posture: 'Seated',
-    image: shoulderReleaseImage,
-  },
-  {
-    id: 'seated-breathing',
-    area: 'Breathing',
-    title: 'Seated breathing reset',
-    description: 'Slow down with a guided breathing rhythm.',
-    duration: 5,
-    posture: 'Seated',
-    icon: Wind,
-  },
-  {
-    id: 'wrist-hand-reset',
-    area: 'Wrists',
-    title: 'Wrist and hand reset',
-    description: 'Gentle movement after keyboard work.',
-    duration: 3,
-    posture: 'Seated',
-    icon: Hand,
-  },
-  {
-    id: 'standing-posture',
-    area: 'Posture',
-    title: 'Standing posture reset',
-    description: 'Reset your stance and upper body.',
-    duration: 4,
-    posture: 'Standing',
-    icon: Footprints,
-  },
-  {
-    id: 'low-impact-energy',
-    area: 'Whole body',
-    title: 'Low-impact energy boost',
-    description: 'A short movement break for low energy.',
-    duration: 5,
-    posture: 'Standing',
-    icon: Dumbbell,
-  },
-]
+const activityVisuals = {
+  'eye-reset': { icon: Eye },
+  'desk-shoulder-release': { image: shoulderReleaseImage },
+  'seated-breathing': { icon: Wind },
+  'wrist-hand-reset': { icon: Hand },
+  'standing-posture': { icon: Footprints },
+  'low-impact-energy': { icon: Dumbbell },
+}
 
 function ActivityLibrary() {
   const [selectedTime, setSelectedTime] = useState('2-5 min')
   const [selectedPosture, setSelectedPosture] = useState('Seated')
+  const [activities, setActivities] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadActivities() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/activities`)
+
+        if (!response.ok) {
+          throw new Error('Failed to load activities')
+        }
+
+        const data = await response.json()
+        setActivities(data)
+      } catch {
+        setError('Activities are unavailable right now.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadActivities()
+  }, [])
 
   return (
     <section className="page activities-page">
@@ -141,19 +118,22 @@ function ActivityLibrary() {
       </Card>
 
       <div className="activity-toolbar-row">
-        <strong>{activities.length} activities</strong>
+        <strong>{isLoading ? 'Loading activities' : `${activities.length} activities`}</strong>
         <span>Recommended</span>
       </div>
 
-      <div className="indoor-activity-grid">
+      {error ? <p className="activity-status-message">{error}</p> : null}
+
+      <div className="indoor-activity-grid" aria-busy={isLoading}>
         {activities.map((activity) => {
-          const Icon = activity.icon
+          const visual = activityVisuals[activity.id] ?? { icon: Dumbbell }
+          const Icon = visual.icon
 
           return (
             <Card className="indoor-activity-card" key={activity.id}>
               <div className="activity-illustration">
-                {activity.image ? (
-                  <img src={activity.image} alt="" />
+                {visual.image ? (
+                  <img src={visual.image} alt="" />
                 ) : (
                   <Icon size={46} strokeWidth={1.35} />
                 )}
