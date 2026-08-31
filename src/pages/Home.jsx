@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HeartPulse, Map } from 'lucide-react'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
@@ -7,11 +7,32 @@ import RecommendedMissionCard from '../components/RecommendedMissionCard.jsx'
 import QuickIndoorBreakCard from '../components/home/QuickIndoorBreakCard.jsx'
 import SessionBadgesCard from '../components/home/SessionBadgesCard.jsx'
 import TodayPlanCard from '../components/home/TodayPlanCard.jsx'
-import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
+import { melbourneCenter } from '@/data/mapPlaces'
+import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
 
 function Home() {
   const [selectedDuration, setSelectedDuration] = useState(5)
+  const [places, setPlaces] = useState([])
+
+  useEffect(() => {
+    async function loadPlaces() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/places`)
+
+        if (!response.ok) {
+          throw new Error('Failed to load places')
+        }
+
+        const data = await response.json()
+        setPlaces(data)
+      } catch {
+        setPlaces([])
+      }
+    }
+
+    loadPlaces()
+  }, [])
 
   return (
     <section className="home-dashboard">
@@ -53,10 +74,10 @@ function Home() {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
-              {mapPlaces.map((place) => (
+              {places.map((place) => (
                 <Marker
                   icon={createMarkerIcon(place.marker, place.markerTone)}
-                  key={place.name}
+                  key={place.id}
                   position={place.position}
                 >
                   <Popup>
