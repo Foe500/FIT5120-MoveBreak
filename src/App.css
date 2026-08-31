@@ -1313,6 +1313,13 @@ main {
   line-height: 1.2;
 }
 
+.mission-preview-description {
+  margin: 0.32rem 0 0;
+  color: #566780;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .preview-tags {
   display: flex;
   gap: 0.42rem;
@@ -1367,6 +1374,13 @@ main {
 .route-breakdown strong {
   color: #1b315d;
   font-size: 0.74rem;
+}
+
+.mission-status-message {
+  margin: 0.72rem 0 0;
+  color: #8a4b0f;
+  font-size: 0.86rem;
+  font-weight: 750;
 }
 
 .preview-primary-button,

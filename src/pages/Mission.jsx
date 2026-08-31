@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
+import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
@@ -47,11 +48,62 @@ const needOptions = [
   { icon: Footprints, label: 'General movement' },
 ]
 
+const apiNeedByLabel = {
+  'Eyes tired': 'Eyes',
+  'Stiff shoulders': 'Shoulders',
+  'Low energy': 'Low energy',
+  'Feeling stressed': 'Breathing',
+  'General movement': 'Movement',
+}
+
 function Mission() {
   const [duration, setDuration] = useState(10)
   const [movementType, setMovementType] = useState('Outdoor')
   const [need, setNeed] = useState('Low energy')
-  const selectedPlace = mapPlaces[0]
+  const [mission, setMission] = useState(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const selectedPlace = mission?.place ?? mapPlaces[0]
+  const previewTitle = mission?.title ?? 'Flagstaff Fresh-Air Loop'
+  const previewDescription =
+    mission?.description ?? 'Choose your options, then generate a break that fits.'
+  const previewDuration = mission?.duration ?? duration
+  const previewSteps =
+    mission?.steps ?? [
+      { label: 'Walk out', duration: 4 },
+      { label: 'Reset', duration: 2 },
+      { label: 'Walk back', duration: 4 },
+    ]
+
+  async function loadMission(nextMovementType = movementType) {
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/missions/recommend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          duration,
+          setting: nextMovementType,
+          need: apiNeedByLabel[need] ?? need,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to load mission')
+      }
+
+      const data = await response.json()
+      setMission(data)
+    } catch {
+      setError('Mission options are unavailable right now.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <section className="page mission-page">
@@ -133,9 +185,9 @@ function Mission() {
                 })}
               </div>
 
-              <Button className="show-options-button" type="button">
+              <Button className="show-options-button" onClick={() => loadMission()} type="button">
                 <Footprints size={17} />
-                Show my options
+                {isLoading ? 'Finding options' : 'Show my options'}
               </Button>
             </div>
           </Card>
@@ -148,12 +200,13 @@ function Mission() {
           </div>
 
           <div className="preview-panel">
-            <h3>Flagstaff Fresh-Air Loop</h3>
+            <h3>{previewTitle}</h3>
+            <p className="mission-preview-description">{previewDescription}</p>
             <div className="preview-tags">
               <Badge variant="success">{movementType}</Badge>
               <Badge variant="secondary">
                 <Clock3 size={13} />
-                {duration} min
+                {previewDuration} min
               </Badge>
               <Badge variant="secondary">
                 <BatteryCharging size={13} />
@@ -188,22 +241,16 @@ function Mission() {
             </div>
 
             <div className="route-breakdown">
-              <span>
-                <Footprints size={16} />
-                <strong>Walk out</strong>
-                4 min
-              </span>
-              <span>
-                <Leaf size={16} />
-                <strong>Reset</strong>
-                2 min
-              </span>
-              <span>
-                <Footprints size={16} />
-                <strong>Walk back</strong>
-                4 min
-              </span>
+              {previewSteps.map((step) => (
+                <span key={step.label}>
+                  {step.label === 'Reset' ? <Leaf size={16} /> : <Footprints size={16} />}
+                  <strong>{step.label}</strong>
+                  {step.duration} min
+                </span>
+              ))}
             </div>
+
+            {error ? <p className="mission-status-message">{error}</p> : null}
 
             <Button asChild className="preview-primary-button">
               <Link to="/explore">
@@ -213,7 +260,11 @@ function Mission() {
             </Button>
             <Button
               className="preview-secondary-button"
-              onClick={() => setMovementType(movementType === 'Indoor' ? 'Outdoor' : 'Indoor')}
+              onClick={() => {
+                const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
+                setMovementType(nextMovementType)
+                loadMission(nextMovementType)
+              }}
               variant="outline"
               type="button"
             >
