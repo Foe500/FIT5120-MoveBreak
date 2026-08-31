@@ -1,8 +1,12 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
+  Building2,
   Clock3,
   Crosshair,
+  Landmark,
+  Leaf,
   MapPin,
   Navigation,
   Route,
@@ -12,13 +16,45 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
+import { melbourneCenter } from '@/data/mapPlaces'
+import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
 
 const categories = ['All', 'Green space', 'Quiet space', 'Landmark', 'Waterfront']
 
+const placeIcons = {
+  'Green space': Leaf,
+  'Waterfront green space': Leaf,
+  'Quiet public space': Building2,
+  'Open public square': Landmark,
+}
+
 function ExploreMap() {
-  const selectedPlace = mapPlaces[0]
+  const [places, setPlaces] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const selectedPlace = places[0]
+
+  useEffect(() => {
+    async function loadPlaces() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/places`)
+
+        if (!response.ok) {
+          throw new Error('Failed to load places')
+        }
+
+        const data = await response.json()
+        setPlaces(data)
+      } catch {
+        setError('Map places are unavailable right now.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadPlaces()
+  }, [])
 
   return (
     <section className="explore-workspace">
@@ -33,10 +69,10 @@ function ExploreMap() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {mapPlaces.map((place) => (
+        {places.map((place) => (
           <Marker
             icon={createMarkerIcon(place.marker, place.markerTone)}
-            key={place.name}
+            key={place.id}
             position={place.position}
           >
             <Popup>
@@ -76,12 +112,14 @@ function ExploreMap() {
 
         <div className="nearby-results-heading">Nearby break spots</div>
 
+        {error ? <p className="map-status-message">{error}</p> : null}
+
         <div className="map-result-list">
-          {mapPlaces.map((place) => {
-            const PlaceIcon = place.icon
+          {places.map((place) => {
+            const PlaceIcon = placeIcons[place.type] ?? MapPin
 
             return (
-              <article key={place.name}>
+              <article key={place.id}>
                 <span className={`result-number ${place.markerTone}`}>{place.marker}</span>
                 <div>
                   <h3>{place.name}</h3>
@@ -99,12 +137,13 @@ function ExploreMap() {
         </div>
 
         <div className="panel-footer-row">
-          <span>Showing 4 nearby options</span>
+          <span>{isLoading ? 'Loading nearby options' : `Showing ${places.length} nearby options`}</span>
           <Link to="/mission">View mission options</Link>
         </div>
       </Card>
 
-      <Card className="selected-place-card">
+      {selectedPlace ? (
+        <Card className="selected-place-card">
         <button aria-label="Close place preview" className="close-card-button" type="button">
           <X size={18} />
         </button>
@@ -148,6 +187,7 @@ function ExploreMap() {
           </Link>
         </Button>
       </Card>
+      ) : null}
     </section>
   )
 }
