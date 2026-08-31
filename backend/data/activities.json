@@ -1,0 +1,68 @@
+[
+  {
+    "id": "eye-reset",
+    "area": "Eyes",
+    "title": "20-20-20 eye reset",
+    "description": "Give your eyes a distance break.",
+    "duration": 2,
+    "posture": "Seated",
+    "setting": "Indoor",
+    "category": "Eye reset",
+    "intensity": "Low"
+  },
+  {
+    "id": "desk-shoulder-release",
+    "area": "Shoulders",
+    "title": "Desk shoulder release",
+    "description": "Ease tension without leaving your chair.",
+    "duration": 3,
+    "posture": "Seated",
+    "setting": "Indoor",
+    "category": "Stretch",
+    "intensity": "Low"
+  },
+  {
+    "id": "seated-breathing",
+    "area": "Breathing",
+    "title": "Seated breathing reset",
+    "description": "Slow down with a guided breathing rhythm.",
+    "duration": 5,
+    "posture": "Seated",
+    "setting": "Indoor",
+    "category": "Breathing",
+    "intensity": "Low"
+  },
+  {
+    "id": "wrist-hand-reset",
+    "area": "Wrists",
+    "title": "Wrist and hand reset",
+    "description": "Gentle movement after keyboard work.",
+    "duration": 3,
+    "posture": "Seated",
+    "setting": "Indoor",
+    "category": "Stretch",
+    "intensity": "Low"
+  },
+  {
+    "id": "standing-posture",
+    "area": "Posture",
+    "title": "Standing posture reset",
+    "description": "Reset your stance and upper body.",
+    "duration": 4,
+    "posture": "Standing",
+    "setting": "Indoor",
+    "category": "Posture",
+    "intensity": "Low"
+  },
+  {
+    "id": "low-impact-energy",
+    "area": "Whole body",
+    "title": "Low-impact energy boost",
+    "description": "A short movement break for low energy.",
+    "duration": 5,
+    "posture": "Standing",
+    "setting": "Indoor",
+    "category": "Movement",
+    "intensity": "Medium"
+  }
+]
