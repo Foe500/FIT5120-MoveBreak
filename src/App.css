@@ -1689,6 +1689,20 @@ main {
   color: #213557;
 }
 
+.map-search-box input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #213557;
+  background: transparent;
+  font: inherit;
+}
+
+.map-search-box input::placeholder {
+  color: #7a8799;
+}
+
 .near-heading-row {
   display: flex;
   align-items: center;
@@ -1765,14 +1779,25 @@ main {
   font-weight: 750;
 }
 
-.map-result-list article {
+.map-result-card {
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0.72rem;
   align-items: center;
+  width: 100%;
   padding: 1rem 0;
+  border: 0;
   border-bottom: 1px solid #edf2f7;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-result-card.selected {
+  border-bottom-color: #cfe0f6;
+  background: #f3f9ff;
 }
 
 .result-number {
