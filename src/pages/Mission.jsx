@@ -48,12 +48,25 @@ const needOptions = [
   { icon: Footprints, label: 'General movement' },
 ]
 
+const outdoorNeedOptions = [
+  { icon: Leaf, label: 'Fresh air' },
+  { icon: MapPin, label: 'Quiet space' },
+  { icon: Footprints, label: 'Short walk' },
+  { icon: Map, label: 'Green space' },
+  { icon: Zap, label: 'Low effort' },
+]
+
 const apiNeedByLabel = {
   'Eyes tired': 'Eyes',
   'Stiff shoulders': 'Shoulders',
   'Low energy': 'Low energy',
   'Feeling stressed': 'Breathing',
   'General movement': 'Movement',
+  'Fresh air': 'Fresh air',
+  'Quiet space': 'Quiet space',
+  'Short walk': 'Short walk',
+  'Green space': 'Green space',
+  'Low effort': 'Low effort',
 }
 
 function getInitialDuration(searchParams) {
@@ -102,6 +115,24 @@ function Mission() {
     ? 'Start Recommendation'
     : `Open ${movementType === 'Indoor' ? 'Activity Library' : 'Explore Map'}`
   const PrimaryActionIcon = movementType === 'Indoor' ? Armchair : Map
+  const currentNeedOptions = movementType === 'Indoor' ? needOptions : outdoorNeedOptions
+  const needQuestion =
+    movementType === 'Indoor'
+      ? 'What do you need?'
+      : 'What kind of outdoor reset do you want?'
+
+  function handleMovementTypeChange(nextMovementType) {
+    setMovementType(nextMovementType)
+
+    // Keep Step 3 meaningful by switching to a default need that matches the selected setting.
+    if (nextMovementType === 'Indoor' && !needOptions.some((option) => option.label === need)) {
+      setNeed('Low energy')
+    }
+
+    if (nextMovementType === 'Outdoor' && !outdoorNeedOptions.some((option) => option.label === need)) {
+      setNeed('Fresh air')
+    }
+  }
 
   async function loadMission(nextMovementType = movementType) {
     setIsLoading(true)
@@ -143,7 +174,7 @@ function Mission() {
     const nextMovementType = getSurpriseMovementType(movementType)
 
     setIsSurpriseRecommendation(true)
-    setMovementType(nextMovementType)
+    handleMovementTypeChange(nextMovementType)
     loadMission(nextMovementType)
   }
 
@@ -154,7 +185,7 @@ function Mission() {
     }
 
     const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
-    setMovementType(nextMovementType)
+    handleMovementTypeChange(nextMovementType)
     loadMission(nextMovementType)
   }
 
@@ -198,7 +229,7 @@ function Mission() {
                   <button
                     className={option.label === movementType ? 'movement-card selected' : 'movement-card'}
                     key={option.label}
-                    onClick={() => setMovementType(option.label)}
+                    onClick={() => handleMovementTypeChange(option.label)}
                     type="button"
                   >
                     <img src={option.image} alt={option.imageAlt} />
@@ -218,23 +249,16 @@ function Mission() {
                 <Shuffle size={15} />
                 {isLoading && isSurpriseRecommendation ? 'Finding surprise' : 'Surprise me'}
               </Button>
-
-              <Button asChild className="continue-flow-button" type="button">
-                <Link to={flowTarget}>
-                  {movementType === 'Indoor' ? <Armchair size={17} /> : <Map size={17} />}
-                  Continue with {movementType}
-                </Link>
-              </Button>
             </div>
 
             <div className="builder-section">
               <div className="builder-question">
                 <span>3</span>
-                <h2>What do you need?</h2>
+                <h2>{needQuestion}</h2>
               </div>
 
               <div className="need-chip-row">
-                {needOptions.map((option) => {
+                {currentNeedOptions.map((option) => {
                   const Icon = option.icon
 
                   return (
@@ -254,6 +278,13 @@ function Mission() {
               <Button className="show-options-button" onClick={handleShowOptions} type="button">
                 <Footprints size={17} />
                 {isLoading ? 'Finding options' : 'Show my options'}
+              </Button>
+
+              <Button asChild className="continue-flow-button" type="button">
+                <Link to={flowTarget}>
+                  {movementType === 'Indoor' ? <Armchair size={17} /> : <Map size={17} />}
+                  Continue with {movementType}
+                </Link>
               </Button>
             </div>
           </Card>
