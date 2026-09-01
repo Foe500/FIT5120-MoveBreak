@@ -8,6 +8,8 @@ import {
   Footprints,
   Pause,
   Play,
+  SkipForward,
+  Square,
   TimerReset,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -15,11 +17,22 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
 
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}
+
 function IndoorGuidedBreak() {
   const { activityId } = useParams()
   const [activity, setActivity] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [stepSecondsLeft, setStepSecondsLeft] = useState(0)
+  const [isTimerRunning, setIsTimerRunning] = useState(false)
+  const [isComplete, setIsComplete] = useState(false)
 
   useEffect(() => {
     async function loadActivity() {
@@ -42,6 +55,90 @@ function IndoorGuidedBreak() {
     loadActivity()
   }, [activityId])
 
+  const steps = activity?.steps ?? []
+  const stepDurationSeconds = steps.length
+    ? Math.max(1, Math.round((activity.duration * 60) / steps.length))
+    : 0
+  const totalSeconds = stepDurationSeconds * steps.length
+  const remainingSeconds = isComplete
+    ? 0
+    : Math.max(0, (steps.length - currentStepIndex - 1) * stepDurationSeconds + stepSecondsLeft)
+  const progressPercent = totalSeconds
+    ? Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100)
+    : 0
+  const currentStep = steps[currentStepIndex] ?? 'Ready to begin.'
+
+  useEffect(() => {
+    if (!activity || !stepDurationSeconds) {
+      return
+    }
+
+    setCurrentStepIndex(0)
+    setStepSecondsLeft(stepDurationSeconds)
+    setIsTimerRunning(false)
+    setIsComplete(false)
+  }, [activity, stepDurationSeconds])
+
+  useEffect(() => {
+    if (!isTimerRunning || isComplete || !stepDurationSeconds) {
+      return undefined
+    }
+
+    const timer = window.setInterval(() => {
+      setStepSecondsLeft((secondsLeft) => {
+        if (secondsLeft > 1) {
+          return secondsLeft - 1
+        }
+
+        if (currentStepIndex >= steps.length - 1) {
+          setIsTimerRunning(false)
+          setIsComplete(true)
+          return 0
+        }
+
+        // Move to the next guided step when the current step timer reaches zero.
+        setCurrentStepIndex((stepIndex) => stepIndex + 1)
+        return stepDurationSeconds
+      })
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [currentStepIndex, isComplete, isTimerRunning, stepDurationSeconds, steps.length])
+
+  function handleStartPause() {
+    if (isComplete) {
+      setCurrentStepIndex(0)
+      setStepSecondsLeft(stepDurationSeconds)
+      setIsComplete(false)
+      setIsTimerRunning(true)
+      return
+    }
+
+    setIsTimerRunning((running) => !running)
+  }
+
+  function handleSkipStep() {
+    if (isComplete) {
+      return
+    }
+
+    if (currentStepIndex >= steps.length - 1) {
+      setIsTimerRunning(false)
+      setIsComplete(true)
+      setStepSecondsLeft(0)
+      return
+    }
+
+    setCurrentStepIndex((stepIndex) => stepIndex + 1)
+    setStepSecondsLeft(stepDurationSeconds)
+  }
+
+  function handleFinish() {
+    setIsTimerRunning(false)
+    setIsComplete(true)
+    setStepSecondsLeft(0)
+  }
+
   if (isLoading) {
     return (
       <section className="page guided-break-page">
@@ -63,8 +160,6 @@ function IndoorGuidedBreak() {
       </section>
     )
   }
-
-  const steps = activity.steps ?? []
 
   return (
     <section className="page guided-break-page">
@@ -93,20 +188,26 @@ function IndoorGuidedBreak() {
 
           <div className="guided-timer-preview">
             <TimerReset size={42} strokeWidth={1.5} />
-            <strong>Ready to start</strong>
-            <span>
-              Timer controls will guide this activity step by step in the next Guided Break AC.
-            </span>
+            <strong>{formatTime(remainingSeconds)}</strong>
+            <span>{isComplete ? 'Break complete. Nice reset.' : currentStep}</span>
+            <div className="guided-progress-track" aria-label="Guided break progress">
+              <div style={{ width: `${progressPercent}%` }} />
+            </div>
+            <small>{progressPercent}% complete</small>
           </div>
 
           <div className="guided-break-actions">
-            <Button className="guided-start-button" type="button">
-              <Play size={16} fill="currentColor" />
-              Start
+            <Button className="guided-start-button" onClick={handleStartPause} type="button">
+              {isTimerRunning ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
+              {isComplete ? 'Restart' : isTimerRunning ? 'Pause' : 'Start'}
             </Button>
-            <Button disabled type="button" variant="outline">
-              <Pause size={16} />
-              Pause
+            <Button disabled={isComplete} onClick={handleSkipStep} type="button" variant="outline">
+              <SkipForward size={16} />
+              Skip
+            </Button>
+            <Button disabled={isComplete} onClick={handleFinish} type="button" variant="outline">
+              <Square size={15} />
+              Finish
             </Button>
           </div>
         </Card>
@@ -119,7 +220,10 @@ function IndoorGuidedBreak() {
 
           <ol>
             {steps.map((step, index) => (
-              <li key={step}>
+              <li
+                className={index === currentStepIndex && !isComplete ? 'active' : ''}
+                key={step}
+              >
                 <span>{index + 1}</span>
                 <p>{step}</p>
               </li>
