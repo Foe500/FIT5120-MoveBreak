@@ -2165,16 +2165,31 @@ main {
 .activity-detail-hero {
   display: grid;
   min-height: 23rem;
+  align-content: center;
+  gap: 0.42rem;
   place-items: center;
   overflow: hidden;
   border-radius: 0.58rem;
-  background: #f8fafc;
+  color: #0757c2;
+  background: linear-gradient(180deg, #f3f9ff, #ffffff);
 }
 
-.activity-detail-hero img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.activity-detail-hero svg {
+  padding: 1rem;
+  border-radius: 999px;
+  color: #0b66df;
+  background: #e8f2ff;
+}
+
+.activity-detail-hero span {
+  color: #527092;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.activity-detail-hero strong {
+  color: #10275b;
+  font-size: 1.15rem;
 }
 
 .activity-detail-copy h1 {

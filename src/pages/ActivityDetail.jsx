@@ -7,15 +7,41 @@ import {
   CheckCircle2,
   Clock3,
   Dumbbell,
+  Eye,
+  Footprints,
+  Hand,
   Play,
   ShieldCheck,
+  Sparkles,
   Tag,
+  Wind,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 import { API_BASE_URL } from '@/lib/api'
+
+const areaVisuals = {
+  Eyes: Eye,
+  Wrists: Hand,
+  Legs: Footprints,
+  Shoulders: Armchair,
+  Neck: Armchair,
+  Back: Dumbbell,
+  'Full Body': Sparkles,
+}
+
+const categoryVisuals = {
+  Breathing: Wind,
+  Mindfulness: Sparkles,
+  Mobility: Footprints,
+  Strength: Dumbbell,
+  Stretch: Armchair,
+}
+
+function getActivityVisual(activity) {
+  return areaVisuals[activity.area] ?? categoryVisuals[activity.category] ?? Dumbbell
+}
 
 function ActivityDetail() {
   const { activityId } = useParams()
@@ -68,6 +94,7 @@ function ActivityDetail() {
 
   const steps = activity.steps ?? []
   const safetyNotes = activity.safetyNotes ?? []
+  const VisualIcon = getActivityVisual(activity)
 
   return (
     <section className="page activity-detail-page">
@@ -81,7 +108,9 @@ function ActivityDetail() {
       <div className="activity-detail-layout">
         <Card className="activity-detail-main">
           <div className="activity-detail-hero">
-            <img src={shoulderReleaseImage} alt="" />
+            <VisualIcon size={88} strokeWidth={1.4} />
+            <span>{activity.area}</span>
+            <strong>{activity.category}</strong>
           </div>
 
           <div className="activity-detail-copy">
