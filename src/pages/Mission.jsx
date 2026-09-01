@@ -64,6 +64,13 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : 10
 }
 
+function getFlowTarget(movementType, duration) {
+  // Keep the selected duration in the URL so the next page can apply the same break condition.
+  const search = `?duration=${duration}`
+
+  return movementType === 'Indoor' ? `/activities${search}` : `/explore${search}`
+}
+
 function Mission() {
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
@@ -83,6 +90,7 @@ function Mission() {
       { label: 'Reset', duration: 2 },
       { label: 'Walk back', duration: 4 },
     ]
+  const flowTarget = getFlowTarget(movementType, duration)
 
   async function loadMission(nextMovementType = movementType) {
     setIsLoading(true)
@@ -167,6 +175,13 @@ function Mission() {
               <Button className="surprise-button" size="sm" variant="outline" type="button">
                 <Shuffle size={15} />
                 Surprise me
+              </Button>
+
+              <Button asChild className="continue-flow-button" type="button">
+                <Link to={flowTarget}>
+                  {movementType === 'Indoor' ? <Armchair size={17} /> : <Map size={17} />}
+                  Continue with {movementType}
+                </Link>
               </Button>
             </div>
 
@@ -262,9 +277,9 @@ function Mission() {
             {error ? <p className="mission-status-message">{error}</p> : null}
 
             <Button asChild className="preview-primary-button">
-              <Link to="/explore">
+              <Link to={flowTarget}>
                 <Map size={17} />
-                Open in Explore Map
+                Open {movementType === 'Indoor' ? 'Activity Library' : 'Explore Map'}
               </Link>
             </Button>
             <Button

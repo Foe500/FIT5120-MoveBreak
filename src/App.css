@@ -1264,6 +1264,18 @@ main {
   margin: 0.7rem auto 0;
 }
 
+.continue-flow-button {
+  width: 100%;
+  margin-top: 0.72rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #08713f, #055c34);
+}
+
+.continue-flow-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #055c34, #044629);
+}
+
 .need-chip-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
