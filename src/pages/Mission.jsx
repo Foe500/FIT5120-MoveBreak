@@ -71,12 +71,19 @@ function getFlowTarget(movementType, duration) {
   return movementType === 'Indoor' ? `/activities${search}` : `/explore${search}`
 }
 
+function getSurpriseMovementType(currentMovementType) {
+  const otherMovementType = currentMovementType === 'Indoor' ? 'Outdoor' : 'Indoor'
+
+  return Math.random() > 0.5 ? currentMovementType : otherMovementType
+}
+
 function Mission() {
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
   const [movementType, setMovementType] = useState('Outdoor')
   const [need, setNeed] = useState('Low energy')
   const [mission, setMission] = useState(null)
+  const [isSurpriseRecommendation, setIsSurpriseRecommendation] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const selectedPlace = mission?.place ?? mapPlaces[0]
@@ -91,6 +98,10 @@ function Mission() {
       { label: 'Walk back', duration: 4 },
     ]
   const flowTarget = getFlowTarget(movementType, duration)
+  const primaryActionLabel = isSurpriseRecommendation
+    ? 'Start Recommendation'
+    : `Open ${movementType === 'Indoor' ? 'Activity Library' : 'Explore Map'}`
+  const PrimaryActionIcon = movementType === 'Indoor' ? Armchair : Map
 
   async function loadMission(nextMovementType = movementType) {
     setIsLoading(true)
@@ -120,6 +131,31 @@ function Mission() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  function handleShowOptions() {
+    setIsSurpriseRecommendation(false)
+    loadMission()
+  }
+
+  function handleSurpriseMe() {
+    // Surprise Me reuses the recommendation API, but lets MoveBreak choose the break setting.
+    const nextMovementType = getSurpriseMovementType(movementType)
+
+    setIsSurpriseRecommendation(true)
+    setMovementType(nextMovementType)
+    loadMission(nextMovementType)
+  }
+
+  function handleAlternativePreview() {
+    if (isSurpriseRecommendation) {
+      handleSurpriseMe()
+      return
+    }
+
+    const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
+    setMovementType(nextMovementType)
+    loadMission(nextMovementType)
   }
 
   return (
@@ -172,9 +208,15 @@ function Mission() {
                 ))}
               </div>
 
-              <Button className="surprise-button" size="sm" variant="outline" type="button">
+              <Button
+                className="surprise-button"
+                onClick={handleSurpriseMe}
+                size="sm"
+                variant="outline"
+                type="button"
+              >
                 <Shuffle size={15} />
-                Surprise me
+                {isLoading && isSurpriseRecommendation ? 'Finding surprise' : 'Surprise me'}
               </Button>
 
               <Button asChild className="continue-flow-button" type="button">
@@ -209,7 +251,7 @@ function Mission() {
                 })}
               </div>
 
-              <Button className="show-options-button" onClick={() => loadMission()} type="button">
+              <Button className="show-options-button" onClick={handleShowOptions} type="button">
                 <Footprints size={17} />
                 {isLoading ? 'Finding options' : 'Show my options'}
               </Button>
@@ -278,22 +320,20 @@ function Mission() {
 
             <Button asChild className="preview-primary-button">
               <Link to={flowTarget}>
-                <Map size={17} />
-                Open {movementType === 'Indoor' ? 'Activity Library' : 'Explore Map'}
+                <PrimaryActionIcon size={17} />
+                {primaryActionLabel}
               </Link>
             </Button>
             <Button
               className="preview-secondary-button"
-              onClick={() => {
-                const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
-                setMovementType(nextMovementType)
-                loadMission(nextMovementType)
-              }}
+              onClick={handleAlternativePreview}
               variant="outline"
               type="button"
             >
-              <Armchair size={17} />
-              Try {movementType === 'Indoor' ? 'outdoor' : 'indoor'} instead
+              {isSurpriseRecommendation ? <Shuffle size={17} /> : <Armchair size={17} />}
+              {isSurpriseRecommendation
+                ? 'Try Another'
+                : `Try ${movementType === 'Indoor' ? 'outdoor' : 'indoor'} instead`}
             </Button>
 
             <p className="return-note">
