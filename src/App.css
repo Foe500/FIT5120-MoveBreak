@@ -1828,9 +1828,14 @@ main {
   align-items: center;
   gap: 0.28rem;
   margin-top: 0.44rem;
+  margin-right: 0.7rem;
   color: #08713f;
   font-size: 0.74rem;
   font-weight: 800;
+}
+
+.map-result-list .time-fit-status {
+  color: #0b66df;
 }
 
 .result-icon {

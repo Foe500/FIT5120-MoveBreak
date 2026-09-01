@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import {
   Building2,
@@ -22,6 +22,8 @@ import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
+const defaultOutdoorBreakDuration = 10
+const durationOptions = [5, 10, 15]
 
 const placeIcons = {
   'Green space': Leaf,
@@ -49,6 +51,25 @@ function getPlaceDataSource(place) {
   }
 }
 
+function getInitialDuration(searchParams) {
+  const duration = Number(searchParams.get('duration'))
+
+  return durationOptions.includes(duration) ? duration : defaultOutdoorBreakDuration
+}
+
+function getPlaceSuitability(place, duration) {
+  const savedSuitability = place.suitabilityByDuration?.[duration]
+
+  if (savedSuitability) {
+    return savedSuitability
+  }
+
+  // I1 uses a basic time-fit indicator until DS provides route-based walking time fields.
+  const bestDuration = Number(place.bestDurationMinutes ?? defaultOutdoorBreakDuration)
+
+  return duration >= bestDuration ? 'Suitable' : 'Outside current time range'
+}
+
 function CurrentLocationView({ position }) {
   const map = useMap()
 
@@ -68,6 +89,8 @@ function CurrentLocationView({ position }) {
 }
 
 function ExploreMap() {
+  const [searchParams] = useSearchParams()
+  const selectedDuration = getInitialDuration(searchParams)
   const [places, setPlaces] = useState([])
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -78,6 +101,9 @@ function ExploreMap() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const selectedPlaceDataSource = selectedPlace ? getPlaceDataSource(selectedPlace) : null
+  const selectedPlaceSuitability = selectedPlace
+    ? getPlaceSuitability(selectedPlace, selectedDuration)
+    : null
   const categoryOptions = useMemo(
     // Build category buttons from place data so new DS categories appear without frontend changes.
     () => ['All', ...new Set(places.map((place) => getPlaceCategory(place)).filter(Boolean))],
@@ -199,6 +225,8 @@ function ExploreMap() {
               <br />
               {getPlaceCategory(place)}
               <br />
+              Time fit: {getPlaceSuitability(place, selectedDuration)}
+              <br />
               Source: {getPlaceDataSource(place).provider}
             </Popup>
           </Marker>
@@ -269,6 +297,7 @@ function ExploreMap() {
           {filteredPlaces.map((place) => {
             const PlaceIcon = placeIcons[getPlaceCategory(place)] ?? placeIcons[place.type] ?? MapPin
             const isSelected = selectedPlace?.id === place.id
+            const suitability = getPlaceSuitability(place, selectedDuration)
 
             return (
               <button
@@ -285,6 +314,10 @@ function ExploreMap() {
                     <Navigation size={13} />
                     {place.distance}
                   </small>
+                  <small className="time-fit-status">
+                    <Clock3 size={13} />
+                    {suitability}
+                  </small>
                 </div>
                 <Badge variant="secondary">{place.status}</Badge>
                 <PlaceIcon className="result-icon" size={18} />
@@ -295,6 +328,7 @@ function ExploreMap() {
 
         <div className="panel-footer-row">
           <span>{isLoading ? 'Loading nearby options' : `Showing ${filteredPlaces.length} nearby options`}</span>
+          <span>{selectedDuration} min break</span>
           <Link to="/mission">View mission options</Link>
         </div>
       </Card>
@@ -331,7 +365,11 @@ function ExploreMap() {
             </span>
             <span>
               <Clock3 size={16} />
-              Best for a 10 min outdoor reset
+              {selectedPlaceSuitability} for a {selectedDuration} min break
+            </span>
+            <span>
+              <Clock3 size={16} />
+              Basic I1 indicator, not a full route-time calculation
             </span>
             <span>
               <Landmark size={16} />
@@ -348,6 +386,7 @@ function ExploreMap() {
           </div>
 
           <div className="accepted-tags">
+            <span>{selectedPlaceSuitability}</span>
             <span>Green</span>
             <span>Quiet</span>
             <span>Seating</span>
