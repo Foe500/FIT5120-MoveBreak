@@ -2277,6 +2277,140 @@ main {
   color: #8a4b0f;
 }
 
+.guided-break-page {
+  padding-top: 1.25rem;
+}
+
+.guided-break-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.72fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.guided-break-main,
+.guided-break-steps {
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 0.72rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(42, 90, 150, 0.08);
+}
+
+.guided-break-main {
+  padding: 1.15rem;
+}
+
+.guided-break-status,
+.guided-break-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.guided-break-main h1 {
+  margin-top: 0.75rem;
+  color: #10275b;
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.guided-break-main > p {
+  margin-top: 0.5rem;
+  color: #5f6f8a;
+  line-height: 1.5;
+}
+
+.guided-timer-preview {
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  min-height: 13rem;
+  margin-top: 1rem;
+  border: 1px solid #d6e7fb;
+  border-radius: 0.58rem;
+  color: #527092;
+  background: #f3f9ff;
+  text-align: center;
+}
+
+.guided-timer-preview svg {
+  color: #0b66df;
+}
+
+.guided-timer-preview strong {
+  color: #10275b;
+  font-size: 1.2rem;
+}
+
+.guided-timer-preview span {
+  max-width: 25rem;
+  font-size: 0.86rem;
+}
+
+.guided-break-actions {
+  margin-top: 1rem;
+}
+
+.guided-start-button {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
+}
+
+.guided-start-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0757c2, #064aa5);
+}
+
+.guided-break-steps {
+  padding: 1rem;
+}
+
+.guided-break-steps h2 {
+  color: #10275b;
+  font-size: 1rem;
+}
+
+.guided-break-steps ol {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.guided-break-steps li {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.guided-break-steps li span {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #0b66df;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.guided-break-steps li p {
+  color: #425674;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.guided-break-note {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  color: #527092;
+  font-size: 0.82rem;
+}
+
 .planner-page {
   padding-top: 1.25rem;
 }
@@ -2851,6 +2985,7 @@ main {
   .indoor-activity-card,
   .activity-detail-layout,
   .activity-detail-main,
+  .guided-break-layout,
   .planner-board-layout,
   .movement-choice-grid,
   .need-chip-row {
