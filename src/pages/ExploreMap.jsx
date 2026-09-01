@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import {
   Building2,
   Clock3,
@@ -18,7 +18,10 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
-import { createMarkerIcon } from '@/lib/mapMarkers'
+import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
+
+const defaultMapZoom = 14
+const currentLocationZoom = 16
 
 const placeIcons = {
   'Green space': Leaf,
@@ -46,11 +49,32 @@ function getPlaceDataSource(place) {
   }
 }
 
+function CurrentLocationView({ position }) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!position) {
+      return
+    }
+
+    // Move the map to the browser-provided location once Aisha grants permission.
+    map.flyTo(position, currentLocationZoom, {
+      animate: true,
+      duration: 0.7,
+    })
+  }, [map, position])
+
+  return null
+}
+
 function ExploreMap() {
   const [places, setPlaces] = useState([])
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
+  const [currentPosition, setCurrentPosition] = useState(null)
+  const [locationStatus, setLocationStatus] = useState('')
+  const [isLocating, setIsLocating] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const selectedPlaceDataSource = selectedPlace ? getPlaceDataSource(selectedPlace) : null
@@ -118,14 +142,44 @@ function ExploreMap() {
     loadPlaces()
   }, [])
 
+  function handleUseCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationStatus('Current location is not supported in this browser.')
+      return
+    }
+
+    setIsLocating(true)
+    setLocationStatus('Finding your current location...')
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextPosition = [position.coords.latitude, position.coords.longitude]
+
+        setCurrentPosition(nextPosition)
+        setLocationStatus('')
+        setIsLocating(false)
+      },
+      () => {
+        setLocationStatus('Location access was denied or unavailable. Melbourne CBD remains selected.')
+        setIsLocating(false)
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 60000,
+        timeout: 10000,
+      },
+    )
+  }
+
   return (
     <section className="explore-workspace">
       <MapContainer
         center={melbourneCenter}
         className="leaflet-workspace-map"
         scrollWheelZoom
-        zoom={14}
+        zoom={defaultMapZoom}
       >
+        <CurrentLocationView position={currentPosition} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -149,6 +203,16 @@ function ExploreMap() {
             </Popup>
           </Marker>
         ))}
+
+        {currentPosition ? (
+          <Marker icon={createCurrentLocationIcon()} position={currentPosition}>
+            <Popup>
+              <strong>You are here</strong>
+              <br />
+              Current location
+            </Popup>
+          </Marker>
+        ) : null}
       </MapContainer>
 
       <Card className="map-control-panel">
@@ -168,10 +232,18 @@ function ExploreMap() {
           <h2>
             Near <strong>Melbourne CBD</strong>
           </h2>
-          <button aria-label="Use current location" type="button">
+          <button
+            aria-label="Use current location"
+            disabled={isLocating}
+            onClick={handleUseCurrentLocation}
+            title="Use current location"
+            type="button"
+          >
             <Crosshair size={18} />
           </button>
         </div>
+
+        {locationStatus ? <p className="map-status-message">{locationStatus}</p> : null}
 
         <div className="category-tabs" aria-label="Map category filters">
           {categoryOptions.map((category) => (
