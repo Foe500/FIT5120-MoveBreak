@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -67,6 +67,17 @@ def health_check():
 @app.get("/activities")
 def get_activities():
     return load_json_file("activities.json")
+
+
+@app.get("/activities/{activity_id}")
+def get_activity(activity_id: str):
+    activities = load_json_file("activities.json")
+    activity = next((item for item in activities if item["id"] == activity_id), None)
+
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    return activity
 
 
 @app.get("/places")
