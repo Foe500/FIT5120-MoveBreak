@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from pathlib import Path
 from typing import Optional
 
@@ -80,12 +81,13 @@ def recommend_mission(request: MissionRequest):
     setting = request.setting.lower()
 
     if setting == "outdoor":
-        place = places[0]
+        # Pick from all available places so Surprise Me and Try Another can show varied outdoor options.
+        place = random.choice(places)
 
         return {
-            "id": "flagstaff-fresh-air-loop",
-            "title": "Flagstaff Fresh-Air Loop",
-            "description": "A short outdoor reset through nearby greenery.",
+            "id": f"{place['id']}-fresh-air-reset",
+            "title": f"{place['name']} Fresh-Air Reset",
+            "description": "A short outdoor reset through a nearby open-data location.",
             "duration": min(request.duration, 15),
             "setting": "Outdoor",
             "place": place,
@@ -112,7 +114,8 @@ def recommend_mission(request: MissionRequest):
             and activity["setting"].lower() == "indoor"
         ]
 
-    activity = matching_activities[0]
+    # Pick from the matching activities instead of always returning the first result.
+    activity = random.choice(matching_activities)
 
     return {
         "id": f"{activity['id']}-mission",
