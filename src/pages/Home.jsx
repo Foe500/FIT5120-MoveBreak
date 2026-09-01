@@ -12,8 +12,20 @@ import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
 
 function Home() {
-  const [selectedDuration, setSelectedDuration] = useState(5)
+  // Keep duration unselected until Emily actively chooses 5, 10 or 15 minutes.
+  const [selectedDuration, setSelectedDuration] = useState(null)
+  const [durationError, setDurationError] = useState('')
   const [places, setPlaces] = useState([])
+
+  function handleDurationChange(duration) {
+    setSelectedDuration(duration)
+    setDurationError('')
+  }
+
+  function handleMissingDuration() {
+    // BreakHero owns the button click, but Home owns the validation message state.
+    setDurationError('Choose how much time you have before finding your break.')
+  }
 
   useEffect(() => {
     async function loadPlaces() {
@@ -40,8 +52,10 @@ function Home() {
         <div className="break-column">
           <section className="break-card">
             <BreakHero
+              durationError={durationError}
+              onMissingDuration={handleMissingDuration}
               selectedDuration={selectedDuration}
-              onDurationChange={setSelectedDuration}
+              onDurationChange={handleDurationChange}
             />
           </section>
           <RecommendedMissionCard duration={selectedDuration} />

@@ -214,6 +214,13 @@ main {
   box-shadow: none;
 }
 
+.duration-error {
+  margin: 0.7rem 0 0 6.55rem;
+  color: #9a3412;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .blue-button,
 .outline-button,
 .small-link,
@@ -1257,6 +1264,18 @@ main {
   margin: 0.7rem auto 0;
 }
 
+.continue-flow-button {
+  width: 100%;
+  margin-top: 0.72rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #08713f, #055c34);
+}
+
+.continue-flow-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #055c34, #044629);
+}
+
 .need-chip-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1670,6 +1689,20 @@ main {
   color: #213557;
 }
 
+.map-search-box input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #213557;
+  background: transparent;
+  font: inherit;
+}
+
+.map-search-box input::placeholder {
+  color: #7a8799;
+}
+
 .near-heading-row {
   display: flex;
   align-items: center;
@@ -1746,14 +1779,25 @@ main {
   font-weight: 750;
 }
 
-.map-result-list article {
+.map-result-card {
   position: relative;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 0.72rem;
   align-items: center;
+  width: 100%;
   padding: 1rem 0;
+  border: 0;
   border-bottom: 1px solid #edf2f7;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.map-result-card.selected {
+  border-bottom-color: #cfe0f6;
+  background: #f3f9ff;
 }
 
 .result-number {
@@ -1784,9 +1828,14 @@ main {
   align-items: center;
   gap: 0.28rem;
   margin-top: 0.44rem;
+  margin-right: 0.7rem;
   color: #08713f;
   font-size: 0.74rem;
   font-weight: 800;
+}
+
+.map-result-list .time-fit-status {
+  color: #0b66df;
 }
 
 .result-icon {
@@ -2110,6 +2159,342 @@ main {
   border-radius: 0.5rem;
   color: #527092;
   background: #f3f9ff;
+  font-size: 0.82rem;
+}
+
+.activity-detail-page {
+  padding-top: 1.25rem;
+}
+
+.activity-back-button {
+  margin-bottom: 0.9rem;
+}
+
+.activity-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(19rem, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.activity-detail-main,
+.activity-detail-panel {
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 0.72rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(42, 90, 150, 0.08);
+}
+
+.activity-detail-main {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.85fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.activity-detail-hero {
+  display: grid;
+  min-height: 23rem;
+  align-content: center;
+  gap: 0.42rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 0.58rem;
+  color: #0757c2;
+  background: linear-gradient(180deg, #f3f9ff, #ffffff);
+}
+
+.activity-detail-hero svg {
+  padding: 1rem;
+  border-radius: 999px;
+  color: #0b66df;
+  background: #e8f2ff;
+}
+
+.activity-detail-hero span {
+  color: #527092;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.activity-detail-hero strong {
+  color: #10275b;
+  font-size: 1.15rem;
+}
+
+.activity-detail-copy h1 {
+  margin-top: 0.25rem;
+  color: #10275b;
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.activity-detail-copy p {
+  margin-top: 0.55rem;
+  color: #5f6f8a;
+  line-height: 1.55;
+}
+
+.activity-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+}
+
+.activity-detail-start-button {
+  width: 100%;
+  margin-top: 1rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
+}
+
+.activity-detail-start-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0757c2, #064aa5);
+}
+
+.activity-demo-note {
+  margin-top: 0.75rem;
+  padding: 0.7rem;
+  border-radius: 0.5rem;
+  color: #527092;
+  background: #f3f9ff;
+  font-size: 0.82rem;
+}
+
+.activity-detail-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.activity-detail-panel {
+  padding: 1rem;
+}
+
+.activity-detail-panel h2 {
+  color: #10275b;
+  font-size: 1rem;
+}
+
+.activity-step-list,
+.activity-safety-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  color: #425674;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.activity-step-list {
+  padding-left: 1.15rem;
+}
+
+.activity-safety-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.activity-safety-list li {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.activity-safety-list svg {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  color: #8a4b0f;
+}
+
+.guided-break-page {
+  padding-top: 1.25rem;
+}
+
+.guided-break-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.72fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.guided-break-main,
+.guided-break-steps {
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 0.72rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(42, 90, 150, 0.08);
+}
+
+.guided-break-main {
+  padding: 1.15rem;
+}
+
+.guided-break-status,
+.guided-break-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.guided-break-main h1 {
+  margin-top: 0.75rem;
+  color: #10275b;
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.guided-break-main > p {
+  margin-top: 0.5rem;
+  color: #5f6f8a;
+  line-height: 1.5;
+}
+
+.guided-timer-preview {
+  display: grid;
+  place-items: center;
+  gap: 0.35rem;
+  min-height: 13rem;
+  margin-top: 1rem;
+  border: 1px solid #d6e7fb;
+  border-radius: 0.58rem;
+  color: #527092;
+  background: #f3f9ff;
+  text-align: center;
+}
+
+.guided-timer-preview svg {
+  color: #0b66df;
+}
+
+.guided-timer-preview strong {
+  color: #10275b;
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.guided-timer-preview span {
+  max-width: 25rem;
+  font-size: 0.86rem;
+}
+
+.guided-timer-preview small {
+  color: #527092;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.guided-progress-track {
+  width: min(100%, 25rem);
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+
+.guided-progress-track div {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #0b66df, #08713f);
+  transition: width 0.25s ease;
+}
+
+.guided-break-actions {
+  margin-top: 1rem;
+}
+
+.guided-start-button {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
+}
+
+.guided-start-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0757c2, #064aa5);
+}
+
+.guided-completion-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #cdebdc;
+  border-radius: 0.75rem;
+  background: #f1fbf6;
+}
+
+.guided-completion-panel strong {
+  color: #075c34;
+  font-size: 0.95rem;
+}
+
+.guided-completion-panel p {
+  margin-top: 0.35rem;
+  color: #52657f;
+  font-size: 0.84rem;
+}
+
+.guided-completion-panel div {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
+.guided-break-steps {
+  padding: 1rem;
+}
+
+.guided-break-steps h2 {
+  color: #10275b;
+  font-size: 1rem;
+}
+
+.guided-break-steps ol {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.guided-break-steps li {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.guided-break-steps li span {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #0b66df;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.guided-break-steps li p {
+  color: #425674;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.guided-break-steps li.active span {
+  background: #08713f;
+}
+
+.guided-break-steps li.active p {
+  color: #10275b;
+  font-weight: 800;
+}
+
+.guided-break-note {
+  display: flex;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  color: #527092;
   font-size: 0.82rem;
 }
 
@@ -2685,6 +3070,9 @@ main {
   .activity-filter-bar,
   .indoor-activity-grid,
   .indoor-activity-card,
+  .activity-detail-layout,
+  .activity-detail-main,
+  .guided-break-layout,
   .planner-board-layout,
   .movement-choice-grid,
   .need-chip-row {
@@ -2715,6 +3103,7 @@ main {
 
   .duration-tabs,
   .generate-button,
+  .duration-error,
   .time-note {
     margin-left: 0;
   }

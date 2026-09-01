@@ -9,7 +9,17 @@
     "setting": "Indoor",
     "category": "Stretch",
     "intensity": "Low",
-    "imageUrl": "/activity-images/desk-shoulder-release.png"
+    "imageUrl": "/activity-images/desk-shoulder-release.png",
+    "steps": [
+      "Sit tall with both feet flat on the floor.",
+      "Roll both shoulders backward slowly, then forward slowly.",
+      "Reach one arm across the chest, hold gently, then switch sides."
+    ],
+    "safetyNotes": [
+      "Keep the stretch gentle and avoid pulling on the neck.",
+      "Stop if you feel sharp pain, tingling or dizziness."
+    ],
+    "demoInstruction": "Use the shoulder release illustration as a static guide for the seated posture."
   },
   {
     "id": "seated-neck-roll",
@@ -21,7 +31,17 @@
     "setting": "Indoor",
     "category": "Stretch",
     "intensity": "Low",
-    "imageUrl": "/activity-images/seated-neck-roll.png"
+    "imageUrl": "/activity-images/seated-neck-roll.png",
+    "steps": [
+      "Sit upright and relax your shoulders away from your ears.",
+      "Slowly tilt your head to one side and pause for a comfortable breath.",
+      "Return to centre, then repeat on the other side without forcing the range."
+    ],
+    "safetyNotes": [
+      "Move slowly and avoid full circles if your neck feels sensitive.",
+      "Stop if you feel pain, dizziness or nerve-like symptoms."
+    ],
+    "demoInstruction": "Follow the static neck mobility description if no video demonstration is available."
   },
   {
     "id": "standing-spine-twist",
@@ -33,7 +53,17 @@
     "setting": "Indoor",
     "category": "Stretch",
     "intensity": "Low",
-    "imageUrl": "/activity-images/standing-spine-twist.png"
+    "imageUrl": "/activity-images/standing-spine-twist.png",
+    "steps": [
+      "Stand with feet hip-width apart and knees soft.",
+      "Place your hands lightly across your chest or on your hips.",
+      "Rotate gently from side to side, keeping the movement controlled."
+    ],
+    "safetyNotes": [
+      "Do not twist into pain or force your lower back.",
+      "Use a smaller range if you feel unsteady."
+    ],
+    "demoInstruction": "Use the written steps as a static alternative for the standing twist."
   },
   {
     "id": "chair-hip-flexor-stretch",
@@ -45,7 +75,17 @@
     "setting": "Indoor",
     "category": "Stretch",
     "intensity": "Low",
-    "imageUrl": "/activity-images/chair-hip-flexor-stretch.png"
+    "imageUrl": "/activity-images/chair-hip-flexor-stretch.png",
+    "steps": [
+      "Sit near the front of a stable chair.",
+      "Slide one foot slightly back while keeping your chest lifted.",
+      "Hold the gentle hip stretch, then repeat on the other side."
+    ],
+    "safetyNotes": [
+      "Use a stable chair and keep one foot grounded.",
+      "Stop if you feel knee, hip or lower-back pain."
+    ],
+    "demoInstruction": "Use the static chair setup instructions to understand the stretch safely."
   },
   {
     "id": "wrist-and-finger-release",
@@ -57,7 +97,17 @@
     "setting": "Indoor",
     "category": "Mobility",
     "intensity": "Low",
-    "imageUrl": "/activity-images/wrist-and-finger-release.png"
+    "imageUrl": "/activity-images/wrist-and-finger-release.png",
+    "steps": [
+      "Extend one arm forward with the palm facing away.",
+      "Use the other hand to gently stretch the fingers back.",
+      "Circle both wrists slowly, then shake out the hands."
+    ],
+    "safetyNotes": [
+      "Keep pressure light and avoid pulling through pain.",
+      "Stop if you feel numbness, tingling or wrist irritation."
+    ],
+    "demoInstruction": "Use the written hand positions as the static demonstration."
   },
   {
     "id": "20-20-20-eye-reset",
@@ -69,7 +119,17 @@
     "setting": "Indoor",
     "category": "Mindfulness",
     "intensity": "Low",
-    "imageUrl": "/activity-images/20-20-20-eye-reset.png"
+    "imageUrl": "/activity-images/20-20-20-eye-reset.png",
+    "steps": [
+      "Look away from the screen toward something far away.",
+      "Keep your gaze relaxed for repeated 20-second intervals.",
+      "Blink slowly and soften your focus before returning to the screen."
+    ],
+    "safetyNotes": [
+      "Do not stare into bright light or the sun.",
+      "Seek advice if eye strain is severe, sudden or persistent."
+    ],
+    "demoInstruction": "Use the static instruction text because this activity does not require movement video."
   },
   {
     "id": "box-breathing-reset",
@@ -81,7 +141,17 @@
     "setting": "Indoor",
     "category": "Breathing",
     "intensity": "Low",
-    "imageUrl": "/activity-images/box-breathing-reset.png"
+    "imageUrl": "/activity-images/box-breathing-reset.png",
+    "steps": [
+      "Sit comfortably with your shoulders relaxed.",
+      "Inhale for four counts, hold for four, exhale for four, then hold for four.",
+      "Repeat the cycle at a calm pace until the break ends."
+    ],
+    "safetyNotes": [
+      "Return to normal breathing if you feel light-headed.",
+      "Keep the breath comfortable rather than forcing deep breaths."
+    ],
+    "demoInstruction": "Use the paced breathing text as the static guide."
   },
   {
     "id": "standing-desk-mobility-flow",
@@ -93,7 +163,17 @@
     "setting": "Indoor",
     "category": "Mobility",
     "intensity": "Low",
-    "imageUrl": "/activity-images/standing-desk-mobility-flow.png"
+    "imageUrl": "/activity-images/standing-desk-mobility-flow.png",
+    "steps": [
+      "Stand beside your desk with enough clear space.",
+      "Move through gentle shoulder rolls, spine bends and hip circles.",
+      "Finish with a slow full-body reach and relaxed breathing."
+    ],
+    "safetyNotes": [
+      "Keep the range comfortable and controlled.",
+      "Clear nearby obstacles before starting."
+    ],
+    "demoInstruction": "Use the static sequence description as a guide for the mobility flow."
   },
   {
     "id": "calf-raise-set",
@@ -105,7 +185,17 @@
     "setting": "Indoor",
     "category": "Strength",
     "intensity": "Moderate",
-    "imageUrl": "/activity-images/calf-raise-set.png"
+    "imageUrl": "/activity-images/calf-raise-set.png",
+    "steps": [
+      "Stand tall near a wall or desk for light balance support.",
+      "Lift your heels slowly, pause briefly, then lower with control.",
+      "Repeat in small sets and rest whenever needed."
+    ],
+    "safetyNotes": [
+      "Hold support if balance feels uncertain.",
+      "Stop if you feel calf, ankle or foot pain."
+    ],
+    "demoInstruction": "Use the static standing description as a safe setup guide."
   },
   {
     "id": "wall-push-up-set",
@@ -117,7 +207,17 @@
     "setting": "Indoor",
     "category": "Strength",
     "intensity": "Moderate",
-    "imageUrl": "/activity-images/wall-push-up-set.png"
+    "imageUrl": "/activity-images/wall-push-up-set.png",
+    "steps": [
+      "Stand facing a stable wall with hands at chest height.",
+      "Step back slightly and bend your elbows to move toward the wall.",
+      "Press back to standing tall and repeat at a steady pace."
+    ],
+    "safetyNotes": [
+      "Keep wrists comfortable and shoulders relaxed.",
+      "Stop if you feel shoulder, wrist or chest discomfort."
+    ],
+    "demoInstruction": "Use the static wall setup instructions if no movement video is available."
   },
   {
     "id": "seated-cat-cow-stretch",
@@ -129,7 +229,17 @@
     "setting": "Indoor",
     "category": "Stretch",
     "intensity": "Low",
-    "imageUrl": "/activity-images/seated-cat-cow-stretch.png"
+    "imageUrl": "/activity-images/seated-cat-cow-stretch.png",
+    "steps": [
+      "Sit near the front of your chair with feet flat.",
+      "Round your upper back gently while tucking your chin slightly.",
+      "Lift your chest and soften your shoulder blades back, then repeat slowly."
+    ],
+    "safetyNotes": [
+      "Keep the movement gentle and avoid forcing your spine.",
+      "Stop if you feel back pain or dizziness."
+    ],
+    "demoInstruction": "Use the static seated spine movement instructions as the demonstration."
   },
   {
     "id": "shoulder-and-chest-opener",
@@ -141,7 +251,17 @@
     "setting": "Indoor",
     "category": "Stretch",
     "intensity": "Low",
-    "imageUrl": "/activity-images/shoulder-and-chest-opener.png"
+    "imageUrl": "/activity-images/shoulder-and-chest-opener.png",
+    "steps": [
+      "Stand tall and clasp your hands loosely behind your back if comfortable.",
+      "Draw your shoulders gently back and open the chest.",
+      "Release, roll the shoulders, and repeat with relaxed breathing."
+    ],
+    "safetyNotes": [
+      "Avoid forcing your arms behind you.",
+      "Stop if you feel shoulder pain or tingling."
+    ],
+    "demoInstruction": "Use the static chest-opening posture instructions as the guide."
   },
   {
     "id": "guided-mindful-breathing",
@@ -153,7 +273,17 @@
     "setting": "Indoor",
     "category": "Mindfulness",
     "intensity": "Low",
-    "imageUrl": "/activity-images/guided-mindful-breathing.png"
+    "imageUrl": "/activity-images/guided-mindful-breathing.png",
+    "steps": [
+      "Sit comfortably and place both feet on the floor.",
+      "Notice your breathing without trying to change it at first.",
+      "Slowly lengthen each exhale and return attention when your mind wanders."
+    ],
+    "safetyNotes": [
+      "Breathe naturally if paced breathing feels uncomfortable.",
+      "Pause if you feel light-headed or anxious."
+    ],
+    "demoInstruction": "Use the written breathing prompts as the static guide."
   },
   {
     "id": "office-stair-step-ups",
@@ -165,7 +295,17 @@
     "setting": "Indoor",
     "category": "Strength",
     "intensity": "Moderate",
-    "imageUrl": "/activity-images/office-stair-step-ups.png"
+    "imageUrl": "/activity-images/office-stair-step-ups.png",
+    "steps": [
+      "Find a clear stair or stable step and hold the rail if available.",
+      "Step up with one foot, bring the other foot up, then step down carefully.",
+      "Alternate leading legs and keep the pace comfortable."
+    ],
+    "safetyNotes": [
+      "Use a handrail and avoid crowded stair areas.",
+      "Stop if you feel short of breath, dizzy or unsteady."
+    ],
+    "demoInstruction": "Use the static stair safety instructions before starting."
   },
   {
     "id": "posture-reset-routine",
@@ -177,7 +317,17 @@
     "setting": "Indoor",
     "category": "Mobility",
     "intensity": "Low",
-    "imageUrl": "/activity-images/posture-reset-routine.png"
+    "imageUrl": "/activity-images/posture-reset-routine.png",
+    "steps": [
+      "Stand tall and gently stack ears, shoulders, hips and ankles.",
+      "Roll shoulders back, lightly brace your core, and soften your knees.",
+      "Hold the reset posture while taking several slow breaths."
+    ],
+    "safetyNotes": [
+      "Do not lock your knees or force your back into an arch.",
+      "Sit down if standing feels uncomfortable."
+    ],
+    "demoInstruction": "Use the static posture checklist as the demonstration."
   },
   {
     "id": "full-body-desk-circuit",
@@ -189,7 +339,17 @@
     "setting": "Indoor",
     "category": "Strength",
     "intensity": "Moderate",
-    "imageUrl": "/activity-images/full-body-desk-circuit.png"
+    "imageUrl": "/activity-images/full-body-desk-circuit.png",
+    "steps": [
+      "Clear space around your desk and start with gentle marching.",
+      "Move through wall push-ups, calf raises and shoulder rolls.",
+      "Finish with relaxed breathing and a short posture reset."
+    ],
+    "safetyNotes": [
+      "Keep the pace moderate and take breaks as needed.",
+      "Stop if you feel pain, dizziness or unusual breathlessness."
+    ],
+    "demoInstruction": "Use the static circuit list to follow each movement in order."
   },
   {
     "id": "extended-mobility-flow",
@@ -201,7 +361,17 @@
     "setting": "Indoor",
     "category": "Mobility",
     "intensity": "Low",
-    "imageUrl": "/activity-images/extended-mobility-flow.png"
+    "imageUrl": "/activity-images/extended-mobility-flow.png",
+    "steps": [
+      "Start with slow neck turns and shoulder rolls.",
+      "Add gentle spine twists, hip circles and ankle movements.",
+      "Repeat the flow calmly, keeping each movement smooth."
+    ],
+    "safetyNotes": [
+      "Stay within a comfortable range of motion.",
+      "Skip any movement that irritates a joint or injury."
+    ],
+    "demoInstruction": "Use the static mobility sequence as the demonstration guide."
   },
   {
     "id": "indoor-brisk-walk-loop",
@@ -213,7 +383,17 @@
     "setting": "Indoor",
     "category": "Strength",
     "intensity": "Moderate",
-    "imageUrl": "/activity-images/indoor-brisk-walk-loop.png"
+    "imageUrl": "/activity-images/indoor-brisk-walk-loop.png",
+    "steps": [
+      "Choose a clear indoor route such as a corridor or open floor area.",
+      "Walk at a brisk but conversational pace.",
+      "Slow down for the final minute and return safely to your workspace."
+    ],
+    "safetyNotes": [
+      "Watch for people, doors and wet floors.",
+      "Slow down or stop if you feel breathless or unsteady."
+    ],
+    "demoInstruction": "Use the static route safety checklist before walking."
   },
   {
     "id": "meditation-and-breathwork",
@@ -225,7 +405,17 @@
     "setting": "Indoor",
     "category": "Mindfulness",
     "intensity": "Low",
-    "imageUrl": "/activity-images/meditation-and-breathwork.png"
+    "imageUrl": "/activity-images/meditation-and-breathwork.png",
+    "steps": [
+      "Sit comfortably and let your hands rest naturally.",
+      "Follow a slow breathing rhythm while relaxing your jaw and shoulders.",
+      "Spend the final minute noticing how your body feels before returning to work."
+    ],
+    "safetyNotes": [
+      "Keep breathing natural and avoid holding the breath too long.",
+      "Stop if the practice increases stress or discomfort."
+    ],
+    "demoInstruction": "Use the static guided text as the meditation prompt."
   },
   {
     "id": "lower-body-strength-set",
@@ -237,6 +427,16 @@
     "setting": "Indoor",
     "category": "Strength",
     "intensity": "Moderate",
-    "imageUrl": "/activity-images/lower-body-strength-set.png"
+    "imageUrl": "/activity-images/lower-body-strength-set.png",
+    "steps": [
+      "Stand with feet about hip-width apart and clear space around you.",
+      "Complete slow bodyweight squats, then step-back lunges if comfortable.",
+      "Rest between sets and finish with gentle leg shaking."
+    ],
+    "safetyNotes": [
+      "Keep knees comfortable and avoid deep ranges if they hurt.",
+      "Use support or choose another activity if balance feels uncertain."
+    ],
+    "demoInstruction": "Use the static lower-body setup instructions before starting."
   }
 ]

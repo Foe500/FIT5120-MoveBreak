@@ -5,6 +5,8 @@ import Home from './pages/Home.jsx'
 import Mission from './pages/Mission.jsx'
 import ExploreMap from './pages/ExploreMap.jsx'
 import ActivityLibrary from './pages/ActivityLibrary.jsx'
+import ActivityDetail from './pages/ActivityDetail.jsx'
+import IndoorGuidedBreak from './pages/IndoorGuidedBreak.jsx'
 import Planner from './pages/Planner.jsx'
 
 const navItems = [
@@ -49,6 +51,8 @@ function App() {
           <Route path="/mission" element={<Mission />} />
           <Route path="/explore" element={<ExploreMap />} />
           <Route path="/activities" element={<ActivityLibrary />} />
+          <Route path="/activities/:activityId" element={<ActivityDetail />} />
+          <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
           <Route path="/planner" element={<Planner />} />
         </Routes>
       </main>
