@@ -12,6 +12,7 @@ import {
   Search,
   SlidersHorizontal,
   Sparkles,
+  Tag,
   Wind,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -123,6 +124,9 @@ function ActivityLibrary() {
       </div>
 
       {error ? <p className="activity-status-message">{error}</p> : null}
+      {!isLoading && !error && activities.length === 0 ? (
+        <p className="activity-status-message">No activities are available right now.</p>
+      ) : null}
 
       <div className="indoor-activity-grid" aria-busy={isLoading}>
         {activities.map((activity) => {
@@ -152,6 +156,10 @@ function ActivityLibrary() {
                   <span>
                     <Armchair size={14} />
                     {activity.posture}
+                  </span>
+                  <span>
+                    <Tag size={14} />
+                    {activity.category}
                   </span>
                 </div>
 
