@@ -2413,6 +2413,32 @@ main {
   background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
+.guided-completion-panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #cdebdc;
+  border-radius: 0.75rem;
+  background: #f1fbf6;
+}
+
+.guided-completion-panel strong {
+  color: #075c34;
+  font-size: 0.95rem;
+}
+
+.guided-completion-panel p {
+  margin-top: 0.35rem;
+  color: #52657f;
+  font-size: 0.84rem;
+}
+
+.guided-completion-panel div {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+
 .guided-break-steps {
   padding: 1rem;
 }

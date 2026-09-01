@@ -210,6 +210,21 @@ function IndoorGuidedBreak() {
               Finish
             </Button>
           </div>
+
+          {isComplete ? (
+            <div className="guided-completion-panel">
+              <strong>Break complete. Nice reset.</strong>
+              <p>You can return to the start or choose another indoor activity.</p>
+              <div>
+                <Button asChild variant="outline">
+                  <Link to="/">Back to Home</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/activities">Activity Library</Link>
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </Card>
 
         <Card className="guided-break-steps">
