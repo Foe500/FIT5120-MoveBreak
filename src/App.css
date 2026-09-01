@@ -2132,6 +2132,136 @@ main {
   font-size: 0.82rem;
 }
 
+.activity-detail-page {
+  padding-top: 1.25rem;
+}
+
+.activity-back-button {
+  margin-bottom: 0.9rem;
+}
+
+.activity-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(19rem, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.activity-detail-main,
+.activity-detail-panel {
+  border: 1px solid rgba(190, 213, 242, 0.8);
+  border-radius: 0.72rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(42, 90, 150, 0.08);
+}
+
+.activity-detail-main {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.85fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.activity-detail-hero {
+  display: grid;
+  min-height: 23rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 0.58rem;
+  background: #f8fafc;
+}
+
+.activity-detail-hero img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.activity-detail-copy h1 {
+  margin-top: 0.25rem;
+  color: #10275b;
+  font-size: 2rem;
+  line-height: 1.05;
+}
+
+.activity-detail-copy p {
+  margin-top: 0.55rem;
+  color: #5f6f8a;
+  line-height: 1.55;
+}
+
+.activity-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+}
+
+.activity-detail-start-button {
+  width: 100%;
+  margin-top: 1rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b66df, #0757c2);
+}
+
+.activity-detail-start-button:hover {
+  color: #ffffff;
+  background: linear-gradient(135deg, #0757c2, #064aa5);
+}
+
+.activity-demo-note {
+  margin-top: 0.75rem;
+  padding: 0.7rem;
+  border-radius: 0.5rem;
+  color: #527092;
+  background: #f3f9ff;
+  font-size: 0.82rem;
+}
+
+.activity-detail-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.activity-detail-panel {
+  padding: 1rem;
+}
+
+.activity-detail-panel h2 {
+  color: #10275b;
+  font-size: 1rem;
+}
+
+.activity-step-list,
+.activity-safety-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+  color: #425674;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.activity-step-list {
+  padding-left: 1.15rem;
+}
+
+.activity-safety-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.activity-safety-list li {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.activity-safety-list svg {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  color: #8a4b0f;
+}
+
 .planner-page {
   padding-top: 1.25rem;
 }
@@ -2704,6 +2834,8 @@ main {
   .activity-filter-bar,
   .indoor-activity-grid,
   .indoor-activity-card,
+  .activity-detail-layout,
+  .activity-detail-main,
   .planner-board-layout,
   .movement-choice-grid,
   .need-chip-row {

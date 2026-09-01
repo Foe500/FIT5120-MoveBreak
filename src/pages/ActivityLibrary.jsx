@@ -203,9 +203,11 @@ function ActivityLibrary() {
                   </span>
                 </div>
 
-                <Button className="activity-start-button" size="sm" type="button">
-                  <Play size={14} fill="currentColor" />
-                  Start now
+                <Button asChild className="activity-start-button" size="sm">
+                  <Link to={`/activities/${activity.id}`}>
+                    <Play size={14} fill="currentColor" />
+                    View details
+                  </Link>
                 </Button>
                 <Button className="activity-add-button" size="sm" type="button" variant="outline">
                   <CalendarPlus size={14} />
