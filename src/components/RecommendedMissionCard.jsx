@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 
 function RecommendedMissionCard({ duration }) {
+  const displayDuration = duration ? `${duration} min` : 'Choose time'
+
   return (
     <Card className="mission-recommendation">
       <img
@@ -21,7 +23,7 @@ function RecommendedMissionCard({ duration }) {
         <div className="recommendation-meta">
           <span>
             <Clock3 size={18} />
-            <strong>{duration} min</strong>
+            <strong>{displayDuration}</strong>
             Duration
           </span>
           <span>
@@ -33,7 +35,7 @@ function RecommendedMissionCard({ duration }) {
 
         <div className="recommendation-actions">
           <Button asChild size="sm">
-            <Link to="/mission">
+            <Link to={duration ? `/mission?duration=${duration}` : '/mission'}>
               <Play size={16} fill="currentColor" />
               Start Break
             </Link>

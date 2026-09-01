@@ -1,10 +1,23 @@
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Footprints, Sparkles, TimerReset } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const breakOptions = [5, 10, 15]
 
-function BreakHero({ selectedDuration, onDurationChange }) {
+function BreakHero({ durationError, selectedDuration, onDurationChange, onMissingDuration }) {
+  const navigate = useNavigate()
+
+  function handleFindBreak() {
+    // Stop the flow on Home until a duration is selected.
+    if (!selectedDuration) {
+      onMissingDuration()
+      return
+    }
+
+    // Pass the selected duration to Mission so it can be applied automatically.
+    navigate(`/mission?duration=${selectedDuration}`)
+  }
+
   return (
     <>
       <div className="break-hero">
@@ -20,6 +33,7 @@ function BreakHero({ selectedDuration, onDurationChange }) {
       <div className="duration-tabs" aria-label="Choose break duration">
         {breakOptions.map((option) => (
           <button
+            aria-pressed={option === selectedDuration}
             className={option === selectedDuration ? 'selected' : ''}
             key={option}
             onClick={() => onDurationChange(option)}
@@ -30,11 +44,15 @@ function BreakHero({ selectedDuration, onDurationChange }) {
         ))}
       </div>
 
-      <Button className="generate-button" asChild>
-        <Link to="/mission">
-          <Sparkles size={17} />
-          Generate Mission
-        </Link>
+      {durationError ? (
+        <p className="duration-error" role="alert">
+          {durationError}
+        </p>
+      ) : null}
+
+      <Button className="generate-button" onClick={handleFindBreak} type="button">
+        <Sparkles size={17} />
+        Find My Break
       </Button>
 
       <p className="time-note">

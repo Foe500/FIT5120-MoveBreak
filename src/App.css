@@ -214,6 +214,13 @@ main {
   box-shadow: none;
 }
 
+.duration-error {
+  margin: 0.7rem 0 0 6.55rem;
+  color: #9a3412;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .blue-button,
 .outline-button,
 .small-link,
@@ -2715,6 +2722,7 @@ main {
 
   .duration-tabs,
   .generate-button,
+  .duration-error,
   .time-note {
     margin-left: 0;
   }

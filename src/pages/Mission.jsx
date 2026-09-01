@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
   Armchair,
@@ -56,8 +56,17 @@ const apiNeedByLabel = {
   'General movement': 'Movement',
 }
 
+function getInitialDuration(searchParams) {
+  // URL search params are strings, so convert duration before comparing with numeric options.
+  const duration = Number(searchParams.get('duration'))
+
+  // Fall back to 10 minutes if the URL is missing duration or contains an unsupported value.
+  return durationOptions.includes(duration) ? duration : 10
+}
+
 function Mission() {
-  const [duration, setDuration] = useState(10)
+  const [searchParams] = useSearchParams()
+  const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
   const [movementType, setMovementType] = useState('Outdoor')
   const [need, setNeed] = useState('Low energy')
   const [mission, setMission] = useState(null)
