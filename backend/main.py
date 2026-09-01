@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -8,6 +9,7 @@ from pydantic import BaseModel
 
 app = FastAPI(title="MoveBreak API")
 DATA_DIR = Path(__file__).parent / "data"
+DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 
 class MissionRequest(BaseModel):
@@ -17,7 +19,11 @@ class MissionRequest(BaseModel):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.getenv("ALLOWED_ORIGINS", DEFAULT_ALLOWED_ORIGINS).split(",")
+        if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
