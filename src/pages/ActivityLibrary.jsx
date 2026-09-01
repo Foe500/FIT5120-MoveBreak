@@ -63,6 +63,12 @@ function ActivityLibrary() {
     [activities, selectedArea, selectedDuration, selectedPosture],
   )
 
+  function handleClearFilters() {
+    setSelectedArea('All areas')
+    setSelectedDuration('Any')
+    setSelectedPosture('Any posture')
+  }
+
   useEffect(() => {
     async function loadActivities() {
       try {
@@ -145,7 +151,7 @@ function ActivityLibrary() {
           ))}
         </div>
 
-        <button className="clear-filter-button" type="button">
+        <button className="clear-filter-button" onClick={handleClearFilters} type="button">
           Clear filters
         </button>
       </Card>
