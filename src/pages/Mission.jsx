@@ -275,12 +275,12 @@ function Mission() {
                 })}
               </div>
 
-              <Button className="show-options-button" onClick={handleShowOptions} type="button">
+              <Button className="mt-[0.72rem] w-full" onClick={handleShowOptions} type="button">
                 <Footprints size={17} />
                 {isLoading ? 'Finding options' : 'Show my options'}
               </Button>
 
-              <Button asChild className="continue-flow-button" type="button">
+              <Button asChild className="mt-[0.72rem] w-full" type="button" variant="success">
                 <Link to={flowTarget}>
                   {movementType === 'Indoor' ? <Armchair size={17} /> : <Map size={17} />}
                   Continue with {movementType}
@@ -349,7 +349,7 @@ function Mission() {
 
             {error ? <p className="mission-status-message">{error}</p> : null}
 
-            <Button asChild className="preview-primary-button">
+            <Button asChild className="mt-[0.72rem] w-full">
               <Link to={flowTarget}>
                 <PrimaryActionIcon size={17} />
                 {primaryActionLabel}

@@ -3,7 +3,10 @@ import { cn } from '@/lib/utils'
 function Card({ className, ...props }) {
   return (
     <section
-      className={cn('rounded-[1.25rem] border border-[#e7e1d6] bg-[#fffdf9] shadow-[0_16px_36px_rgba(54,60,65,0.07)]', className)}
+      className={cn(
+        'rounded-[1.25rem] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]',
+        className,
+      )}
       {...props}
     />
   )
@@ -14,7 +17,7 @@ function CardHeader({ className, ...props }) {
 }
 
 function CardTitle({ className, ...props }) {
-  return <h2 className={cn('text-base font-extrabold leading-tight text-[#17365f]', className)} {...props} />
+  return <h2 className={cn('text-base font-extrabold leading-tight text-[var(--color-heading)]', className)} {...props} />
 }
 
 function CardContent({ className, ...props }) {

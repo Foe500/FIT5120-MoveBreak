@@ -15,6 +15,7 @@ import RecommendedMissionCard from '../components/RecommendedMissionCard.jsx'
 import QuickIndoorBreakCard from '../components/home/QuickIndoorBreakCard.jsx'
 import SessionBadgesCard from '../components/home/SessionBadgesCard.jsx'
 import TodayPlanCard from '../components/home/TodayPlanCard.jsx'
+import { Card } from '@/components/ui/card'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 import { melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
@@ -122,7 +123,7 @@ function Home() {
       <section className="home-feature-grid">
         <RecommendedMissionCard duration={selectedDuration} />
 
-        <section className="map-card">
+        <Card className="map-card">
           <div className="card-title-row">
             <div className="title-with-icon">
               <MapPin size={19} />
@@ -172,7 +173,7 @@ function Home() {
               <ArrowRight size={15} />
             </Link>
           </div>
-        </section>
+        </Card>
       </section>
 
       <div className="dashboard-bottom">

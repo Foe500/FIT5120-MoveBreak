@@ -396,23 +396,7 @@ main {
   margin-top: 0.9rem;
 }
 
-.recommendation-actions a:first-child {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0b66df, #0757c2);
-  box-shadow: 0 12px 20px rgba(9, 105, 218, 0.2);
-}
-
-.recommendation-actions a:first-child:hover {
-  color: #ffffff;
-}
-
-.recommendation-actions a:last-child {
-  color: #0757c2;
-  background: #ffffff;
-}
-
-.recommendation-actions .blue-button,
-.recommendation-actions .outline-button {
+.recommendation-actions a {
   min-height: 2.35rem;
   padding: 0 0.75rem;
   font-size: 0.9rem;
@@ -939,21 +923,6 @@ main {
   line-height: 1.35;
 }
 
-.quick-break-button {
-  width: fit-content;
-  min-height: 2.05rem;
-  padding: 0 0.9rem;
-  color: #ffffff;
-  background: linear-gradient(135deg, #0b66df, #0757c2);
-  font-size: 0.78rem;
-  box-shadow: 0 12px 20px rgba(9, 105, 218, 0.2);
-}
-
-.quick-break-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0757c2, #064aa5);
-}
-
 .desk-stretch-art {
   display: block;
   position: relative;
@@ -1264,18 +1233,6 @@ main {
   margin: 0.7rem auto 0;
 }
 
-.continue-flow-button {
-  width: 100%;
-  margin-top: 0.72rem;
-  color: #ffffff;
-  background: linear-gradient(135deg, #08713f, #055c34);
-}
-
-.continue-flow-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #055c34, #044629);
-}
-
 .need-chip-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1300,18 +1257,6 @@ main {
   border-color: #2f80ed;
   color: #0b66df;
   background: #edf5ff;
-}
-
-.show-options-button {
-  width: 100%;
-  margin-top: 0.72rem;
-  color: #ffffff;
-  background: linear-gradient(135deg, #0b66df, #0757c2);
-}
-
-.show-options-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
 .mission-preview-card {
@@ -1402,20 +1347,9 @@ main {
   font-weight: 750;
 }
 
-.preview-primary-button,
 .preview-secondary-button {
   width: 100%;
   margin-top: 0.72rem;
-}
-
-.preview-primary-button {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0b66df, #0757c2);
-}
-
-.preview-primary-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
 .return-note {
@@ -1935,18 +1869,6 @@ main {
   font-weight: 800;
 }
 
-.directions-button {
-  width: 100%;
-  margin-top: 1.05rem;
-  color: #ffffff;
-  background: linear-gradient(135deg, #08713f, #055c34);
-}
-
-.directions-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #055c34, #044629);
-}
-
 .activities-page {
   padding-top: 1.25rem;
 }
@@ -2133,20 +2055,9 @@ main {
   font-weight: 800;
 }
 
-.activity-start-button,
 .activity-add-button {
   width: 100%;
   margin-top: 0.55rem;
-}
-
-.activity-start-button {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0b66df, #0757c2);
-}
-
-.activity-start-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
 .activity-safety-note {
@@ -2240,18 +2151,6 @@ main {
   flex-wrap: wrap;
   gap: 0.45rem;
   margin-top: 0.9rem;
-}
-
-.activity-detail-start-button {
-  width: 100%;
-  margin-top: 1rem;
-  color: #ffffff;
-  background: linear-gradient(135deg, #0b66df, #0757c2);
-}
-
-.activity-detail-start-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
 .activity-demo-note {
@@ -2401,16 +2300,6 @@ main {
 
 .guided-break-actions {
   margin-top: 1rem;
-}
-
-.guided-start-button {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0b66df, #0757c2);
-}
-
-.guided-start-button:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0757c2, #064aa5);
 }
 
 .guided-completion-panel {
@@ -3551,14 +3440,6 @@ main {
   align-items: stretch;
 }
 
-.home-redesign .mission-recommendation,
-.home-redesign .map-card,
-.home-redesign .mini-card {
-  border: 1px solid #e7e1d6;
-  background: #fffdf9;
-  box-shadow: 0 18px 38px rgba(54, 60, 65, 0.07);
-}
-
 .home-redesign .mission-recommendation {
   grid-template-columns: 1fr;
   padding: 0.9rem;
@@ -3578,17 +3459,6 @@ main {
 .home-redesign .badge-card.earned {
   color: #315b3c;
   background: #e3eee1;
-}
-
-.home-redesign .recommendation-actions a:first-child,
-.home-redesign .quick-break-button {
-  border-color: #f06d52;
-  background: #f06d52;
-}
-
-.home-redesign .recommendation-actions a:first-child:hover,
-.home-redesign .quick-break-button:hover {
-  background: #da5b43;
 }
 
 .home-redesign .map-card {
@@ -3630,8 +3500,14 @@ main {
   gap: 0.4rem;
   border: 0;
   border-radius: 0.65rem;
-  background: #17365f;
-  box-shadow: 0 10px 20px rgba(23, 54, 95, 0.18);
+  color: #ffffff;
+  background: var(--color-success);
+  box-shadow: 0 10px 20px rgba(85, 115, 91, 0.18);
+}
+
+.home-redesign .open-map-overlay:hover {
+  color: #ffffff;
+  background: var(--color-success-hover);
 }
 
 .home-redesign .dashboard-bottom {
@@ -3928,38 +3804,6 @@ main {
   border-color: #719078;
   color: #315b3c;
   background: #e8efe4;
-}
-
-.show-options-button,
-.preview-primary-button,
-.activity-start-button,
-.activity-detail-start-button,
-.guided-start-button {
-  border-color: #f06d52;
-  color: #ffffff;
-  background: #f06d52;
-  box-shadow: 0 10px 20px rgba(240, 109, 82, 0.18);
-}
-
-.show-options-button:hover,
-.preview-primary-button:hover,
-.activity-start-button:hover,
-.activity-detail-start-button:hover,
-.guided-start-button:hover {
-  color: #ffffff;
-  background: #da5b43;
-}
-
-.continue-flow-button,
-.directions-button {
-  color: #ffffff;
-  background: #55735b;
-}
-
-.continue-flow-button:hover,
-.directions-button:hover {
-  color: #ffffff;
-  background: #405d47;
 }
 
 .preview-panel {

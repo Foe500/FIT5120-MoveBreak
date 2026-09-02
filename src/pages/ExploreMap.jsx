@@ -393,7 +393,7 @@ function ExploreMap() {
             <span>Low traffic</span>
           </div>
 
-          <Button asChild className="directions-button">
+          <Button asChild className="mt-[1.05rem] w-full" variant="success">
             <Link to="/mission">
               <Route size={17} />
               Use this break spot

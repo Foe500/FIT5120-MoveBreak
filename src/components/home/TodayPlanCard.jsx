@@ -30,7 +30,7 @@ function TodayPlanCard() {
         ))}
       </CardContent>
 
-      <Link className="small-link mt-auto" to="/planner">
+      <Link className="small-link mt-auto w-fit" to="/planner">
         Open planner
       </Link>
     </Card>

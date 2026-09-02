@@ -4,10 +4,10 @@ import { cn } from '@/lib/utils'
 const badgeVariants = cva('inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold', {
   variants: {
     variant: {
-      default: 'bg-[#e6eff4] text-[#315d74]',
+      default: 'bg-[var(--color-soft-blue)] text-[#315d74]',
       secondary: 'bg-[#f0ece4] text-[#5d625f]',
       success: 'bg-[#e3eee1] text-[#315b3c]',
-      warning: 'bg-[#fae9df] text-[#96513d]',
+      warning: 'bg-[var(--color-soft-coral)] text-[#96513d]',
       muted: 'bg-[#f0ece4] text-[#77736c]',
     },
   },
