@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Footprints, Sparkles, TimerReset } from 'lucide-react'
+import { ArrowRight, TimerReset } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const breakOptions = [5, 10, 15]
@@ -21,15 +21,13 @@ function BreakHero({ durationError, selectedDuration, onDurationChange, onMissin
   return (
     <>
       <div className="break-hero">
-        <div className="round-illustration" aria-hidden="true">
-          <Footprints size={38} />
-        </div>
         <div>
-          <h1>Ready for a short break?</h1>
-          <p>Step away, reset and come back refreshed.</p>
+          <h1>Take a quick movement break. Feel ready to study again.</h1>
+          <p>Choose a short reset that fits your time, energy and space. No equipment needed.</p>
         </div>
       </div>
 
+      <p className="duration-label">How much time do you have?</p>
       <div className="duration-tabs" aria-label="Choose break duration">
         {breakOptions.map((option) => (
           <button
@@ -51,13 +49,13 @@ function BreakHero({ durationError, selectedDuration, onDurationChange, onMissin
       ) : null}
 
       <Button className="generate-button" onClick={handleFindBreak} type="button">
-        <Sparkles size={17} />
-        Find My Break
+        Start my movement break
+        <ArrowRight size={17} />
       </Button>
 
       <p className="time-note">
         <TimerReset size={15} />
-        All missions are time-safe and easy to return from.
+        You will be back at your desk on time.
       </p>
     </>
   )

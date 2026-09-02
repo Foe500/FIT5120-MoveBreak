@@ -203,7 +203,7 @@ function ActivityLibrary() {
                   </span>
                 </div>
 
-                <Button asChild className="activity-start-button" size="sm">
+                <Button asChild className="mt-[0.55rem] w-full" size="sm">
                   <Link to={`/activities/${activity.id}`}>
                     <Play size={14} fill="currentColor" />
                     View details

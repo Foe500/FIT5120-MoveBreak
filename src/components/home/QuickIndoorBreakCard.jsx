@@ -15,7 +15,7 @@ function QuickIndoorBreakCard() {
           3 min
         </Badge>
         <p>Release tension and reset your shoulders.</p>
-        <Button className="quick-break-button" size="sm" type="button">
+        <Button className="w-fit" size="sm" type="button">
           <Play size={15} fill="currentColor" />
           Start guided break
         </Button>

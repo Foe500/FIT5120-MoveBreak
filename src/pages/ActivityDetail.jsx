@@ -137,7 +137,7 @@ function ActivityDetail() {
               </Badge>
             </div>
 
-            <Button asChild className="activity-detail-start-button">
+            <Button asChild className="mt-4 w-full">
               <Link to={`/guided/indoor/${activity.id}`}>
                 <Play size={16} fill="currentColor" />
                 Start Now

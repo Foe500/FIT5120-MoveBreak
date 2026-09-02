@@ -197,7 +197,7 @@ function IndoorGuidedBreak() {
           </div>
 
           <div className="guided-break-actions">
-            <Button className="guided-start-button" onClick={handleStartPause} type="button">
+            <Button onClick={handleStartPause} type="button">
               {isTimerRunning ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
               {isComplete ? 'Restart' : isTimerRunning ? 'Pause' : 'Start'}
             </Button>

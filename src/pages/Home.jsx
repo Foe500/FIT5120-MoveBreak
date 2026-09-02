@@ -1,12 +1,22 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { HeartPulse, Map } from 'lucide-react'
+import {
+  ArrowRight,
+  CheckCircle2,
+  HeartPulse,
+  MapPin,
+  Smile,
+  Sparkles,
+  TimerReset,
+} from 'lucide-react'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import BreakHero from '../components/BreakHero.jsx'
 import RecommendedMissionCard from '../components/RecommendedMissionCard.jsx'
 import QuickIndoorBreakCard from '../components/home/QuickIndoorBreakCard.jsx'
 import SessionBadgesCard from '../components/home/SessionBadgesCard.jsx'
 import TodayPlanCard from '../components/home/TodayPlanCard.jsx'
+import { Card } from '@/components/ui/card'
+import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 import { melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
@@ -47,25 +57,80 @@ function Home() {
   }, [])
 
   return (
-    <section className="home-dashboard">
-      <div className="dashboard-main">
-        <div className="break-column">
-          <section className="break-card">
-            <BreakHero
-              durationError={durationError}
-              onMissingDuration={handleMissingDuration}
-              selectedDuration={selectedDuration}
-              onDurationChange={handleDurationChange}
-            />
-          </section>
-          <RecommendedMissionCard duration={selectedDuration} />
+    <section className="home-dashboard home-redesign">
+      <section className="home-hero-shell">
+        <div className="home-hero-copy">
+          <span className="home-eyebrow">
+            <Sparkles size={15} />
+            A small pause for a better study day
+          </span>
+          <BreakHero
+            durationError={durationError}
+            onMissingDuration={handleMissingDuration}
+            selectedDuration={selectedDuration}
+            onDurationChange={handleDurationChange}
+          />
         </div>
 
-        <section className="map-card">
+        <div className="home-hero-visual" aria-label="A student taking a movement break beside a desk">
+          <span className="hero-shape hero-shape-blue" aria-hidden="true"></span>
+          <span className="hero-shape hero-shape-green" aria-hidden="true"></span>
+          <img src={shoulderReleaseImage} alt="Person stretching beside a study desk" />
+          <div className="hero-benefit-card">
+            <CheckCircle2 size={20} />
+            <div>
+              <strong>Short, guided and achievable</strong>
+              <span>2–15 minute resets for busy study days</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="how-it-works" aria-labelledby="how-it-works-title">
+        <div className="section-heading-row">
+          <div>
+            <span className="section-kicker">How it works</span>
+            <h2 id="how-it-works-title">Your reset in three simple steps</h2>
+          </div>
+          <Link className="section-text-link" to="/mission">
+            Find my break
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+
+        <div className="journey-step-grid">
+          <article className="journey-step journey-step-sage">
+            <span className="step-number">1</span>
+            <Smile size={28} aria-hidden="true" />
+            <h3>Choose how you feel</h3>
+            <p>Tell us your available time, space and what your body needs.</p>
+          </article>
+          <article className="journey-step journey-step-blue">
+            <span className="step-number">2</span>
+            <TimerReset size={28} aria-hidden="true" />
+            <h3>Follow a short break</h3>
+            <p>Get a guided indoor activity or a nearby outdoor reset.</p>
+          </article>
+          <article className="journey-step journey-step-coral">
+            <span className="step-number">3</span>
+            <Sparkles size={28} aria-hidden="true" />
+            <h3>Return refreshed</h3>
+            <p>Come back re-energised and ready to focus on what matters.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="home-feature-grid">
+        <RecommendedMissionCard duration={selectedDuration} />
+
+        <Card className="map-card">
           <div className="card-title-row">
             <div className="title-with-icon">
-              <Map size={19} />
-              <h2>Your Nearby Map</h2>
+              <MapPin size={19} />
+              <div>
+                <span className="section-kicker">Outdoor option</span>
+                <h2>Find a place to move</h2>
+              </div>
             </div>
             <div className="zone-legend">
               <span className="green-dot">5 min zone</span>
@@ -104,11 +169,12 @@ function Home() {
             </MapContainer>
 
             <Link className="open-map-overlay" to="/explore">
-              Open Explore Map
+              Open the map
+              <ArrowRight size={15} />
             </Link>
           </div>
-        </section>
-      </div>
+        </Card>
+      </section>
 
       <div className="dashboard-bottom">
         <TodayPlanCard />
@@ -120,7 +186,10 @@ function Home() {
         <HeartPulse size={18} />
         <strong>Small breaks. Big difference.</strong>
         <span>Short breaks improve focus, wellbeing and bring more energy to your day.</span>
-        <Link to="/mission">You've got this.</Link>
+        <Link to="/mission">
+          Find a break
+          <ArrowRight size={15} />
+        </Link>
       </aside>
     </section>
   )
