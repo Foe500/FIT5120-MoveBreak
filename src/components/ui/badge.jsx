@@ -1,14 +1,14 @@
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
-const badgeVariants = cva('inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold', {
+const badgeVariants = cva('badge badge-sm w-fit gap-1 font-semibold', {
   variants: {
     variant: {
-      default: 'bg-[#e6eff4] text-[#315d74]',
-      secondary: 'bg-[#f0ece4] text-[#5d625f]',
-      success: 'bg-[#e3eee1] text-[#315b3c]',
-      warning: 'bg-[#fae9df] text-[#96513d]',
-      muted: 'bg-[#f0ece4] text-[#77736c]',
+      default: 'badge-info badge-soft',
+      secondary: 'badge-neutral badge-soft',
+      success: 'badge-success badge-soft',
+      warning: 'badge-warning badge-soft',
+      muted: 'badge-ghost',
     },
   },
   defaultVariants: {

@@ -1,9 +1,58 @@
 @import "tailwindcss";
+@plugin "daisyui" {
+  themes: false;
+}
+@plugin "daisyui/theme" {
+  name: "movebreak";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #fffefa;
+  --color-base-200: #f5f3ed;
+  --color-base-300: #dedfd9;
+  --color-base-content: #283734;
+  --color-primary: #32736f;
+  --color-primary-content: #ffffff;
+  --color-secondary: #d9a36f;
+  --color-secondary-content: #35271c;
+  --color-accent: #6f91a3;
+  --color-accent-content: #ffffff;
+  --color-neutral: #334743;
+  --color-neutral-content: #ffffff;
+  --color-info: #6f91a3;
+  --color-info-content: #ffffff;
+  --color-success: #5f7f62;
+  --color-success-content: #ffffff;
+  --color-warning: #d9a36f;
+  --color-warning-content: #35271c;
+  --color-error: #b86155;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.45rem;
+  --radius-box: 0.8rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
 
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #20334b;
-  background: #fbf8f2;
+  color: var(--color-base-content);
+  background: var(--color-base-200);
+  --button-primary: var(--color-primary);
+  --button-primary-hover: color-mix(in oklab, var(--color-primary) 86%, black);
+  --button-primary-text: var(--color-primary-content);
+  --button-secondary: var(--color-base-100);
+  --button-secondary-hover: var(--color-base-200);
+  --button-secondary-border: var(--color-base-300);
+  --button-secondary-text: var(--color-base-content);
+  --button-success: var(--color-success);
+  --button-success-hover: color-mix(in oklab, var(--color-success) 86%, black);
+  --button-radius: var(--radius-field);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

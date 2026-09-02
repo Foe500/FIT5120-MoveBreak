@@ -93,11 +93,9 @@ button,
     background-color 160ms ease,
     border-color 160ms ease,
     color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
+    box-shadow 160ms ease;
 }
 
-button:hover,
 .open-map-overlay:hover {
   transform: translateY(-1px);
 }
@@ -106,7 +104,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid rgba(47, 128, 237, 0.28);
+  outline: 3px solid rgba(63, 102, 88, 0.25);
   outline-offset: 2px;
 }
 
@@ -4354,4 +4352,274 @@ main {
   .selected-place-card {
     border-radius: 1rem;
   }
+}
+
+/* Quiet button system preview */
+.generate-button,
+.blue-button,
+.primary-button,
+.show-options-button,
+.preview-primary-button,
+.activity-start-button,
+.activity-detail-start-button,
+.guided-start-button {
+  border: 1px solid var(--button-primary);
+  border-radius: var(--button-radius);
+  color: var(--button-primary-text);
+  background: var(--button-primary);
+  box-shadow: none;
+  font-weight: 650;
+}
+
+.generate-button:hover,
+.blue-button:hover,
+.primary-button:hover,
+.show-options-button:hover,
+.preview-primary-button:hover,
+.activity-start-button:hover,
+.activity-detail-start-button:hover,
+.guided-start-button:hover {
+  border-color: var(--button-primary-hover);
+  color: var(--button-primary-text);
+  background: var(--button-primary-hover);
+  box-shadow: none;
+}
+
+.outline-button,
+.secondary-button,
+.continue-flow-button,
+.preview-secondary-button,
+.browse-activities-button {
+  border: 1px solid var(--button-secondary-border);
+  border-radius: var(--button-radius);
+  color: var(--button-secondary-text);
+  background: var(--button-secondary);
+  box-shadow: none;
+  font-weight: 650;
+}
+
+.outline-button:hover,
+.secondary-button:hover,
+.continue-flow-button:hover,
+.preview-secondary-button:hover,
+.browse-activities-button:hover {
+  border-color: #87958a;
+  color: var(--button-secondary-text);
+  background: var(--button-secondary-hover);
+  box-shadow: none;
+}
+
+.directions-button {
+  border: 1px solid var(--button-success);
+  border-radius: var(--button-radius);
+  color: #ffffff;
+  background: var(--button-success);
+  box-shadow: none;
+  font-weight: 650;
+}
+
+.directions-button:hover {
+  border-color: var(--button-success-hover);
+  color: #ffffff;
+  background: var(--button-success-hover);
+}
+
+.mission-duration-cards button,
+.movement-card,
+.need-chip-row button,
+.category-tabs button,
+.activity-pill-group button,
+.planner-segmented-control button,
+.planner-tag-row button {
+  border-radius: 0.55rem;
+  box-shadow: none;
+}
+
+.mission-duration-cards button.selected,
+.movement-card.selected {
+  box-shadow: inset 0 0 0 1px #719078;
+}
+
+.need-chip-row .selected,
+.category-tabs .selected,
+.activity-pill-group .selected,
+.planner-segmented-control .selected,
+.planner-tag-row .selected {
+  box-shadow: none;
+}
+
+.planner-row-actions button,
+.near-heading-row button,
+.close-card-button {
+  border-radius: 0.45rem;
+  box-shadow: none;
+}
+
+button:active:not(:disabled),
+[role='button']:active:not([aria-disabled='true']) {
+  transform: none;
+}
+
+/* Home page button alignment */
+.home-redesign .generate-button,
+.home-redesign .recommendation-actions a:first-child,
+.home-redesign .quick-break-button,
+.home-redesign .open-map-overlay {
+  border: 1px solid var(--button-primary);
+  border-radius: var(--button-radius);
+  color: var(--button-primary-text);
+  background: var(--button-primary);
+  box-shadow: none;
+  font-weight: 650;
+}
+
+.home-redesign .generate-button:hover,
+.home-redesign .recommendation-actions a:first-child:hover,
+.home-redesign .quick-break-button:hover,
+.home-redesign .open-map-overlay:hover {
+  border-color: var(--button-primary-hover);
+  color: var(--button-primary-text);
+  background: var(--button-primary-hover);
+  box-shadow: none;
+}
+
+.home-redesign .recommendation-actions a:last-child {
+  border-color: var(--button-secondary-border);
+  border-radius: var(--button-radius);
+  color: var(--button-secondary-text);
+  background: var(--button-secondary);
+  box-shadow: none;
+  font-weight: 650;
+}
+
+.home-redesign .recommendation-actions a:last-child:hover {
+  border-color: #87958a;
+  color: var(--button-secondary-text);
+  background: var(--button-secondary-hover);
+}
+
+.home-redesign .bottom-callout a,
+.home-redesign .section-text-link {
+  color: var(--button-primary);
+}
+
+/* MoveBreak daisyUI theme cohesion */
+.app-shell {
+  background:
+    radial-gradient(circle at 88% 4%, color-mix(in oklab, var(--color-accent) 12%, transparent), transparent 25rem),
+    var(--color-base-200);
+}
+
+.topbar {
+  border-bottom-color: var(--color-base-300);
+  background: color-mix(in oklab, var(--color-base-100) 94%, transparent);
+}
+
+.brand strong,
+.nav-links a:hover,
+.nav-links a.active,
+.mission-page-header h1,
+.mission-page .builder-question h2,
+.mission-preview-heading h2,
+.mission-page .preview-panel h3 {
+  color: var(--color-neutral);
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-base-100));
+}
+
+.mission-kicker,
+.preview-ready-indicator {
+  color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 11%, var(--color-base-100));
+}
+
+.mission-selection-summary span,
+.mission-progress,
+.mission-page .mission-builder-card,
+.mission-page .mission-preview-card,
+.mission-duration-cards button,
+.mission-page .movement-card,
+.mission-page .preview-panel,
+.mission-page .route-breakdown {
+  border-color: var(--color-base-300);
+  background: var(--color-base-100);
+}
+
+.mission-selection-summary strong,
+.mission-progress strong,
+.mission-duration-cards button,
+.mission-page .movement-card strong,
+.mission-page .route-breakdown strong {
+  color: var(--color-neutral);
+}
+
+.mission-progress li,
+.mission-page .builder-section {
+  border-color: var(--color-base-300);
+}
+
+.mission-progress li > span,
+.mission-page .builder-question > span {
+  color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 12%, var(--color-base-100));
+}
+
+.mission-progress li.active {
+  background: color-mix(in oklab, var(--color-secondary) 16%, var(--color-base-100));
+}
+
+.mission-progress li.active > span {
+  color: var(--color-primary-content);
+  background: var(--color-primary);
+}
+
+.mission-duration-cards button:hover,
+.mission-page .movement-card:hover {
+  border-color: color-mix(in oklab, var(--color-primary) 55%, var(--color-base-300));
+  background: var(--color-base-200);
+}
+
+.mission-duration-cards button.selected,
+.mission-page .movement-card.selected {
+  border-color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-base-100));
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+.mission-page .movement-card.selected::after {
+  background: var(--color-primary);
+}
+
+.mission-helper-row,
+.preview-indoor-visual {
+  background: var(--color-base-200);
+}
+
+.mission-page .need-chip-row button {
+  border-color: var(--color-base-300);
+  color: var(--color-base-content);
+  background: var(--color-base-100);
+}
+
+.mission-page .need-chip-row button:hover,
+.mission-page .need-chip-row .selected {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: color-mix(in oklab, var(--color-primary) 10%, var(--color-base-100));
+}
+
+.mission-page .preview-panel {
+  background: var(--color-base-200);
+}
+
+.mission-page .route-breakdown {
+  background: var(--color-base-100);
+}
+
+.mission-page .route-breakdown svg,
+.mission-page .return-note svg {
+  color: var(--color-primary);
 }
