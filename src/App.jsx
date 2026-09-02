@@ -11,10 +11,10 @@ import Planner from './pages/Planner.jsx'
 
 const navItems = [
   { to: '/', label: 'Home', icon: HomeIcon },
-  { to: '/mission', label: 'Mission', icon: Sparkles },
-  { to: '/explore', label: 'Explore Map', icon: MapPinned },
+  { to: '/mission', label: 'Find a break', icon: Sparkles },
+  { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
-  { to: '/planner', label: 'Break Planner', icon: CalendarDays },
+  { to: '/planner', label: 'Planner', icon: CalendarDays },
 ]
 
 function App() {
@@ -25,10 +25,7 @@ function App() {
           <span className="brand-mark">
             <Sprout size={24} strokeWidth={2.4} />
           </span>
-          <span>
-            <strong>MoveBreak</strong>
-            <small>Melbourne</small>
-          </span>
+          <strong>MoveBreak</strong>
         </Link>
 
         <nav className="nav-links" aria-label="Main navigation">
