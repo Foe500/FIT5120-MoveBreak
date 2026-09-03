@@ -1,6 +1,8 @@
+import os
+import random
 from typing import Optional
 
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -9,6 +11,7 @@ from database import get_db
 from models import Activity, Place
 
 app = FastAPI(title="MoveBreak API")
+DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 
 class MissionRequest(BaseModel):
@@ -19,7 +22,11 @@ class MissionRequest(BaseModel):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.getenv("ALLOWED_ORIGINS", DEFAULT_ALLOWED_ORIGINS).split(",")
+        if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -85,6 +92,16 @@ def get_activities(db: Session = Depends(get_db)):
     return [activity_to_dict(a) for a in activities]
 
 
+@app.get("/activities/{activity_id}")
+def get_activity(activity_id: str, db: Session = Depends(get_db)):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    return activity_to_dict(activity)
+
+
 @app.get("/places")
 def get_places(db: Session = Depends(get_db)):
     places = db.query(Place).all()
@@ -99,11 +116,13 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
     setting = request.setting.lower()
 
     if setting == "outdoor":
-        place = places[0] if places else None
+        # Pick from all available places so Surprise Me and Try Another can show varied outdoor options.
+        place = random.choice(places) if places else None
+
         return {
-            "id": "flagstaff-fresh-air-loop",
-            "title": "Flagstaff Fresh-Air Loop",
-            "description": "A short outdoor reset through nearby greenery.",
+            "id": f"{place['id']}-fresh-air-reset" if place else "fresh-air-reset",
+            "title": f"{place['name']} Fresh-Air Reset" if place else "Fresh-Air Reset",
+            "description": "A short outdoor reset through a nearby open-data location.",
             "duration": min(request.duration, 15),
             "setting": "Outdoor",
             "place": place,
@@ -129,7 +148,9 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
             and activity["setting"].lower() == "indoor"
         ]
 
-    activity = matching_activities[0]
+    # Pick from the matching activities instead of always returning the first result.
+    activity = random.choice(matching_activities)
+
     return {
         "id": f"{activity['id']}-mission",
         "title": activity["title"],
