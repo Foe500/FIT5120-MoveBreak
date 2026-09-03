@@ -1,18 +1,30 @@
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
-import { CalendarDays, HomeIcon, MapPinned, Sprout, Sparkles, StretchHorizontal } from 'lucide-react'
+import {
+  CalendarDays,
+  HomeIcon,
+  MapPinned,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
+  StretchHorizontal,
+} from 'lucide-react'
 import './App.css'
 import Home from './pages/Home.jsx'
 import Mission from './pages/Mission.jsx'
 import ExploreMap from './pages/ExploreMap.jsx'
 import ActivityLibrary from './pages/ActivityLibrary.jsx'
+import ActivityDetail from './pages/ActivityDetail.jsx'
+import IndoorGuidedBreak from './pages/IndoorGuidedBreak.jsx'
 import Planner from './pages/Planner.jsx'
+import Privacy from './pages/Privacy.jsx'
 
 const navItems = [
   { to: '/', label: 'Home', icon: HomeIcon },
-  { to: '/mission', label: 'Mission', icon: Sparkles },
-  { to: '/explore', label: 'Explore Map', icon: MapPinned },
+  { to: '/mission', label: 'Find a break', icon: Sparkles },
+  { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
-  { to: '/planner', label: 'Break Planner', icon: CalendarDays },
+  { to: '/planner', label: 'Planner', icon: CalendarDays },
+  { to: '/privacy', label: 'Privacy', icon: ShieldCheck },
 ]
 
 function App() {
@@ -23,10 +35,7 @@ function App() {
           <span className="brand-mark">
             <Sprout size={24} strokeWidth={2.4} />
           </span>
-          <span>
-            <strong>MoveBreak</strong>
-            <small>Melbourne</small>
-          </span>
+          <strong>MoveBreak</strong>
         </Link>
 
         <nav className="nav-links" aria-label="Main navigation">
@@ -49,7 +58,10 @@ function App() {
           <Route path="/mission" element={<Mission />} />
           <Route path="/explore" element={<ExploreMap />} />
           <Route path="/activities" element={<ActivityLibrary />} />
+          <Route path="/activities/:activityId" element={<ActivityDetail />} />
+          <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
           <Route path="/planner" element={<Planner />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </main>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
   Armchair,
@@ -48,19 +48,55 @@ const needOptions = [
   { icon: Footprints, label: 'General movement' },
 ]
 
+const outdoorNeedOptions = [
+  { icon: Leaf, label: 'Fresh air' },
+  { icon: MapPin, label: 'Quiet space' },
+  { icon: Footprints, label: 'Short walk' },
+  { icon: Map, label: 'Green space' },
+  { icon: Zap, label: 'Low effort' },
+]
+
 const apiNeedByLabel = {
   'Eyes tired': 'Eyes',
   'Stiff shoulders': 'Shoulders',
   'Low energy': 'Low energy',
   'Feeling stressed': 'Breathing',
   'General movement': 'Movement',
+  'Fresh air': 'Fresh air',
+  'Quiet space': 'Quiet space',
+  'Short walk': 'Short walk',
+  'Green space': 'Green space',
+  'Low effort': 'Low effort',
+}
+
+function getInitialDuration(searchParams) {
+  // URL search params are strings, so convert duration before comparing with numeric options.
+  const duration = Number(searchParams.get('duration'))
+
+  // Fall back to 10 minutes if the URL is missing duration or contains an unsupported value.
+  return durationOptions.includes(duration) ? duration : 10
+}
+
+function getFlowTarget(movementType, duration) {
+  // Keep the selected duration in the URL so the next page can apply the same break condition.
+  const search = `?duration=${duration}`
+
+  return movementType === 'Indoor' ? `/activities${search}` : `/explore${search}`
+}
+
+function getSurpriseMovementType(currentMovementType) {
+  const otherMovementType = currentMovementType === 'Indoor' ? 'Outdoor' : 'Indoor'
+
+  return Math.random() > 0.5 ? currentMovementType : otherMovementType
 }
 
 function Mission() {
-  const [duration, setDuration] = useState(10)
+  const [searchParams] = useSearchParams()
+  const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
   const [movementType, setMovementType] = useState('Outdoor')
   const [need, setNeed] = useState('Low energy')
   const [mission, setMission] = useState(null)
+  const [isSurpriseRecommendation, setIsSurpriseRecommendation] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const selectedPlace = mission?.place ?? mapPlaces[0]
@@ -74,6 +110,29 @@ function Mission() {
       { label: 'Reset', duration: 2 },
       { label: 'Walk back', duration: 4 },
     ]
+  const flowTarget = getFlowTarget(movementType, duration)
+  const primaryActionLabel = isSurpriseRecommendation
+    ? 'Start Recommendation'
+    : `Open ${movementType === 'Indoor' ? 'Activity Library' : 'Explore Map'}`
+  const PrimaryActionIcon = movementType === 'Indoor' ? Armchair : Map
+  const currentNeedOptions = movementType === 'Indoor' ? needOptions : outdoorNeedOptions
+  const needQuestion =
+    movementType === 'Indoor'
+      ? 'What do you need?'
+      : 'What kind of outdoor reset do you want?'
+
+  function handleMovementTypeChange(nextMovementType) {
+    setMovementType(nextMovementType)
+
+    // Keep Step 3 meaningful by switching to a default need that matches the selected setting.
+    if (nextMovementType === 'Indoor' && !needOptions.some((option) => option.label === need)) {
+      setNeed('Low energy')
+    }
+
+    if (nextMovementType === 'Outdoor' && !outdoorNeedOptions.some((option) => option.label === need)) {
+      setNeed('Fresh air')
+    }
+  }
 
   async function loadMission(nextMovementType = movementType) {
     setIsLoading(true)
@@ -103,6 +162,31 @@ function Mission() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  function handleShowOptions() {
+    setIsSurpriseRecommendation(false)
+    loadMission()
+  }
+
+  function handleSurpriseMe() {
+    // Surprise Me reuses the recommendation API, but lets MoveBreak choose the break setting.
+    const nextMovementType = getSurpriseMovementType(movementType)
+
+    setIsSurpriseRecommendation(true)
+    handleMovementTypeChange(nextMovementType)
+    loadMission(nextMovementType)
+  }
+
+  function handleAlternativePreview() {
+    if (isSurpriseRecommendation) {
+      handleSurpriseMe()
+      return
+    }
+
+    const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
+    handleMovementTypeChange(nextMovementType)
+    loadMission(nextMovementType)
   }
 
   return (
@@ -145,7 +229,7 @@ function Mission() {
                   <button
                     className={option.label === movementType ? 'movement-card selected' : 'movement-card'}
                     key={option.label}
-                    onClick={() => setMovementType(option.label)}
+                    onClick={() => handleMovementTypeChange(option.label)}
                     type="button"
                   >
                     <img src={option.image} alt={option.imageAlt} />
@@ -155,20 +239,26 @@ function Mission() {
                 ))}
               </div>
 
-              <Button className="surprise-button" size="sm" variant="outline" type="button">
+              <Button
+                className="surprise-button"
+                onClick={handleSurpriseMe}
+                size="sm"
+                variant="outline"
+                type="button"
+              >
                 <Shuffle size={15} />
-                Surprise me
+                {isLoading && isSurpriseRecommendation ? 'Finding surprise' : 'Surprise me'}
               </Button>
             </div>
 
             <div className="builder-section">
               <div className="builder-question">
                 <span>3</span>
-                <h2>What do you need?</h2>
+                <h2>{needQuestion}</h2>
               </div>
 
               <div className="need-chip-row">
-                {needOptions.map((option) => {
+                {currentNeedOptions.map((option) => {
                   const Icon = option.icon
 
                   return (
@@ -185,9 +275,16 @@ function Mission() {
                 })}
               </div>
 
-              <Button className="show-options-button" onClick={() => loadMission()} type="button">
+              <Button className="mt-[0.72rem] w-full" onClick={handleShowOptions} type="button">
                 <Footprints size={17} />
                 {isLoading ? 'Finding options' : 'Show my options'}
+              </Button>
+
+              <Button asChild className="mt-[0.72rem] w-full" type="button" variant="success">
+                <Link to={flowTarget}>
+                  {movementType === 'Indoor' ? <Armchair size={17} /> : <Map size={17} />}
+                  Continue with {movementType}
+                </Link>
               </Button>
             </div>
           </Card>
@@ -252,24 +349,22 @@ function Mission() {
 
             {error ? <p className="mission-status-message">{error}</p> : null}
 
-            <Button asChild className="preview-primary-button">
-              <Link to="/explore">
-                <Map size={17} />
-                Open in Explore Map
+            <Button asChild className="mt-[0.72rem] w-full">
+              <Link to={flowTarget}>
+                <PrimaryActionIcon size={17} />
+                {primaryActionLabel}
               </Link>
             </Button>
             <Button
               className="preview-secondary-button"
-              onClick={() => {
-                const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
-                setMovementType(nextMovementType)
-                loadMission(nextMovementType)
-              }}
+              onClick={handleAlternativePreview}
               variant="outline"
               type="button"
             >
-              <Armchair size={17} />
-              Try {movementType === 'Indoor' ? 'outdoor' : 'indoor'} instead
+              {isSurpriseRecommendation ? <Shuffle size={17} /> : <Armchair size={17} />}
+              {isSurpriseRecommendation
+                ? 'Try Another'
+                : `Try ${movementType === 'Indoor' ? 'outdoor' : 'indoor'} instead`}
             </Button>
 
             <p className="return-note">

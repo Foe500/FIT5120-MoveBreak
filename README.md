@@ -4,6 +4,16 @@ MoveBreak is an Iteration 1 web prototype for helping users find short indoor or
 
 The project includes a React frontend and a FastAPI backend. The frontend renders the user interface, while the backend provides activity data, map place data, and a basic mission recommendation API.
 
+## Live Site
+
+The frontend is deployed on Vercel, and the backend API is deployed on Render.
+
+```text
+Frontend: https://fit-5120-move-break.vercel.app
+Backend:  https://movebreak-api.onrender.com
+Health:   https://movebreak-api.onrender.com/health
+```
+
 ## Tech Stack
 
 - Frontend: React, Vite, React Router, Tailwind CSS, Leaflet

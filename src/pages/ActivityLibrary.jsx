@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Armchair,
   CalendarPlus,
@@ -10,8 +10,8 @@ import {
   Hand,
   Play,
   Search,
-  SlidersHorizontal,
   Sparkles,
+  Tag,
   Wind,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -19,8 +19,8 @@ import { Card } from '@/components/ui/card'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 import { API_BASE_URL } from '@/lib/api'
 
-const filters = ['2-5 min', '5-10 min', 'Any']
-const postureFilters = ['Seated', 'Standing', 'Low intensity', 'Step-free']
+const durationFilters = [5, 10, 15, 'Any']
+const postureFilters = ['Any posture', 'Seated', 'Standing']
 
 const activityVisuals = {
   'eye-reset': { icon: Eye },
@@ -31,12 +31,43 @@ const activityVisuals = {
   'low-impact-energy': { icon: Dumbbell },
 }
 
+function getInitialDuration(searchParams) {
+  const duration = Number(searchParams.get('duration'))
+
+  return durationFilters.includes(duration) ? duration : 'Any'
+}
+
 function ActivityLibrary() {
-  const [selectedTime, setSelectedTime] = useState('2-5 min')
-  const [selectedPosture, setSelectedPosture] = useState('Seated')
+  const [searchParams] = useSearchParams()
+  const [selectedDuration, setSelectedDuration] = useState(() => getInitialDuration(searchParams))
+  const [selectedArea, setSelectedArea] = useState('All areas')
+  const [selectedPosture, setSelectedPosture] = useState('Any posture')
   const [activities, setActivities] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const areaOptions = useMemo(
+    () => ['All areas', ...new Set(activities.map((activity) => activity.area))],
+    [activities],
+  )
+  const filteredActivities = useMemo(
+    () =>
+      activities.filter((activity) => {
+        const matchesArea = selectedArea === 'All areas' || activity.area === selectedArea
+        // Duration means Noah should only see activities he can complete within his available time.
+        const matchesDuration = selectedDuration === 'Any' || activity.duration <= selectedDuration
+        const matchesPosture =
+          selectedPosture === 'Any posture' || activity.posture === selectedPosture
+
+        return matchesArea && matchesDuration && matchesPosture
+      }),
+    [activities, selectedArea, selectedDuration, selectedPosture],
+  )
+
+  function handleClearFilters() {
+    setSelectedArea('All areas')
+    setSelectedDuration('Any')
+    setSelectedPosture('Any posture')
+  }
 
   useEffect(() => {
     async function loadActivities() {
@@ -81,20 +112,28 @@ function ActivityLibrary() {
           <span>Search activities</span>
         </label>
 
-        <button className="area-filter" type="button">
-          All areas
-          <SlidersHorizontal size={15} />
-        </button>
+        <select
+          aria-label="Filter by body area"
+          className="area-filter"
+          onChange={(event) => setSelectedArea(event.target.value)}
+          value={selectedArea}
+        >
+          {areaOptions.map((area) => (
+            <option key={area} value={area}>
+              {area}
+            </option>
+          ))}
+        </select>
 
         <div className="activity-pill-group" aria-label="Duration filters">
-          {filters.map((filter) => (
+          {durationFilters.map((filter) => (
             <button
-              className={filter === selectedTime ? 'selected' : ''}
+              className={filter === selectedDuration ? 'selected' : ''}
               key={filter}
-              onClick={() => setSelectedTime(filter)}
+              onClick={() => setSelectedDuration(filter)}
               type="button"
             >
-              {filter}
+              {filter === 'Any' ? 'Any' : `${filter} min`}
             </button>
           ))}
         </div>
@@ -112,20 +151,25 @@ function ActivityLibrary() {
           ))}
         </div>
 
-        <button className="clear-filter-button" type="button">
+        <button className="clear-filter-button" onClick={handleClearFilters} type="button">
           Clear filters
         </button>
       </Card>
 
       <div className="activity-toolbar-row">
-        <strong>{isLoading ? 'Loading activities' : `${activities.length} activities`}</strong>
+        <strong>
+          {isLoading ? 'Loading activities' : `${filteredActivities.length} activities`}
+        </strong>
         <span>Recommended</span>
       </div>
 
       {error ? <p className="activity-status-message">{error}</p> : null}
+      {!isLoading && !error && filteredActivities.length === 0 ? (
+        <p className="activity-status-message">No activities match the current filters.</p>
+      ) : null}
 
       <div className="indoor-activity-grid" aria-busy={isLoading}>
-        {activities.map((activity) => {
+        {filteredActivities.map((activity) => {
           const visual = activityVisuals[activity.id] ?? { icon: Dumbbell }
           const Icon = visual.icon
 
@@ -153,11 +197,17 @@ function ActivityLibrary() {
                     <Armchair size={14} />
                     {activity.posture}
                   </span>
+                  <span>
+                    <Tag size={14} />
+                    {activity.category}
+                  </span>
                 </div>
 
-                <Button className="activity-start-button" size="sm" type="button">
-                  <Play size={14} fill="currentColor" />
-                  Start now
+                <Button asChild className="mt-[0.55rem] w-full" size="sm">
+                  <Link to={`/activities/${activity.id}`}>
+                    <Play size={14} fill="currentColor" />
+                    View details
+                  </Link>
                 </Button>
                 <Button className="activity-add-button" size="sm" type="button" variant="outline">
                   <CalendarPlus size={14} />
