@@ -1,5 +1,13 @@
 import { Link, NavLink, Route, Routes } from 'react-router-dom'
-import { CalendarDays, HomeIcon, MapPinned, Sprout, Sparkles, StretchHorizontal } from 'lucide-react'
+import {
+  CalendarDays,
+  HomeIcon,
+  MapPinned,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
+  StretchHorizontal,
+} from 'lucide-react'
 import './App.css'
 import Home from './pages/Home.jsx'
 import Mission from './pages/Mission.jsx'
@@ -8,6 +16,7 @@ import ActivityLibrary from './pages/ActivityLibrary.jsx'
 import ActivityDetail from './pages/ActivityDetail.jsx'
 import IndoorGuidedBreak from './pages/IndoorGuidedBreak.jsx'
 import Planner from './pages/Planner.jsx'
+import Privacy from './pages/Privacy.jsx'
 
 const navItems = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -15,6 +24,7 @@ const navItems = [
   { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
   { to: '/planner', label: 'Planner', icon: CalendarDays },
+  { to: '/privacy', label: 'Privacy', icon: ShieldCheck },
 ]
 
 function App() {
@@ -51,6 +61,7 @@ function App() {
           <Route path="/activities/:activityId" element={<ActivityDetail />} />
           <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
           <Route path="/planner" element={<Planner />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </main>
     </div>
