@@ -1,20 +1,28 @@
 """
-One-time migration script.
-Reads backend/data/activities.json and backend/data/places.json,
-inserts their contents into the SQLite database as rows.
+One-time migration script — ACTIVITIES ONLY.
+Reads backend/data/activities.json and inserts its contents into the
+'activities' table.
+
+Places are NOT handled here on purpose. The 'places' table is loaded
+by build_places_to_db.py, which pulls real, live data from the City of
+Melbourne APIs. Running both scripts against the places table caused
+a real bug once already (this script's old placeholder data silently
+overwrote 389 real rows) — so this script now only ever touches
+'activities', and build_places_to_db.py is the only thing that ever
+touches 'places'.
 
 Run this once after setting up database.py and models.py:
     python backend/migrate_json_to_db.py
 
-Safe to re-run: it clears each table before re-inserting, so you can
-run it again any time the JSON files change during development.
+Safe to re-run: it clears the activities table before re-inserting, so
+you can run it again any time activities.json changes during development.
 """
 
 import json
 from pathlib import Path
 
 from database import engine, SessionLocal, Base
-from models import Activity, Place
+from models import Activity
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -51,23 +59,6 @@ def migrate():
                 imageUrl=entry.get("imageUrl"),  # optional field
             ))
         print(f"  Inserted {len(activities_data)} activities")
-
-        # --- Places ---
-        places_data = load_json("places.json")
-        db.query(Place).delete()
-        for entry in places_data:
-            db.add(Place(
-                id=entry["id"],
-                name=entry["name"],
-                type=entry["type"],
-                distance=entry.get("distance"),
-                status=entry.get("status"),
-                marker=entry.get("marker"),
-                markerTone=entry.get("markerTone"),
-                position=entry["position"],
-                address=entry.get("address"),
-            ))
-        print(f"  Inserted {len(places_data)} places")
 
         db.commit()
         print("Migration complete.")
