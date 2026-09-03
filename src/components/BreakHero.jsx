@@ -22,7 +22,7 @@ function BreakHero({ durationError, selectedDuration, onDurationChange, onMissin
     <>
       <div className="break-hero">
         <div>
-          <h1>Take a quick movement break. Feel ready to study again.</h1>
+          <h1>Take a quick movement break. Feel ready to work again.</h1>
           <p>Choose a short reset that fits your time, energy and space. No equipment needed.</p>
         </div>
       </div>
