@@ -49,7 +49,7 @@ function BreakHero({ durationError, selectedDuration, onDurationChange, onMissin
       ) : null}
 
       <Button className="generate-button" onClick={handleFindBreak} type="button">
-        Start my movement break
+        Find my break
         <ArrowRight size={17} />
       </Button>
 

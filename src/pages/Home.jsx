@@ -62,7 +62,7 @@ function Home() {
         <div className="home-hero-copy">
           <span className="home-eyebrow">
             <Sparkles size={15} />
-            A small pause for a better study day
+            A small pause for a better work day
           </span>
           <BreakHero
             durationError={durationError}
