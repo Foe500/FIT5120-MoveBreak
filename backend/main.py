@@ -1,15 +1,12 @@
-import json
 import os
 import random
-from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI(title="MoveBreak API")
-DATA_DIR = Path(__file__).parent / "data"
 DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 
@@ -70,14 +67,13 @@ def get_activities():
 
 
 @app.get("/activities/{activity_id}")
-def get_activity(activity_id: str):
-    activities = load_json_file("activities.json")
-    activity = next((item for item in activities if item["id"] == activity_id), None)
+def get_activity(activity_id: str, db: Session = Depends(get_db)):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
 
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
 
-    return activity
+    return activity_to_dict(activity)
 
 
 @app.get("/places")
@@ -93,11 +89,11 @@ def recommend_mission(request: MissionRequest):
 
     if setting == "outdoor":
         # Pick from all available places so Surprise Me and Try Another can show varied outdoor options.
-        place = random.choice(places)
+        place = random.choice(places) if places else None
 
         return {
-            "id": f"{place['id']}-fresh-air-reset",
-            "title": f"{place['name']} Fresh-Air Reset",
+            "id": f"{place['id']}-fresh-air-reset" if place else "fresh-air-reset",
+            "title": f"{place['name']} Fresh-Air Reset" if place else "Fresh-Air Reset",
             "description": "A short outdoor reset through a nearby open-data location.",
             "duration": min(request.duration, 15),
             "setting": "Outdoor",
