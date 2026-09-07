@@ -17,14 +17,18 @@ Health:   https://movebreak-api.onrender.com/health
 ## Tech Stack
 
 - Frontend: React, Vite, React Router, Tailwind CSS, Leaflet
-- Backend: Python, FastAPI
-- Data source for Iteration 1: local JSON files in `backend/data`
+- Backend: Python, FastAPI, SQLite, SQLAlchemy
+- Data source for Iteration 1: local JSON files in `backend/data`, loaded into a local SQLite database
 
 ## Project Structure
 
 ```text
 backend/
   main.py                 FastAPI app and API routes
+  database.py             SQLite connection setup
+  models.py               SQLAlchemy database models
+  migrate_json_to_db.py   Loads activity data into SQLite
+  build_places_to_db.py   Loads Melbourne place data into SQLite
   requirements.txt        Python backend dependencies
   data/
     activities.json       Indoor activity data
@@ -75,10 +79,18 @@ Install backend dependencies:
 pip install -r backend\requirements.txt
 ```
 
+Initialise the local SQLite database:
+
+```bash
+cd backend
+python migrate_json_to_db.py
+python build_places_to_db.py
+```
+
 Start the FastAPI server:
 
 ```bash
-uvicorn backend.main:app --reload
+python -m uvicorn main:app --reload
 ```
 
 The backend runs at:
@@ -213,7 +225,8 @@ run:
 ```bash
 npm run lint
 npm run build
-python -m compileall backend
+cd backend
+python -m compileall .
 ```
 
 Then manually check:
@@ -227,6 +240,6 @@ Then manually check:
 
 ## Notes For Iteration 1
 
-- The backend uses JSON files instead of a database for this iteration.
+- The backend uses a local SQLite database generated from the JSON files in `backend/data`.
 - Planner data is not stored in the backend because the project does not currently include login or user accounts.
 - Future iterations can replace JSON files with a database or open data pipeline.
