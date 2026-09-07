@@ -1595,7 +1595,7 @@ main {
   padding: 1.45rem;
   border: 1px solid rgba(207, 223, 241, 0.9);
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.96);
+  background: #ffffff;
   box-shadow: 0 20px 42px rgba(26, 54, 98, 0.18);
 }
 
@@ -1704,6 +1704,8 @@ main {
 
 .map-result-list {
   display: grid;
+  max-height: min(34rem, calc(100vh - 24rem));
+  overflow: auto;
 }
 
 .map-status-message {
@@ -1800,7 +1802,7 @@ main {
   padding: 1.35rem;
   border: 1px solid rgba(207, 223, 241, 0.9);
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.97);
+  background: #ffffff;
   box-shadow: 0 20px 42px rgba(26, 54, 98, 0.18);
 }
 
