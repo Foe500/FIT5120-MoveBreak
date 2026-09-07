@@ -23,6 +23,7 @@ import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
 const defaultMapZoom = 14
 const currentLocationZoom = 16
 const defaultOutdoorBreakDuration = 10
+const maxVisiblePlaces = 40
 const durationOptions = [5, 10, 15]
 
 const placeIcons = {
@@ -133,6 +134,14 @@ function ExploreMap() {
       }),
     [places, searchQuery, selectedCategory],
   )
+  const visiblePlaces = useMemo(
+    () =>
+      filteredPlaces.slice(0, maxVisiblePlaces).map((place, index) => ({
+        ...place,
+        displayMarker: String(index + 1),
+      })),
+    [filteredPlaces],
+  )
 
   useEffect(() => {
     if (!filteredPlaces.length) {
@@ -211,9 +220,9 @@ function ExploreMap() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {filteredPlaces.map((place) => (
+        {visiblePlaces.map((place) => (
           <Marker
-            icon={createMarkerIcon(place.marker, place.markerTone)}
+            icon={createMarkerIcon(place.displayMarker, place.markerTone)}
             key={place.id}
             position={place.position}
             eventHandlers={{
@@ -294,7 +303,7 @@ function ExploreMap() {
         ) : null}
 
         <div className="map-result-list">
-          {filteredPlaces.map((place) => {
+          {visiblePlaces.map((place) => {
             const PlaceIcon = placeIcons[getPlaceCategory(place)] ?? placeIcons[place.type] ?? MapPin
             const isSelected = selectedPlace?.id === place.id
             const suitability = getPlaceSuitability(place, selectedDuration)
@@ -306,20 +315,20 @@ function ExploreMap() {
                 onClick={() => setSelectedPlace(place)}
                 type="button"
               >
-                <span className={`result-number ${place.markerTone}`}>{place.marker}</span>
+                <span className={`result-number ${place.markerTone}`}>{place.displayMarker}</span>
                 <div>
                   <h3>{place.name}</h3>
                   <p>{getPlaceCategory(place)}</p>
                   <small>
                     <Navigation size={13} />
-                    {place.distance}
+                    {place.distance ?? 'Distance unavailable'}
                   </small>
                   <small className="time-fit-status">
                     <Clock3 size={13} />
                     {suitability}
                   </small>
                 </div>
-                <Badge variant="secondary">{place.status}</Badge>
+                <Badge variant="secondary">{place.status ?? 'Open data'}</Badge>
                 <PlaceIcon className="result-icon" size={18} />
               </button>
             )
@@ -327,7 +336,11 @@ function ExploreMap() {
         </div>
 
         <div className="panel-footer-row">
-          <span>{isLoading ? 'Loading nearby options' : `Showing ${filteredPlaces.length} nearby options`}</span>
+          <span>
+            {isLoading
+              ? 'Loading nearby options'
+              : `Showing ${visiblePlaces.length} of ${filteredPlaces.length} options`}
+          </span>
           <span>{selectedDuration} min break</span>
           <Link to="/mission">View mission options</Link>
         </div>
@@ -346,22 +359,22 @@ function ExploreMap() {
 
           <div className="selected-title-row">
             <span className={`result-number ${selectedPlace.markerTone}`}>
-              {selectedPlace.marker}
+              {visiblePlaces.find((place) => place.id === selectedPlace.id)?.displayMarker ?? selectedPlace.marker}
             </span>
             <div>
               <h2>{selectedPlace.name}</h2>
-              <Badge variant="success">{selectedPlace.status}</Badge>
+              <Badge variant="success">{selectedPlace.status ?? 'Open data'}</Badge>
             </div>
           </div>
 
           <div className="selected-detail-list">
             <span>
               <MapPin size={16} />
-              {selectedPlace.address}
+              {selectedPlace.address ?? 'Address unavailable'}
             </span>
             <span>
               <Navigation size={16} />
-              {selectedPlace.distance}
+              {selectedPlace.distance ?? 'Distance unavailable'}
             </span>
             <span>
               <Clock3 size={16} />
