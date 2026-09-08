@@ -24,7 +24,6 @@ const navItems = [
   { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
   { to: '/planner', label: 'Planner', icon: CalendarDays },
-  { to: '/privacy', label: 'Privacy', icon: ShieldCheck },
 ]
 
 function App() {
@@ -64,6 +63,23 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </main>
+
+      <footer className="footer" aria-label="Site information">
+        <div className="footer-content">
+          <Link className="footer-brand" to="/" aria-label="MoveBreak home">
+            <span className="footer-brand-mark" aria-hidden="true">
+              <Sprout size={18} strokeWidth={2.3} />
+            </span>
+            <span>© 2026 MoveBreak</span>
+          </Link>
+          <nav className="footer-links" aria-label="Footer navigation">
+            <NavLink to="/privacy">
+              <ShieldCheck size={15} aria-hidden="true" />
+              Privacy
+            </NavLink>
+          </nav>
+        </div>
+      </footer>
     </div>
   )
 }
