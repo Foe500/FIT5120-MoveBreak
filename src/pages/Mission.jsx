@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
@@ -12,6 +12,7 @@ import {
   MapPin,
   Shuffle,
   TimerReset,
+  X,
   Zap,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -97,6 +98,7 @@ function Mission() {
   const [need, setNeed] = useState('Low energy')
   const [mission, setMission] = useState(null)
   const [isSurpriseRecommendation, setIsSurpriseRecommendation] = useState(false)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const selectedPlace = mission?.place ?? mapPlaces[0]
@@ -111,15 +113,29 @@ function Mission() {
       { label: 'Walk back', duration: 4 },
     ]
   const flowTarget = getFlowTarget(movementType, duration)
-  const primaryActionLabel = isSurpriseRecommendation
-    ? 'Start Recommendation'
-    : `Open ${movementType === 'Indoor' ? 'Activity Library' : 'Explore Map'}`
-  const PrimaryActionIcon = movementType === 'Indoor' ? Armchair : Map
+  const isIndoor = movementType === 'Indoor'
+  const primaryActionLabel = isIndoor
+    ? 'Open activity'
+    : isSurpriseRecommendation
+      ? 'Start recommendation'
+      : 'Open map'
+  const PrimaryActionIcon = isIndoor ? Armchair : Map
   const currentNeedOptions = movementType === 'Indoor' ? needOptions : outdoorNeedOptions
   const needQuestion =
     movementType === 'Indoor'
       ? 'What do you need?'
       : 'What kind of outdoor reset do you want?'
+
+  useEffect(() => {
+    function closePreviewOnEscape(event) {
+      if (event.key === 'Escape') {
+        setIsPreviewOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', closePreviewOnEscape)
+    return () => window.removeEventListener('keydown', closePreviewOnEscape)
+  }, [])
 
   function handleMovementTypeChange(nextMovementType) {
     setMovementType(nextMovementType)
@@ -166,6 +182,7 @@ function Mission() {
 
   function handleShowOptions() {
     setIsSurpriseRecommendation(false)
+    setIsPreviewOpen(true)
     loadMission()
   }
 
@@ -272,10 +289,26 @@ function Mission() {
           </Card>
         </div>
 
-        <Card className="mission-preview-card">
+        {isPreviewOpen ? (
+          <div
+            aria-labelledby="mission-preview-title"
+            className="mission-preview-modal"
+            onMouseDown={() => setIsPreviewOpen(false)}
+            role="dialog"
+            aria-modal="true"
+          >
+          <Card className="mission-preview-card" onMouseDown={(event) => event.stopPropagation()}>
+            <button
+              aria-label="Close mission preview"
+              className="mission-preview-close"
+              onClick={() => setIsPreviewOpen(false)}
+              type="button"
+            >
+              <X size={19} aria-hidden="true" />
+            </button>
           <div className="title-with-icon">
             <MapPin size={18} />
-            <h2>Your mission preview</h2>
+            <h2 id="mission-preview-title">Your mission preview</h2>
           </div>
 
           <div className="preview-panel">
@@ -293,31 +326,41 @@ function Mission() {
               </Badge>
             </div>
 
-            <div className="preview-map">
-              <MapContainer
-                center={melbourneCenter}
-                className="mission-preview-leaflet-map"
-                dragging={false}
-                scrollWheelZoom={false}
-                zoom={14}
-                zoomControl={false}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Marker
-                  icon={createMarkerIcon(selectedPlace.marker, selectedPlace.markerTone)}
-                  position={selectedPlace.position}
+            {isIndoor ? (
+              <div className="indoor-mission-preview">
+                <Armchair size={26} aria-hidden="true" />
+                <div>
+                  <strong>Recommended indoor activity</strong>
+                  <span>Designed for your desk or workspace.</span>
+                </div>
+              </div>
+            ) : (
+              <div className="preview-map">
+                <MapContainer
+                  center={melbourneCenter}
+                  className="mission-preview-leaflet-map"
+                  dragging={false}
+                  scrollWheelZoom={false}
+                  zoom={14}
+                  zoomControl={false}
                 >
-                  <Popup>
-                    <strong>{selectedPlace.name}</strong>
-                    <br />
-                    {selectedPlace.distance}
-                  </Popup>
-                </Marker>
-              </MapContainer>
-            </div>
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker
+                    icon={createMarkerIcon(selectedPlace.marker, selectedPlace.markerTone)}
+                    position={selectedPlace.position}
+                  >
+                    <Popup>
+                      <strong>{selectedPlace.name}</strong>
+                      <br />
+                      {selectedPlace.distance}
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+            )}
 
             <div className="route-breakdown">
               {previewSteps.map((step) => (
@@ -344,6 +387,8 @@ function Mission() {
             </p>
           </div>
         </Card>
+          </div>
+        ) : null}
       </div>
     </section>
   )
