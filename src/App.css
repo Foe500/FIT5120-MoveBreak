@@ -3819,6 +3819,82 @@ main {
   font-size: 0.82rem;
 }
 
+/* Persistent privacy link at the bottom of the application. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  padding: 1.4rem max(1.25rem, calc((100vw - 1180px) / 2));
+  background: #0d1117;
+}
+
+.footer-content,
+.footer-brand,
+.footer-links,
+.footer a {
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-content {
+  width: 100%;
+  gap: 0.45rem;
+}
+
+.footer-brand,
+.footer-links {
+  gap: 0.9rem;
+}
+
+.footer-brand {
+  color: #9ba4b3;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-brand:hover {
+  color: #ffffff;
+}
+
+.footer-brand-mark {
+  display: grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  place-items: center;
+  border: 1px solid #46505f;
+  border-radius: 999px;
+  color: #c8d9c3;
+}
+
+.footer a {
+  gap: 0.4rem;
+  color: #9ba4b3;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer a:hover,
+.footer a.active {
+  color: #ffffff;
+}
+
+@media (max-width: 520px) {
+  .footer-content {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 760px) {
   .privacy-page {
     width: min(100% - 1.25rem, 1040px);
