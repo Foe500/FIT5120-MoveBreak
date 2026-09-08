@@ -45,6 +45,9 @@ def activity_to_dict(a: Activity) -> dict:
         "category": a.category,
         "intensity": a.intensity,
         "imageUrl": a.imageUrl,
+        "steps": a.steps,
+        "safetyNotes": a.safetyNotes,
+        "demoInstruction": a.demoInstruction,
     }
 
 

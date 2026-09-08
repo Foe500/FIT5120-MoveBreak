@@ -2159,6 +2159,13 @@ main {
   padding-left: 1.15rem;
 }
 
+.activity-step-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .activity-safety-list {
   padding-left: 0;
   list-style: none;
@@ -2316,9 +2323,20 @@ main {
 
 .guided-break-steps li {
   display: grid;
-  grid-template-columns: 1.8rem minmax(0, 1fr);
+  grid-template-columns: 1.8rem minmax(0, 1fr) auto;
   gap: 0.65rem;
   align-items: start;
+}
+
+.guided-break-steps li small {
+  color: #5f6f8a;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.guided-break-steps li.active small {
+  color: #08713f;
+  font-weight: 700;
 }
 
 .guided-break-steps li span {
