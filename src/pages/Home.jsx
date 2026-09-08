@@ -1,7 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
-  ArrowRight,
   CheckCircle2,
   HeartPulse,
   Smile,
@@ -65,10 +63,6 @@ function Home() {
             <span className="section-kicker">How it works</span>
             <h2 id="how-it-works-title">Your reset in three simple steps</h2>
           </div>
-          <Link className="section-text-link" to="/mission">
-            Find my break
-            <ArrowRight size={16} />
-          </Link>
         </div>
 
         <div className="journey-step-grid">
@@ -103,10 +97,6 @@ function Home() {
         <HeartPulse size={18} />
         <strong>Small breaks. Big difference.</strong>
         <span>Short breaks improve focus, wellbeing and bring more energy to your day.</span>
-        <Link to="/mission">
-          Find a break
-          <ArrowRight size={15} />
-        </Link>
       </aside>
     </section>
   )
