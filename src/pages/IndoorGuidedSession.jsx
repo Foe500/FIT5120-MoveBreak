@@ -285,7 +285,10 @@ function IndoorGuidedSession() {
                     <span>{activityIndex + 1}</span>
                     <div>
                       <strong>{activity.title}</strong>
-                      <small>{formatTime(activity.steps.reduce((sum, step) => sum + step.seconds, 0))}</small>
+                      <small>
+                        <Clock3 size={12} />
+                        {formatTime(activity.steps.reduce((sum, step) => sum + step.seconds, 0))} total
+                      </small>
                     </div>
                   </div>
 
