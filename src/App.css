@@ -2366,6 +2366,110 @@ main {
   font-weight: 800;
 }
 
+.session-activity-list {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.session-activity {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(190, 213, 242, 0.6);
+}
+
+.session-activity:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.session-activity-header {
+  display: grid;
+  grid-template-columns: 1.8rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.session-activity-header span {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #9db0c9;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.session-activity-header > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.session-activity-header strong {
+  color: #425674;
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-activity-header small {
+  flex-shrink: 0;
+  color: #7c8aa3;
+  font-size: 0.78rem;
+}
+
+.session-activity.active .session-activity-header span {
+  background: #08713f;
+}
+
+.session-activity.active .session-activity-header strong {
+  color: #10275b;
+  font-weight: 800;
+}
+
+.session-activity.done .session-activity-header span {
+  background: #bcd0c2;
+}
+
+.session-activity.done .session-activity-header strong {
+  color: #7c8aa3;
+}
+
+.session-step-list {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  margin-left: 2.45rem;
+  padding: 0;
+  list-style: none;
+}
+
+.session-step-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #7c8aa3;
+  font-size: 0.8rem;
+}
+
+.session-step-list li.done {
+  color: #a9b4c4;
+  text-decoration: line-through;
+}
+
+.session-step-list li.active {
+  color: #10275b;
+  font-weight: 700;
+}
+
 .guided-break-note {
   display: flex;
   gap: 0.45rem;
@@ -3999,6 +4103,59 @@ main {
 .indoor-mission-preview span {
   color: #55735b;
   font-size: 0.84rem;
+}
+
+.indoor-session-preview-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.indoor-session-preview-list li {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d5e2d2;
+  border-radius: 0.65rem;
+  background: #e8efe4;
+}
+
+.indoor-session-preview-list li span {
+  display: grid;
+  width: 1.6rem;
+  height: 1.6rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #08713f;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.indoor-session-preview-list li div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.indoor-session-preview-list li strong {
+  color: #17365f;
+  font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.indoor-session-preview-list li small {
+  flex-shrink: 0;
+  color: #55735b;
+  font-size: 0.78rem;
 }
 
 .mission-preview-close {

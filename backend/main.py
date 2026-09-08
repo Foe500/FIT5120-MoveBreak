@@ -166,3 +166,37 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
             {"label": "Move gently", "duration": activity["duration"]},
         ],
     }
+
+
+@app.post("/missions/recommend-session")
+def recommend_indoor_session(request: MissionRequest, db: Session = Depends(get_db)):
+    """Picks several indoor activities to chain into one guided session,
+    filling roughly the requested duration using each activity's real
+    step-by-step time (not the duration category)."""
+    activities = [activity_to_dict(a) for a in db.query(Activity).all()]
+
+    indoor_activities = [a for a in activities if a["setting"].lower() == "indoor"]
+    matching_activities = [a for a in indoor_activities if matches_need(a, request.need)]
+    pool = matching_activities if matching_activities else indoor_activities
+
+    random.shuffle(pool)
+
+    target_seconds = request.duration * 60
+    selected = []
+    total_seconds = 0
+
+    for activity in pool:
+        step_seconds = sum(step["seconds"] for step in (activity["steps"] or []))
+        if not step_seconds:
+            continue
+
+        selected.append(activity)
+        total_seconds += step_seconds
+
+        if total_seconds >= target_seconds:
+            break
+
+    return {
+        "activities": selected,
+        "totalSeconds": total_seconds,
+    }

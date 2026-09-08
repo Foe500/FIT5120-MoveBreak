@@ -15,6 +15,7 @@ import ExploreMap from './pages/ExploreMap.jsx'
 import ActivityLibrary from './pages/ActivityLibrary.jsx'
 import ActivityDetail from './pages/ActivityDetail.jsx'
 import IndoorGuidedBreak from './pages/IndoorGuidedBreak.jsx'
+import IndoorGuidedSession from './pages/IndoorGuidedSession.jsx'
 import Planner from './pages/Planner.jsx'
 import Privacy from './pages/Privacy.jsx'
 
@@ -59,6 +60,7 @@ function App() {
           <Route path="/activities" element={<ActivityLibrary />} />
           <Route path="/activities/:activityId" element={<ActivityDetail />} />
           <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
+          <Route path="/guided/indoor-session" element={<IndoorGuidedSession />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/privacy" element={<Privacy />} />
         </Routes>
