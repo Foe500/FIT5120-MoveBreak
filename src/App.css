@@ -2471,6 +2471,26 @@ main {
   font-weight: 700;
 }
 
+/* The legacy .guided-break-steps li p / li.active p rules (for the
+   single-activity page) directly target <p>, which wins over these
+   inherited li colors regardless of the li's own specificity — so the
+   step text itself needs its own explicit color per state, specific
+   enough to beat .guided-break-steps li.active p (0,2,2). */
+.session-step-list li p {
+  color: #7c8aa3;
+  font-weight: 400;
+}
+
+.session-step-list li.done p {
+  color: #a9b4c4;
+  font-weight: 400;
+}
+
+.session-step-list li.active p {
+  color: #10275b;
+  font-weight: 700;
+}
+
 .guided-break-note {
   display: flex;
   gap: 0.45rem;
