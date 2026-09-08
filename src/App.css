@@ -1347,14 +1347,11 @@ main {
   font-weight: 750;
 }
 
-.preview-secondary-button {
-  width: 100%;
-  margin-top: 0.72rem;
-}
-
 .return-note {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   gap: 0.32rem;
   margin-top: 0.75rem;
   color: #6c7890;
@@ -1896,7 +1893,7 @@ main {
 
 .activity-filter-bar {
   display: grid;
-  grid-template-columns: minmax(12rem, 1.2fr) 7.5rem auto auto auto;
+  grid-template-columns: minmax(12rem, 1.2fr) 8.5rem 8.5rem 9.5rem auto;
   gap: 0.65rem;
   align-items: center;
   padding: 0.7rem;
@@ -1907,7 +1904,7 @@ main {
 }
 
 .activity-search-field,
-.area-filter {
+.activity-filter-select {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -1920,38 +1917,10 @@ main {
   font-size: 0.8rem;
 }
 
-.area-filter {
-  justify-content: space-between;
+.activity-filter-select {
+  width: 100%;
   color: #344662;
   font-weight: 800;
-}
-
-.activity-pill-group {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  border: 1px solid #d6e7fb;
-  border-radius: 0.45rem;
-}
-
-.activity-pill-group button {
-  min-height: 2.45rem;
-  border: 0;
-  border-right: 1px solid #e4eaf4;
-  padding: 0 0.8rem;
-  color: #344662;
-  background: #ffffff;
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.activity-pill-group button:last-child {
-  border-right: 0;
-}
-
-.activity-pill-group .selected {
-  color: #ffffff;
-  background: #0b66df;
 }
 
 .clear-filter-button {
@@ -3338,7 +3307,7 @@ main {
 }
 
 .how-it-works {
-  padding: 5rem 0 4.25rem;
+  padding: 5rem 0 2rem;
 }
 
 .section-heading-row {
@@ -3513,7 +3482,7 @@ main {
 .home-redesign .dashboard-bottom {
   grid-template-columns: 0.95fr 1.1fr 1.2fr;
   gap: 1rem;
-  margin-top: 4rem;
+  margin-top: 1.5rem;
 }
 
 .home-redesign .mini-card {
@@ -3819,6 +3788,82 @@ main {
   font-size: 0.82rem;
 }
 
+/* Persistent privacy link at the bottom of the application. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  padding: 1.4rem max(1.25rem, calc((100vw - 1180px) / 2));
+  background: #0d1117;
+}
+
+.footer-content,
+.footer-brand,
+.footer-links,
+.footer a {
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-content {
+  width: 100%;
+  gap: 0.45rem;
+}
+
+.footer-brand,
+.footer-links {
+  gap: 0.9rem;
+}
+
+.footer-brand {
+  color: #9ba4b3;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-brand:hover {
+  color: #ffffff;
+}
+
+.footer-brand-mark {
+  display: grid;
+  width: 1.7rem;
+  height: 1.7rem;
+  place-items: center;
+  border: 1px solid #46505f;
+  border-radius: 999px;
+  color: #c8d9c3;
+}
+
+.footer a {
+  gap: 0.4rem;
+  color: #9ba4b3;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer a:hover,
+.footer a.active {
+  color: #ffffff;
+}
+
+@media (max-width: 520px) {
+  .footer-content {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 760px) {
   .privacy-page {
     width: min(100% - 1.25rem, 1040px);
@@ -3894,8 +3939,69 @@ main {
 
 /* Mission builder */
 .mission-shell {
-  grid-template-columns: minmax(0, 1.25fr) minmax(20rem, 0.75fr);
-  gap: 1.25rem;
+  display: block;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.mission-preview-modal {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(13, 17, 23, 0.58);
+}
+
+.mission-preview-modal .mission-preview-card {
+  position: relative;
+  width: min(100%, 34rem);
+  max-height: min(44rem, calc(100vh - 3rem));
+  overflow-y: auto;
+}
+
+.indoor-mission-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 0.9rem;
+  padding: 1rem;
+  border: 1px solid #d5e2d2;
+  border-radius: 0.8rem;
+  color: #315b3c;
+  background: #e8efe4;
+}
+
+.indoor-mission-preview > div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.indoor-mission-preview span {
+  color: #55735b;
+  font-size: 0.84rem;
+}
+
+.mission-preview-close {
+  position: absolute;
+  z-index: 2;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid #d8d5ce;
+  border-radius: 999px;
+  color: #53606d;
+  background: #fffdf9;
+}
+
+.mission-preview-close:hover {
+  color: #17365f;
+  border-color: #b9cbb8;
+  background: #eef3ea;
 }
 
 .mission-builder-card,
@@ -4110,22 +4216,10 @@ main {
 }
 
 .activity-search-field,
-.area-filter,
-.activity-pill-group {
+.activity-filter-select {
   border-color: #ded9d0;
   border-radius: 0.7rem;
   background: #fffdf9;
-}
-
-.activity-pill-group button {
-  border-color: #e7e1d6;
-  color: #53606d;
-  background: #fffdf9;
-}
-
-.activity-pill-group .selected {
-  color: #17365f;
-  background: #dfeadf;
 }
 
 .clear-filter-button,

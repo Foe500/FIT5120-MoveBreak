@@ -114,7 +114,7 @@ function ActivityLibrary() {
 
         <select
           aria-label="Filter by body area"
-          className="area-filter"
+          className="activity-filter-select"
           onChange={(event) => setSelectedArea(event.target.value)}
           value={selectedArea}
         >
@@ -125,31 +125,31 @@ function ActivityLibrary() {
           ))}
         </select>
 
-        <div className="activity-pill-group" aria-label="Duration filters">
+        <select
+          aria-label="Filter by duration"
+          className="activity-filter-select"
+          onChange={(event) => setSelectedDuration(event.target.value === 'Any' ? 'Any' : Number(event.target.value))}
+          value={selectedDuration}
+        >
           {durationFilters.map((filter) => (
-            <button
-              className={filter === selectedDuration ? 'selected' : ''}
-              key={filter}
-              onClick={() => setSelectedDuration(filter)}
-              type="button"
-            >
-              {filter === 'Any' ? 'Any' : `${filter} min`}
-            </button>
+            <option key={filter} value={filter}>
+              {filter === 'Any' ? 'Any duration' : `${filter} min`}
+            </option>
           ))}
-        </div>
+        </select>
 
-        <div className="activity-pill-group" aria-label="Posture filters">
+        <select
+          aria-label="Filter by posture"
+          className="activity-filter-select"
+          onChange={(event) => setSelectedPosture(event.target.value)}
+          value={selectedPosture}
+        >
           {postureFilters.map((filter) => (
-            <button
-              className={filter === selectedPosture ? 'selected' : ''}
-              key={filter}
-              onClick={() => setSelectedPosture(filter)}
-              type="button"
-            >
+            <option key={filter} value={filter}>
               {filter}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
 
         <button className="clear-filter-button" onClick={handleClearFilters} type="button">
           Clear filters
