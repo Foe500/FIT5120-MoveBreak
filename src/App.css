@@ -1347,14 +1347,11 @@ main {
   font-weight: 750;
 }
 
-.preview-secondary-button {
-  width: 100%;
-  margin-top: 0.72rem;
-}
-
 .return-note {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   gap: 0.32rem;
   margin-top: 0.75rem;
   color: #6c7890;
@@ -3338,7 +3335,7 @@ main {
 }
 
 .how-it-works {
-  padding: 5rem 0 4.25rem;
+  padding: 5rem 0 2rem;
 }
 
 .section-heading-row {
@@ -3513,7 +3510,7 @@ main {
 .home-redesign .dashboard-bottom {
   grid-template-columns: 0.95fr 1.1fr 1.2fr;
   gap: 1rem;
-  margin-top: 4rem;
+  margin-top: 1.5rem;
 }
 
 .home-redesign .mini-card {

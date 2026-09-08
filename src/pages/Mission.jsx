@@ -178,17 +178,6 @@ function Mission() {
     loadMission(nextMovementType)
   }
 
-  function handleAlternativePreview() {
-    if (isSurpriseRecommendation) {
-      handleSurpriseMe()
-      return
-    }
-
-    const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
-    handleMovementTypeChange(nextMovementType)
-    loadMission(nextMovementType)
-  }
-
   return (
     <section className="page mission-page">
       <div className="mission-shell">
@@ -279,13 +268,6 @@ function Mission() {
                 <Footprints size={17} />
                 {isLoading ? 'Finding options' : 'Show my options'}
               </Button>
-
-              <Button asChild className="mt-[0.72rem] w-full" type="button" variant="success">
-                <Link to={flowTarget}>
-                  {movementType === 'Indoor' ? <Armchair size={17} /> : <Map size={17} />}
-                  Continue with {movementType}
-                </Link>
-              </Button>
             </div>
           </Card>
         </div>
@@ -354,17 +336,6 @@ function Mission() {
                 <PrimaryActionIcon size={17} />
                 {primaryActionLabel}
               </Link>
-            </Button>
-            <Button
-              className="preview-secondary-button"
-              onClick={handleAlternativePreview}
-              variant="outline"
-              type="button"
-            >
-              {isSurpriseRecommendation ? <Shuffle size={17} /> : <Armchair size={17} />}
-              {isSurpriseRecommendation
-                ? 'Try Another'
-                : `Try ${movementType === 'Indoor' ? 'outdoor' : 'indoor'} instead`}
             </Button>
 
             <p className="return-note">

@@ -35,7 +35,7 @@ function Home() {
         <div className="home-hero-copy">
           <span className="home-eyebrow">
             <Sparkles size={15} />
-            A small pause for a better study day
+            A small pause for a better work day
           </span>
           <BreakHero
             durationError={durationError}
@@ -45,15 +45,15 @@ function Home() {
           />
         </div>
 
-        <div className="home-hero-visual" aria-label="A student taking a movement break beside a desk">
+        <div className="home-hero-visual" aria-label="A person taking a movement break beside a work desk">
           <span className="hero-shape hero-shape-blue" aria-hidden="true"></span>
           <span className="hero-shape hero-shape-green" aria-hidden="true"></span>
-          <img src={shoulderReleaseImage} alt="Person stretching beside a study desk" />
+          <img src={shoulderReleaseImage} alt="Person stretching beside a work desk" />
           <div className="hero-benefit-card">
             <CheckCircle2 size={20} />
             <div>
               <strong>Short, guided and achievable</strong>
-              <span>2–15 minute resets for busy study days</span>
+              <span>2–15 minute resets for busy work days</span>
             </div>
           </div>
         </div>
