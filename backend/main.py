@@ -1,23 +1,53 @@
 import os
 import random
+import secrets
+import string
+import uuid
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
-from database import get_db
-from models import Activity, Place
+from database import engine, get_db, Base
+from models import Activity, Place, Team, TeamMember, SessionLog
+
+# Creates any tables that don't exist yet (e.g. the team/leaderboard
+# tables added after activities/places already existed) without
+# touching tables that are already there.
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="MoveBreak API")
 DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+
+JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))
+
+
+def generate_join_code(length: int = 6) -> str:
+    return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
 
 
 class MissionRequest(BaseModel):
     duration: int = 10
     setting: str = "Indoor"
     need: Optional[str] = None
+
+
+class CreateTeamRequest(BaseModel):
+    teamName: str
+
+
+class JoinTeamRequest(BaseModel):
+    nickname: str
+
+
+class LogSessionRequest(BaseModel):
+    memberId: str
+    setting: str
+    label: Optional[str] = None
+    seconds: int
 
 
 app.add_middleware(
@@ -199,4 +229,128 @@ def recommend_indoor_session(request: MissionRequest, db: Session = Depends(get_
     return {
         "activities": selected,
         "totalSeconds": total_seconds,
+    }
+
+
+def get_team_by_code(join_code: str, db: Session) -> Team:
+    team = db.query(Team).filter(Team.join_code == join_code.upper()).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return team
+
+
+@app.post("/teams")
+def create_team(request: CreateTeamRequest, db: Session = Depends(get_db)):
+    team_name = request.teamName.strip()
+    if not team_name:
+        raise HTTPException(status_code=400, detail="Team name is required")
+
+    # Extremely unlikely to collide, but avoid handing out a code already in use.
+    join_code = generate_join_code()
+    while db.query(Team).filter(Team.join_code == join_code).first():
+        join_code = generate_join_code()
+
+    team = Team(id=uuid.uuid4().hex, name=team_name, join_code=join_code)
+    db.add(team)
+    db.commit()
+    db.refresh(team)
+
+    return {"id": team.id, "name": team.name, "joinCode": team.join_code}
+
+
+@app.post("/teams/{join_code}/join")
+def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(get_db)):
+    nickname = request.nickname.strip()
+    if not nickname:
+        raise HTTPException(status_code=400, detail="Nickname is required")
+
+    team = get_team_by_code(join_code, db)
+
+    member = TeamMember(id=uuid.uuid4().hex, team_id=team.id, nickname=nickname)
+    db.add(member)
+    db.commit()
+    db.refresh(member)
+
+    return {
+        "memberId": member.id,
+        "nickname": member.nickname,
+        "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
+    }
+
+
+@app.get("/teams/{join_code}")
+def get_team(join_code: str, db: Session = Depends(get_db)):
+    team = get_team_by_code(join_code, db)
+    member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
+
+    return {
+        "id": team.id,
+        "name": team.name,
+        "joinCode": team.join_code,
+        "memberCount": member_count,
+    }
+
+
+@app.post("/teams/{join_code}/log-session")
+def log_session(join_code: str, request: LogSessionRequest, db: Session = Depends(get_db)):
+    team = get_team_by_code(join_code, db)
+
+    member = (
+        db.query(TeamMember)
+        .filter(TeamMember.id == request.memberId, TeamMember.team_id == team.id)
+        .first()
+    )
+    if not member:
+        raise HTTPException(status_code=404, detail="Team member not found")
+
+    if request.seconds <= 0:
+        raise HTTPException(status_code=400, detail="seconds must be positive")
+
+    log = SessionLog(
+        id=uuid.uuid4().hex,
+        team_id=team.id,
+        member_id=member.id,
+        setting=request.setting,
+        label=request.label,
+        seconds=request.seconds,
+    )
+    db.add(log)
+    db.commit()
+
+    return {"status": "logged"}
+
+
+@app.get("/teams/{join_code}/leaderboard")
+def get_leaderboard(join_code: str, db: Session = Depends(get_db)):
+    team = get_team_by_code(join_code, db)
+
+    members = db.query(TeamMember).filter(TeamMember.team_id == team.id).all()
+
+    totals = dict(
+        db.query(SessionLog.member_id, func.sum(SessionLog.seconds))
+        .filter(SessionLog.team_id == team.id)
+        .group_by(SessionLog.member_id)
+        .all()
+    )
+    counts = dict(
+        db.query(SessionLog.member_id, func.count(SessionLog.id))
+        .filter(SessionLog.team_id == team.id)
+        .group_by(SessionLog.member_id)
+        .all()
+    )
+
+    rows = [
+        {
+            "memberId": member.id,
+            "nickname": member.nickname,
+            "totalSeconds": totals.get(member.id, 0),
+            "sessionsCompleted": counts.get(member.id, 0),
+        }
+        for member in members
+    ]
+    rows.sort(key=lambda row: row["totalSeconds"], reverse=True)
+
+    return {
+        "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
+        "members": rows,
     }

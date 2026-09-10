@@ -7,6 +7,7 @@ import {
   Sparkles,
   Sprout,
   StretchHorizontal,
+  Trophy,
 } from 'lucide-react'
 import './App.css'
 import Home from './pages/Home.jsx'
@@ -16,6 +17,7 @@ import ActivityLibrary from './pages/ActivityLibrary.jsx'
 import ActivityDetail from './pages/ActivityDetail.jsx'
 import IndoorGuidedBreak from './pages/IndoorGuidedBreak.jsx'
 import IndoorGuidedSession from './pages/IndoorGuidedSession.jsx'
+import Team from './pages/Team.jsx'
 import Planner from './pages/Planner.jsx'
 import Privacy from './pages/Privacy.jsx'
 
@@ -24,6 +26,7 @@ const navItems = [
   { to: '/mission', label: 'Find a break', icon: Sparkles },
   { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
+  { to: '/team', label: 'Team', icon: Trophy },
   { to: '/planner', label: 'Planner', icon: CalendarDays },
 ]
 
@@ -61,6 +64,7 @@ function App() {
           <Route path="/activities/:activityId" element={<ActivityDetail />} />
           <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
           <Route path="/guided/indoor-session" element={<IndoorGuidedSession />} />
+          <Route path="/team" element={<Team />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/privacy" element={<Privacy />} />
         </Routes>
