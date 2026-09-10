@@ -237,9 +237,12 @@ function TeamLeaderboard({ identity, onLeave }) {
                   {member.nickname}
                   {member.memberId === identity.memberId ? ' (you)' : ''}
                 </strong>
-                <small>{member.sessionsCompleted} session{member.sessionsCompleted === 1 ? '' : 's'} completed</small>
+                <small>
+                  {member.sessionsCompleted} session{member.sessionsCompleted === 1 ? '' : 's'} ·{' '}
+                  {formatMinutes(member.totalSeconds)} moved
+                </small>
               </div>
-              <Badge variant="success">{formatMinutes(member.totalSeconds)}</Badge>
+              <Badge variant="success">{member.points} pts</Badge>
             </li>
           ))}
         </ol>

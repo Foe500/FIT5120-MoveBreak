@@ -24,6 +24,12 @@ DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))
 
+# Leaderboard scoring: a flat bonus for completing a break, plus a small
+# amount per second actually moved, so showing up often matters more
+# than just racking up minutes in one long session.
+POINTS_PER_SESSION = 10
+POINTS_SECONDS_DIVISOR = 10
+
 
 def generate_join_code(length: int = 6) -> str:
     return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
@@ -339,16 +345,24 @@ def get_leaderboard(join_code: str, db: Session = Depends(get_db)):
         .all()
     )
 
-    rows = [
-        {
-            "memberId": member.id,
-            "nickname": member.nickname,
-            "totalSeconds": totals.get(member.id, 0),
-            "sessionsCompleted": counts.get(member.id, 0),
-        }
-        for member in members
-    ]
-    rows.sort(key=lambda row: row["totalSeconds"], reverse=True)
+    rows = []
+    for member in members:
+        total_seconds = totals.get(member.id, 0)
+        sessions_completed = counts.get(member.id, 0)
+        # 10 points for showing up to a break, plus 1 point per 10 seconds
+        # actually moved — rewards frequent short breaks, not just minutes.
+        points = sessions_completed * POINTS_PER_SESSION + total_seconds // POINTS_SECONDS_DIVISOR
+
+        rows.append(
+            {
+                "memberId": member.id,
+                "nickname": member.nickname,
+                "totalSeconds": total_seconds,
+                "sessionsCompleted": sessions_completed,
+                "points": points,
+            }
+        )
+    rows.sort(key=lambda row: row["points"], reverse=True)
 
     return {
         "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
