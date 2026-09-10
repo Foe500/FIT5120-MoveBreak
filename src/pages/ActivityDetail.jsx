@@ -43,6 +43,15 @@ function getActivityVisual(activity) {
   return areaVisuals[activity.area] ?? categoryVisuals[activity.category] ?? Dumbbell
 }
 
+function formatStepDuration(seconds) {
+  if (seconds >= 60) {
+    const minutes = Math.floor(seconds / 60)
+    const remainder = seconds % 60
+    return remainder ? `${minutes}m ${remainder}s` : `${minutes} min`
+  }
+  return `${seconds} sec`
+}
+
 function ActivityDetail() {
   const { activityId } = useParams()
   const [activity, setActivity] = useState(null)
@@ -158,7 +167,13 @@ function ActivityDetail() {
             </div>
             <ol className="activity-step-list">
               {steps.map((step) => (
-                <li key={step}>{step}</li>
+                <li key={step.text}>
+                  <span>{step.text}</span>
+                  <Badge variant="secondary">
+                    <Clock3 size={12} />
+                    {formatStepDuration(step.seconds)}
+                  </Badge>
+                </li>
               ))}
             </ol>
           </Card>

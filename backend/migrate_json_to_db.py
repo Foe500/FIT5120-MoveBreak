@@ -57,6 +57,9 @@ def migrate():
                 category=entry["category"],
                 intensity=entry["intensity"],
                 imageUrl=entry.get("imageUrl"),  # optional field
+                steps=entry.get("steps"),
+                safetyNotes=entry.get("safetyNotes"),
+                demoInstruction=entry.get("demoInstruction"),
             ))
         print(f"  Inserted {len(activities_data)} activities")
 

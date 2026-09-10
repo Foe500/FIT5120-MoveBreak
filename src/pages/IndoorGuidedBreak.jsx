@@ -56,31 +56,32 @@ function IndoorGuidedBreak() {
   }, [activityId])
 
   const steps = activity?.steps ?? []
-  const stepDurationSeconds = steps.length
-    ? Math.max(1, Math.round((activity.duration * 60) / steps.length))
-    : 0
-  const totalSeconds = stepDurationSeconds * steps.length
-  const remainingSeconds = isComplete
-    ? 0
-    : Math.max(0, (steps.length - currentStepIndex - 1) * stepDurationSeconds + stepSecondsLeft)
+  const currentStepDurationSeconds = steps[currentStepIndex]?.seconds ?? 0
+  const totalSeconds = steps.reduce((sum, step) => sum + step.seconds, 0)
+  const remainingStepsSeconds = steps
+    .slice(currentStepIndex + 1)
+    .reduce((sum, step) => sum + step.seconds, 0)
+  const remainingSeconds = isComplete ? 0 : Math.max(0, remainingStepsSeconds + stepSecondsLeft)
   const progressPercent = totalSeconds
     ? Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100)
     : 0
-  const currentStep = steps[currentStepIndex] ?? 'Ready to begin.'
+  const currentStep = steps[currentStepIndex]?.text ?? 'Ready to begin.'
 
   useEffect(() => {
-    if (!activity || !stepDurationSeconds) {
+    if (!activity || !steps.length) {
       return
     }
 
     setCurrentStepIndex(0)
-    setStepSecondsLeft(stepDurationSeconds)
+    setStepSecondsLeft(steps[0].seconds)
     setIsTimerRunning(false)
     setIsComplete(false)
-  }, [activity, stepDurationSeconds])
+    // Only re-run when a different activity loads, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activity])
 
   useEffect(() => {
-    if (!isTimerRunning || isComplete || !stepDurationSeconds) {
+    if (!isTimerRunning || isComplete || !currentStepDurationSeconds) {
       return undefined
     }
 
@@ -97,18 +98,19 @@ function IndoorGuidedBreak() {
         }
 
         // Move to the next guided step when the current step timer reaches zero.
-        setCurrentStepIndex((stepIndex) => stepIndex + 1)
-        return stepDurationSeconds
+        const nextIndex = currentStepIndex + 1
+        setCurrentStepIndex(nextIndex)
+        return steps[nextIndex].seconds
       })
     }, 1000)
 
     return () => window.clearInterval(timer)
-  }, [currentStepIndex, isComplete, isTimerRunning, stepDurationSeconds, steps.length])
+  }, [currentStepIndex, isComplete, isTimerRunning, currentStepDurationSeconds, steps])
 
   function handleStartPause() {
     if (isComplete) {
       setCurrentStepIndex(0)
-      setStepSecondsLeft(stepDurationSeconds)
+      setStepSecondsLeft(steps[0]?.seconds ?? 0)
       setIsComplete(false)
       setIsTimerRunning(true)
       return
@@ -129,8 +131,9 @@ function IndoorGuidedBreak() {
       return
     }
 
-    setCurrentStepIndex((stepIndex) => stepIndex + 1)
-    setStepSecondsLeft(stepDurationSeconds)
+    const nextIndex = currentStepIndex + 1
+    setCurrentStepIndex(nextIndex)
+    setStepSecondsLeft(steps[nextIndex].seconds)
   }
 
   function handleFinish() {
@@ -237,10 +240,11 @@ function IndoorGuidedBreak() {
             {steps.map((step, index) => (
               <li
                 className={index === currentStepIndex && !isComplete ? 'active' : ''}
-                key={step}
+                key={step.text}
               >
                 <span>{index + 1}</span>
-                <p>{step}</p>
+                <p>{step.text}</p>
+                <small>{formatTime(step.seconds)}</small>
               </li>
             ))}
           </ol>

@@ -11,9 +11,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/desk-shoulder-release.png",
     "steps": [
-      "Sit tall with both feet flat on the floor.",
-      "Roll both shoulders backward slowly, then forward slowly.",
-      "Reach one arm across the chest, hold gently, then switch sides."
+      {
+        "text": "Sit tall with both feet flat on the floor.",
+        "seconds": 5
+      },
+      {
+        "text": "Roll both shoulders backward slowly, then forward slowly.",
+        "seconds": 25
+      },
+      {
+        "text": "Reach one arm across the chest, hold gently, then switch sides.",
+        "seconds": 15
+      }
     ],
     "safetyNotes": [
       "Keep the stretch gentle and avoid pulling on the neck.",
@@ -33,9 +42,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/seated-neck-roll.png",
     "steps": [
-      "Sit upright and relax your shoulders away from your ears.",
-      "Slowly tilt your head to one side and pause for a comfortable breath.",
-      "Return to centre, then repeat on the other side without forcing the range."
+      {
+        "text": "Sit upright and relax your shoulders away from your ears.",
+        "seconds": 5
+      },
+      {
+        "text": "Slowly tilt your head to one side and pause for a comfortable breath.",
+        "seconds": 20
+      },
+      {
+        "text": "Return to centre, then repeat on the other side without forcing the range.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Move slowly and avoid full circles if your neck feels sensitive.",
@@ -55,9 +73,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/standing-spine-twist.png",
     "steps": [
-      "Stand with feet hip-width apart and knees soft.",
-      "Place your hands lightly across your chest or on your hips.",
-      "Rotate gently from side to side, keeping the movement controlled."
+      {
+        "text": "Stand with feet hip-width apart and knees soft.",
+        "seconds": 5
+      },
+      {
+        "text": "Place your hands lightly across your chest or on your hips.",
+        "seconds": 10
+      },
+      {
+        "text": "Rotate gently from side to side, keeping the movement controlled.",
+        "seconds": 30
+      }
     ],
     "safetyNotes": [
       "Do not twist into pain or force your lower back.",
@@ -77,9 +104,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/chair-hip-flexor-stretch.png",
     "steps": [
-      "Sit near the front of a stable chair.",
-      "Slide one foot slightly back while keeping your chest lifted.",
-      "Hold the gentle hip stretch, then repeat on the other side."
+      {
+        "text": "Sit near the front of a stable chair.",
+        "seconds": 5
+      },
+      {
+        "text": "Slide one foot slightly back while keeping your chest lifted.",
+        "seconds": 20
+      },
+      {
+        "text": "Hold the gentle hip stretch, then repeat on the other side.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Use a stable chair and keep one foot grounded.",
@@ -99,9 +135,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/wrist-and-finger-release.png",
     "steps": [
-      "Extend one arm forward with the palm facing away.",
-      "Use the other hand to gently stretch the fingers back.",
-      "Circle both wrists slowly, then shake out the hands."
+      {
+        "text": "Extend one arm forward with the palm facing away.",
+        "seconds": 5
+      },
+      {
+        "text": "Use the other hand to gently stretch the fingers back.",
+        "seconds": 20
+      },
+      {
+        "text": "Circle both wrists slowly, then shake out the hands.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Keep pressure light and avoid pulling through pain.",
@@ -121,9 +166,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/20-20-20-eye-reset.png",
     "steps": [
-      "Look away from the screen toward something far away.",
-      "Keep your gaze relaxed for repeated 20-second intervals.",
-      "Blink slowly and soften your focus before returning to the screen."
+      {
+        "text": "Look away from the screen toward something far away.",
+        "seconds": 15
+      },
+      {
+        "text": "Keep your gaze relaxed for repeated 20-second intervals.",
+        "seconds": 20
+      },
+      {
+        "text": "Blink slowly and soften your focus before returning to the screen.",
+        "seconds": 10
+      }
     ],
     "safetyNotes": [
       "Do not stare into bright light or the sun.",
@@ -143,9 +197,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/box-breathing-reset.png",
     "steps": [
-      "Sit comfortably with your shoulders relaxed.",
-      "Inhale for four counts, hold for four, exhale for four, then hold for four.",
-      "Repeat the cycle at a calm pace until the break ends."
+      {
+        "text": "Sit comfortably with your shoulders relaxed.",
+        "seconds": 5
+      },
+      {
+        "text": "Inhale for four counts, hold for four, exhale for four, then hold for four.",
+        "seconds": 16
+      },
+      {
+        "text": "Repeat the cycle at a calm pace until the break ends.",
+        "seconds": 24
+      }
     ],
     "safetyNotes": [
       "Return to normal breathing if you feel light-headed.",
@@ -165,9 +228,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/standing-desk-mobility-flow.png",
     "steps": [
-      "Stand beside your desk with enough clear space.",
-      "Move through gentle shoulder rolls, spine bends and hip circles.",
-      "Finish with a slow full-body reach and relaxed breathing."
+      {
+        "text": "Stand beside your desk with enough clear space.",
+        "seconds": 5
+      },
+      {
+        "text": "Move through gentle shoulder rolls, spine bends and hip circles.",
+        "seconds": 25
+      },
+      {
+        "text": "Finish with a slow full-body reach and relaxed breathing.",
+        "seconds": 15
+      }
     ],
     "safetyNotes": [
       "Keep the range comfortable and controlled.",
@@ -187,9 +259,18 @@
     "intensity": "Moderate",
     "imageUrl": "/activity-images/calf-raise-set.png",
     "steps": [
-      "Stand tall near a wall or desk for light balance support.",
-      "Lift your heels slowly, pause briefly, then lower with control.",
-      "Repeat in small sets and rest whenever needed."
+      {
+        "text": "Stand tall near a wall or desk for light balance support.",
+        "seconds": 5
+      },
+      {
+        "text": "Lift your heels slowly, pause briefly, then lower with control.",
+        "seconds": 20
+      },
+      {
+        "text": "Repeat in small sets and rest whenever needed.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Hold support if balance feels uncertain.",
@@ -209,9 +290,18 @@
     "intensity": "Moderate",
     "imageUrl": "/activity-images/wall-push-up-set.png",
     "steps": [
-      "Stand facing a stable wall with hands at chest height.",
-      "Step back slightly and bend your elbows to move toward the wall.",
-      "Press back to standing tall and repeat at a steady pace."
+      {
+        "text": "Stand facing a stable wall with hands at chest height.",
+        "seconds": 5
+      },
+      {
+        "text": "Step back slightly and bend your elbows to move toward the wall.",
+        "seconds": 20
+      },
+      {
+        "text": "Press back to standing tall and repeat at a steady pace.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Keep wrists comfortable and shoulders relaxed.",
@@ -231,9 +321,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/seated-cat-cow-stretch.png",
     "steps": [
-      "Sit near the front of your chair with feet flat.",
-      "Round your upper back gently while tucking your chin slightly.",
-      "Lift your chest and soften your shoulder blades back, then repeat slowly."
+      {
+        "text": "Sit near the front of your chair with feet flat.",
+        "seconds": 5
+      },
+      {
+        "text": "Round your upper back gently while tucking your chin slightly.",
+        "seconds": 20
+      },
+      {
+        "text": "Lift your chest and soften your shoulder blades back, then repeat slowly.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Keep the movement gentle and avoid forcing your spine.",
@@ -253,9 +352,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/shoulder-and-chest-opener.png",
     "steps": [
-      "Stand tall and clasp your hands loosely behind your back if comfortable.",
-      "Draw your shoulders gently back and open the chest.",
-      "Release, roll the shoulders, and repeat with relaxed breathing."
+      {
+        "text": "Stand tall and clasp your hands loosely behind your back if comfortable.",
+        "seconds": 5
+      },
+      {
+        "text": "Draw your shoulders gently back and open the chest.",
+        "seconds": 20
+      },
+      {
+        "text": "Release, roll the shoulders, and repeat with relaxed breathing.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Avoid forcing your arms behind you.",
@@ -275,9 +383,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/guided-mindful-breathing.png",
     "steps": [
-      "Sit comfortably and place both feet on the floor.",
-      "Notice your breathing without trying to change it at first.",
-      "Slowly lengthen each exhale and return attention when your mind wanders."
+      {
+        "text": "Sit comfortably and place both feet on the floor.",
+        "seconds": 5
+      },
+      {
+        "text": "Notice your breathing without trying to change it at first.",
+        "seconds": 20
+      },
+      {
+        "text": "Slowly lengthen each exhale and return attention when your mind wanders.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Breathe naturally if paced breathing feels uncomfortable.",
@@ -297,9 +414,18 @@
     "intensity": "Moderate",
     "imageUrl": "/activity-images/office-stair-step-ups.png",
     "steps": [
-      "Find a clear stair or stable step and hold the rail if available.",
-      "Step up with one foot, bring the other foot up, then step down carefully.",
-      "Alternate leading legs and keep the pace comfortable."
+      {
+        "text": "Find a clear stair or stable step and hold the rail if available.",
+        "seconds": 5
+      },
+      {
+        "text": "Step up with one foot, bring the other foot up, then step down carefully.",
+        "seconds": 25
+      },
+      {
+        "text": "Alternate leading legs and keep the pace comfortable.",
+        "seconds": 15
+      }
     ],
     "safetyNotes": [
       "Use a handrail and avoid crowded stair areas.",
@@ -319,9 +445,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/posture-reset-routine.png",
     "steps": [
-      "Stand tall and gently stack ears, shoulders, hips and ankles.",
-      "Roll shoulders back, lightly brace your core, and soften your knees.",
-      "Hold the reset posture while taking several slow breaths."
+      {
+        "text": "Stand tall and gently stack ears, shoulders, hips and ankles.",
+        "seconds": 5
+      },
+      {
+        "text": "Roll shoulders back, lightly brace your core, and soften your knees.",
+        "seconds": 20
+      },
+      {
+        "text": "Hold the reset posture while taking several slow breaths.",
+        "seconds": 20
+      }
     ],
     "safetyNotes": [
       "Do not lock your knees or force your back into an arch.",
@@ -341,9 +476,18 @@
     "intensity": "Moderate",
     "imageUrl": "/activity-images/full-body-desk-circuit.png",
     "steps": [
-      "Clear space around your desk and start with gentle marching.",
-      "Move through wall push-ups, calf raises and shoulder rolls.",
-      "Finish with relaxed breathing and a short posture reset."
+      {
+        "text": "Clear space around your desk and start with gentle marching.",
+        "seconds": 10
+      },
+      {
+        "text": "Move through wall push-ups, calf raises and shoulder rolls.",
+        "seconds": 25
+      },
+      {
+        "text": "Finish with relaxed breathing and a short posture reset.",
+        "seconds": 10
+      }
     ],
     "safetyNotes": [
       "Keep the pace moderate and take breaks as needed.",
@@ -363,9 +507,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/extended-mobility-flow.png",
     "steps": [
-      "Start with slow neck turns and shoulder rolls.",
-      "Add gentle spine twists, hip circles and ankle movements.",
-      "Repeat the flow calmly, keeping each movement smooth."
+      {
+        "text": "Start with slow neck turns and shoulder rolls.",
+        "seconds": 15
+      },
+      {
+        "text": "Add gentle spine twists, hip circles and ankle movements.",
+        "seconds": 20
+      },
+      {
+        "text": "Repeat the flow calmly, keeping each movement smooth.",
+        "seconds": 10
+      }
     ],
     "safetyNotes": [
       "Stay within a comfortable range of motion.",
@@ -385,9 +538,18 @@
     "intensity": "Moderate",
     "imageUrl": "/activity-images/indoor-brisk-walk-loop.png",
     "steps": [
-      "Choose a clear indoor route such as a corridor or open floor area.",
-      "Walk at a brisk but conversational pace.",
-      "Slow down for the final minute and return safely to your workspace."
+      {
+        "text": "Choose a clear indoor route such as a corridor or open floor area.",
+        "seconds": 5
+      },
+      {
+        "text": "Walk at a brisk but conversational pace.",
+        "seconds": 30
+      },
+      {
+        "text": "Slow down for the final minute and return safely to your workspace.",
+        "seconds": 10
+      }
     ],
     "safetyNotes": [
       "Watch for people, doors and wet floors.",
@@ -407,9 +569,18 @@
     "intensity": "Low",
     "imageUrl": "/activity-images/meditation-and-breathwork.png",
     "steps": [
-      "Sit comfortably and let your hands rest naturally.",
-      "Follow a slow breathing rhythm while relaxing your jaw and shoulders.",
-      "Spend the final minute noticing how your body feels before returning to work."
+      {
+        "text": "Sit comfortably and let your hands rest naturally.",
+        "seconds": 5
+      },
+      {
+        "text": "Follow a slow breathing rhythm while relaxing your jaw and shoulders.",
+        "seconds": 25
+      },
+      {
+        "text": "Spend the final minute noticing how your body feels before returning to work.",
+        "seconds": 15
+      }
     ],
     "safetyNotes": [
       "Keep breathing natural and avoid holding the breath too long.",
@@ -429,9 +600,18 @@
     "intensity": "Moderate",
     "imageUrl": "/activity-images/lower-body-strength-set.png",
     "steps": [
-      "Stand with feet about hip-width apart and clear space around you.",
-      "Complete slow bodyweight squats, then step-back lunges if comfortable.",
-      "Rest between sets and finish with gentle leg shaking."
+      {
+        "text": "Stand with feet about hip-width apart and clear space around you.",
+        "seconds": 5
+      },
+      {
+        "text": "Complete slow bodyweight squats, then step-back lunges if comfortable.",
+        "seconds": 25
+      },
+      {
+        "text": "Rest between sets and finish with gentle leg shaking.",
+        "seconds": 15
+      }
     ],
     "safetyNotes": [
       "Keep knees comfortable and avoid deep ranges if they hurt.",
