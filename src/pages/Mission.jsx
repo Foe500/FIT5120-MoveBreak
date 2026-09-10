@@ -78,11 +78,25 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : 10
 }
 
-function getFlowTarget(movementType, duration) {
-  // Keep the selected duration in the URL so the next page can apply the same break condition.
-  const search = `?duration=${duration}`
+function getFlowTarget(movementType, duration, sessionActivities) {
+  if (movementType === 'Indoor') {
+    const ids = sessionActivities.map((activity) => activity.id).join(',')
+    return ids ? `/guided/indoor-session?ids=${ids}` : `/activities?duration=${duration}`
+  }
 
-  return movementType === 'Indoor' ? `/activities${search}` : `/explore${search}`
+  // Keep the selected duration in the URL so the next page can apply the same break condition.
+  return `/explore?duration=${duration}`
+}
+
+function formatSessionTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  if (!minutes) {
+    return `${seconds}s`
+  }
+
+  return seconds ? `${minutes}m ${seconds}s` : `${minutes} min`
 }
 
 function getSurpriseMovementType(currentMovementType) {
@@ -97,25 +111,34 @@ function Mission() {
   const [movementType, setMovementType] = useState('Outdoor')
   const [need, setNeed] = useState('Low energy')
   const [mission, setMission] = useState(null)
+  const [sessionActivities, setSessionActivities] = useState([])
+  const [sessionTotalSeconds, setSessionTotalSeconds] = useState(0)
   const [isSurpriseRecommendation, setIsSurpriseRecommendation] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const selectedPlace = mission?.place ?? mapPlaces[0]
-  const previewTitle = mission?.title ?? 'Flagstaff Fresh-Air Loop'
-  const previewDescription =
-    mission?.description ?? 'Choose your options, then generate a break that fits.'
-  const previewDuration = mission?.duration ?? duration
+  const isIndoor = movementType === 'Indoor'
+  const previewTitle = isIndoor
+    ? sessionActivities.length
+      ? `${sessionActivities.length} exercise${sessionActivities.length === 1 ? '' : 's'} for you`
+      : 'Your indoor session'
+    : (mission?.title ?? 'Flagstaff Fresh-Air Loop')
+  const previewDescription = isIndoor
+    ? 'A guided session that runs through each exercise one by one.'
+    : (mission?.description ?? 'Choose your options, then generate a break that fits.')
+  const previewDuration = isIndoor
+    ? Math.round(sessionTotalSeconds / 60) || duration
+    : (mission?.duration ?? duration)
   const previewSteps =
     mission?.steps ?? [
       { label: 'Walk out', duration: 4 },
       { label: 'Reset', duration: 2 },
       { label: 'Walk back', duration: 4 },
     ]
-  const flowTarget = getFlowTarget(movementType, duration)
-  const isIndoor = movementType === 'Indoor'
+  const flowTarget = getFlowTarget(movementType, duration, sessionActivities)
   const primaryActionLabel = isIndoor
-    ? 'Open activity'
+    ? 'Start session'
     : isSurpriseRecommendation
       ? 'Start recommendation'
       : 'Open map'
@@ -154,8 +177,11 @@ function Mission() {
     setIsLoading(true)
     setError('')
 
+    const isNextIndoor = nextMovementType === 'Indoor'
+    const endpoint = isNextIndoor ? 'missions/recommend-session' : 'missions/recommend'
+
     try {
-      const response = await fetch(`${API_BASE_URL}/missions/recommend`, {
+      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +198,13 @@ function Mission() {
       }
 
       const data = await response.json()
-      setMission(data)
+
+      if (isNextIndoor) {
+        setSessionActivities(data.activities ?? [])
+        setSessionTotalSeconds(data.totalSeconds ?? 0)
+      } else {
+        setMission(data)
+      }
     } catch {
       setError('Mission options are unavailable right now.')
     } finally {
@@ -327,13 +359,21 @@ function Mission() {
             </div>
 
             {isIndoor ? (
-              <div className="indoor-mission-preview">
-                <Armchair size={26} aria-hidden="true" />
-                <div>
-                  <strong>Recommended indoor activity</strong>
-                  <span>Designed for your desk or workspace.</span>
-                </div>
-              </div>
+              <ol className="indoor-session-preview-list">
+                {sessionActivities.map((activity, index) => (
+                  <li key={activity.id}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{activity.title}</strong>
+                      <small>
+                        {formatSessionTime(
+                          activity.steps.reduce((sum, step) => sum + step.seconds, 0),
+                        )}
+                      </small>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             ) : (
               <div className="preview-map">
                 <MapContainer
@@ -362,29 +402,40 @@ function Mission() {
               </div>
             )}
 
-            <div className="route-breakdown">
-              {previewSteps.map((step) => (
-                <span key={step.label}>
-                  {step.label === 'Reset' ? <Leaf size={16} /> : <Footprints size={16} />}
-                  <strong>{step.label}</strong>
-                  {step.duration} min
-                </span>
-              ))}
-            </div>
+            {isIndoor ? null : (
+              <div className="route-breakdown">
+                {previewSteps.map((step) => (
+                  <span key={step.label}>
+                    {step.label === 'Reset' ? <Leaf size={16} /> : <Footprints size={16} />}
+                    <strong>{step.label}</strong>
+                    {step.duration} min
+                  </span>
+                ))}
+              </div>
+            )}
 
             {error ? <p className="mission-status-message">{error}</p> : null}
 
-            <Button asChild className="mt-[0.72rem] w-full">
-              <Link to={flowTarget}>
+            {isIndoor && (isLoading || !sessionActivities.length) ? (
+              <Button className="mt-[0.72rem] w-full" disabled type="button">
                 <PrimaryActionIcon size={17} />
-                {primaryActionLabel}
-              </Link>
-            </Button>
+                {isLoading ? 'Finding exercises' : primaryActionLabel}
+              </Button>
+            ) : (
+              <Button asChild className="mt-[0.72rem] w-full">
+                <Link to={flowTarget}>
+                  <PrimaryActionIcon size={17} />
+                  {primaryActionLabel}
+                </Link>
+              </Button>
+            )}
 
-            <p className="return-note">
-              <TimerReset size={15} />
-              Includes time to return.
-            </p>
+            {isIndoor ? null : (
+              <p className="return-note">
+                <TimerReset size={15} />
+                Includes time to return.
+              </p>
+            )}
           </div>
         </Card>
           </div>
