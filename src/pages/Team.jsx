@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
-import { addMembership, getMemberships, getTeamHistory, isJoined, leaveTeam } from '@/lib/team'
+import { addMembership, getMemberships, isJoined, leaveTeam } from '@/lib/team'
 
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
@@ -196,79 +196,6 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
   )
 }
 
-function YourTeamsOverview({ excludeTeamIds }) {
-  const [teams, setTeams] = useState(null)
-  const [error, setError] = useState('')
-  const pastTeamIds = getTeamHistory().filter((teamId) => !excludeTeamIds.includes(teamId))
-
-  useEffect(() => {
-    if (!pastTeamIds.length) {
-      setTeams([])
-      return undefined
-    }
-
-    async function loadTeams() {
-      try {
-        const response = await fetch(`${API_BASE_URL}/teams`)
-
-        if (!response.ok) {
-          throw new Error('Failed to load teams')
-        }
-
-        const data = await response.json()
-        setTeams(data.teams.filter((team) => pastTeamIds.includes(team.id)))
-      } catch {
-        setError('Teams overview is unavailable right now.')
-      }
-    }
-
-    loadTeams()
-    const interval = window.setInterval(loadTeams, 20000)
-    return () => window.clearInterval(interval)
-    // Only the join-history membership matters here, not object identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pastTeamIds.join(',')])
-
-  if (error) {
-    return null
-  }
-
-  if (teams && !teams.length) {
-    return null
-  }
-
-  return (
-    <Card className="all-teams-card">
-      <div className="title-with-icon">
-        <Trophy size={18} />
-        <h2>Teams you've left</h2>
-      </div>
-      <p className="team-setup-description">
-        Teams you were on before, from this browser. Rejoin any time with their code.
-      </p>
-
-      {teams ? (
-        <ol className="all-teams-list">
-          {teams.map((team, index) => (
-            <li key={team.id}>
-              {rankIcon(index)}
-              <div>
-                <strong>{team.name}</strong>
-                <small>
-                  {team.memberCount} member{team.memberCount === 1 ? '' : 's'} · Week {team.weekNumber}
-                </small>
-              </div>
-              <Badge variant="success">{team.points} pts</Badge>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="team-status-message">Loading teams...</p>
-      )}
-    </Card>
-  )
-}
-
 function rankIcon(index) {
   if (index === 0) return <Crown className="rank-icon gold" size={18} />
   if (index === 1) return <Medal className="rank-icon silver" size={18} />
@@ -441,6 +368,8 @@ function Team() {
       </div>
 
       <div className="team-page-layout">
+        <TeamCreateJoinForm hasMemberships={memberships.length > 0} onJoined={handleJoined} />
+
         {memberships.map((membership) => (
           <TeamLeaderboard
             identity={membership}
@@ -448,10 +377,6 @@ function Team() {
             onLeave={() => handleLeave(membership.teamId)}
           />
         ))}
-
-        <TeamCreateJoinForm hasMemberships={memberships.length > 0} onJoined={handleJoined} />
-
-        <YourTeamsOverview excludeTeamIds={memberships.map((membership) => membership.teamId)} />
       </div>
     </section>
   )
