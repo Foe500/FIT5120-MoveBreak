@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
+import { logTeamSession } from '@/lib/team'
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -66,6 +67,14 @@ function IndoorGuidedBreak() {
     ? Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100)
     : 0
   const currentStep = steps[currentStepIndex]?.text ?? 'Ready to begin.'
+
+  useEffect(() => {
+    if (isComplete && activity) {
+      logTeamSession({ setting: 'Indoor', label: activity.title, seconds: totalSeconds })
+    }
+    // Only log once per completion, not on every render while complete.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete])
 
   useEffect(() => {
     if (!activity || !steps.length) {
