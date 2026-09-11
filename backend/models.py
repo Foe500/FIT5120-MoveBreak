@@ -22,6 +22,9 @@ class Activity(Base):
     category = Column(String, nullable=False)          # Stretch, Mobility, etc.
     intensity = Column(String, nullable=False)          # Low / Moderate / High
     imageUrl = Column(String, nullable=True)             # optional, may not exist yet
+    steps = Column(JSON, nullable=True)                   # [{text, seconds}, ...]
+    safetyNotes = Column(JSON, nullable=True)              # [string, ...]
+    demoInstruction = Column(String, nullable=True)
 
 
 class Place(Base):

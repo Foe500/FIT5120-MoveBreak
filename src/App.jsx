@@ -15,6 +15,7 @@ import ExploreMap from './pages/ExploreMap.jsx'
 import ActivityLibrary from './pages/ActivityLibrary.jsx'
 import ActivityDetail from './pages/ActivityDetail.jsx'
 import IndoorGuidedBreak from './pages/IndoorGuidedBreak.jsx'
+import IndoorGuidedSession from './pages/IndoorGuidedSession.jsx'
 import Planner from './pages/Planner.jsx'
 import Privacy from './pages/Privacy.jsx'
 
@@ -24,7 +25,6 @@ const navItems = [
   { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
   { to: '/planner', label: 'Planner', icon: CalendarDays },
-  { to: '/privacy', label: 'Privacy', icon: ShieldCheck },
 ]
 
 function App() {
@@ -60,10 +60,28 @@ function App() {
           <Route path="/activities" element={<ActivityLibrary />} />
           <Route path="/activities/:activityId" element={<ActivityDetail />} />
           <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
+          <Route path="/guided/indoor-session" element={<IndoorGuidedSession />} />
           <Route path="/planner" element={<Planner />} />
           <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </main>
+
+      <footer className="footer" aria-label="Site information">
+        <div className="footer-content">
+          <Link className="footer-brand" to="/" aria-label="MoveBreak home">
+            <span className="footer-brand-mark" aria-hidden="true">
+              <Sprout size={18} strokeWidth={2.3} />
+            </span>
+            <span>© 2026 MoveBreak</span>
+          </Link>
+          <nav className="footer-links" aria-label="Footer navigation">
+            <NavLink to="/privacy">
+              <ShieldCheck size={15} aria-hidden="true" />
+              Privacy
+            </NavLink>
+          </nav>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
@@ -12,6 +12,7 @@ import {
   MapPin,
   Shuffle,
   TimerReset,
+  X,
   Zap,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -77,11 +78,25 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : 10
 }
 
-function getFlowTarget(movementType, duration) {
-  // Keep the selected duration in the URL so the next page can apply the same break condition.
-  const search = `?duration=${duration}`
+function getFlowTarget(movementType, duration, sessionActivities) {
+  if (movementType === 'Indoor') {
+    const ids = sessionActivities.map((activity) => activity.id).join(',')
+    return ids ? `/guided/indoor-session?ids=${ids}` : `/activities?duration=${duration}`
+  }
 
-  return movementType === 'Indoor' ? `/activities${search}` : `/explore${search}`
+  // Keep the selected duration in the URL so the next page can apply the same break condition.
+  return `/explore?duration=${duration}`
+}
+
+function formatSessionTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+
+  if (!minutes) {
+    return `${seconds}s`
+  }
+
+  return seconds ? `${minutes}m ${seconds}s` : `${minutes} min`
 }
 
 function getSurpriseMovementType(currentMovementType) {
@@ -96,30 +111,54 @@ function Mission() {
   const [movementType, setMovementType] = useState('Outdoor')
   const [need, setNeed] = useState('Low energy')
   const [mission, setMission] = useState(null)
+  const [sessionActivities, setSessionActivities] = useState([])
+  const [sessionTotalSeconds, setSessionTotalSeconds] = useState(0)
   const [isSurpriseRecommendation, setIsSurpriseRecommendation] = useState(false)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const selectedPlace = mission?.place ?? mapPlaces[0]
-  const previewTitle = mission?.title ?? 'Flagstaff Fresh-Air Loop'
-  const previewDescription =
-    mission?.description ?? 'Choose your options, then generate a break that fits.'
-  const previewDuration = mission?.duration ?? duration
+  const isIndoor = movementType === 'Indoor'
+  const previewTitle = isIndoor
+    ? sessionActivities.length
+      ? `${sessionActivities.length} exercise${sessionActivities.length === 1 ? '' : 's'} for you`
+      : 'Your indoor session'
+    : (mission?.title ?? 'Flagstaff Fresh-Air Loop')
+  const previewDescription = isIndoor
+    ? 'A guided session that runs through each exercise one by one.'
+    : (mission?.description ?? 'Choose your options, then generate a break that fits.')
+  const previewDuration = isIndoor
+    ? Math.round(sessionTotalSeconds / 60) || duration
+    : (mission?.duration ?? duration)
   const previewSteps =
     mission?.steps ?? [
       { label: 'Walk out', duration: 4 },
       { label: 'Reset', duration: 2 },
       { label: 'Walk back', duration: 4 },
     ]
-  const flowTarget = getFlowTarget(movementType, duration)
-  const primaryActionLabel = isSurpriseRecommendation
-    ? 'Start Recommendation'
-    : `Open ${movementType === 'Indoor' ? 'Activity Library' : 'Explore Map'}`
-  const PrimaryActionIcon = movementType === 'Indoor' ? Armchair : Map
+  const flowTarget = getFlowTarget(movementType, duration, sessionActivities)
+  const primaryActionLabel = isIndoor
+    ? 'Start session'
+    : isSurpriseRecommendation
+      ? 'Start recommendation'
+      : 'Open map'
+  const PrimaryActionIcon = isIndoor ? Armchair : Map
   const currentNeedOptions = movementType === 'Indoor' ? needOptions : outdoorNeedOptions
   const needQuestion =
     movementType === 'Indoor'
       ? 'What do you need?'
       : 'What kind of outdoor reset do you want?'
+
+  useEffect(() => {
+    function closePreviewOnEscape(event) {
+      if (event.key === 'Escape') {
+        setIsPreviewOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', closePreviewOnEscape)
+    return () => window.removeEventListener('keydown', closePreviewOnEscape)
+  }, [])
 
   function handleMovementTypeChange(nextMovementType) {
     setMovementType(nextMovementType)
@@ -138,8 +177,11 @@ function Mission() {
     setIsLoading(true)
     setError('')
 
+    const isNextIndoor = nextMovementType === 'Indoor'
+    const endpoint = isNextIndoor ? 'missions/recommend-session' : 'missions/recommend'
+
     try {
-      const response = await fetch(`${API_BASE_URL}/missions/recommend`, {
+      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +198,13 @@ function Mission() {
       }
 
       const data = await response.json()
-      setMission(data)
+
+      if (isNextIndoor) {
+        setSessionActivities(data.activities ?? [])
+        setSessionTotalSeconds(data.totalSeconds ?? 0)
+      } else {
+        setMission(data)
+      }
     } catch {
       setError('Mission options are unavailable right now.')
     } finally {
@@ -166,6 +214,7 @@ function Mission() {
 
   function handleShowOptions() {
     setIsSurpriseRecommendation(false)
+    setIsPreviewOpen(true)
     loadMission()
   }
 
@@ -174,17 +223,6 @@ function Mission() {
     const nextMovementType = getSurpriseMovementType(movementType)
 
     setIsSurpriseRecommendation(true)
-    handleMovementTypeChange(nextMovementType)
-    loadMission(nextMovementType)
-  }
-
-  function handleAlternativePreview() {
-    if (isSurpriseRecommendation) {
-      handleSurpriseMe()
-      return
-    }
-
-    const nextMovementType = movementType === 'Indoor' ? 'Outdoor' : 'Indoor'
     handleMovementTypeChange(nextMovementType)
     loadMission(nextMovementType)
   }
@@ -279,21 +317,30 @@ function Mission() {
                 <Footprints size={17} />
                 {isLoading ? 'Finding options' : 'Show my options'}
               </Button>
-
-              <Button asChild className="mt-[0.72rem] w-full" type="button" variant="success">
-                <Link to={flowTarget}>
-                  {movementType === 'Indoor' ? <Armchair size={17} /> : <Map size={17} />}
-                  Continue with {movementType}
-                </Link>
-              </Button>
             </div>
           </Card>
         </div>
 
-        <Card className="mission-preview-card">
+        {isPreviewOpen ? (
+          <div
+            aria-labelledby="mission-preview-title"
+            className="mission-preview-modal"
+            onMouseDown={() => setIsPreviewOpen(false)}
+            role="dialog"
+            aria-modal="true"
+          >
+          <Card className="mission-preview-card" onMouseDown={(event) => event.stopPropagation()}>
+            <button
+              aria-label="Close mission preview"
+              className="mission-preview-close"
+              onClick={() => setIsPreviewOpen(false)}
+              type="button"
+            >
+              <X size={19} aria-hidden="true" />
+            </button>
           <div className="title-with-icon">
             <MapPin size={18} />
-            <h2>Your mission preview</h2>
+            <h2 id="mission-preview-title">Your mission preview</h2>
           </div>
 
           <div className="preview-panel">
@@ -311,68 +358,88 @@ function Mission() {
               </Badge>
             </div>
 
-            <div className="preview-map">
-              <MapContainer
-                center={melbourneCenter}
-                className="mission-preview-leaflet-map"
-                dragging={false}
-                scrollWheelZoom={false}
-                zoom={14}
-                zoomControl={false}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Marker
-                  icon={createMarkerIcon(selectedPlace.marker, selectedPlace.markerTone)}
-                  position={selectedPlace.position}
+            {isIndoor ? (
+              <ol className="indoor-session-preview-list">
+                {sessionActivities.map((activity, index) => (
+                  <li key={activity.id}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <strong>{activity.title}</strong>
+                      <small>
+                        {formatSessionTime(
+                          activity.steps.reduce((sum, step) => sum + step.seconds, 0),
+                        )}
+                      </small>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <div className="preview-map">
+                <MapContainer
+                  center={melbourneCenter}
+                  className="mission-preview-leaflet-map"
+                  dragging={false}
+                  scrollWheelZoom={false}
+                  zoom={14}
+                  zoomControl={false}
                 >
-                  <Popup>
-                    <strong>{selectedPlace.name}</strong>
-                    <br />
-                    {selectedPlace.distance}
-                  </Popup>
-                </Marker>
-              </MapContainer>
-            </div>
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker
+                    icon={createMarkerIcon(selectedPlace.marker, selectedPlace.markerTone)}
+                    position={selectedPlace.position}
+                  >
+                    <Popup>
+                      <strong>{selectedPlace.name}</strong>
+                      <br />
+                      {selectedPlace.distance}
+                    </Popup>
+                  </Marker>
+                </MapContainer>
+              </div>
+            )}
 
-            <div className="route-breakdown">
-              {previewSteps.map((step) => (
-                <span key={step.label}>
-                  {step.label === 'Reset' ? <Leaf size={16} /> : <Footprints size={16} />}
-                  <strong>{step.label}</strong>
-                  {step.duration} min
-                </span>
-              ))}
-            </div>
+            {isIndoor ? null : (
+              <div className="route-breakdown">
+                {previewSteps.map((step) => (
+                  <span key={step.label}>
+                    {step.label === 'Reset' ? <Leaf size={16} /> : <Footprints size={16} />}
+                    <strong>{step.label}</strong>
+                    {step.duration} min
+                  </span>
+                ))}
+              </div>
+            )}
 
             {error ? <p className="mission-status-message">{error}</p> : null}
 
-            <Button asChild className="mt-[0.72rem] w-full">
-              <Link to={flowTarget}>
+            {isIndoor && (isLoading || !sessionActivities.length) ? (
+              <Button className="mt-[0.72rem] w-full" disabled type="button">
                 <PrimaryActionIcon size={17} />
-                {primaryActionLabel}
-              </Link>
-            </Button>
-            <Button
-              className="preview-secondary-button"
-              onClick={handleAlternativePreview}
-              variant="outline"
-              type="button"
-            >
-              {isSurpriseRecommendation ? <Shuffle size={17} /> : <Armchair size={17} />}
-              {isSurpriseRecommendation
-                ? 'Try Another'
-                : `Try ${movementType === 'Indoor' ? 'outdoor' : 'indoor'} instead`}
-            </Button>
+                {isLoading ? 'Finding exercises' : primaryActionLabel}
+              </Button>
+            ) : (
+              <Button asChild className="mt-[0.72rem] w-full">
+                <Link to={flowTarget}>
+                  <PrimaryActionIcon size={17} />
+                  {primaryActionLabel}
+                </Link>
+              </Button>
+            )}
 
-            <p className="return-note">
-              <TimerReset size={15} />
-              Includes time to return.
-            </p>
+            {isIndoor ? null : (
+              <p className="return-note">
+                <TimerReset size={15} />
+                Includes time to return.
+              </p>
+            )}
           </div>
         </Card>
+          </div>
+        ) : null}
       </div>
     </section>
   )

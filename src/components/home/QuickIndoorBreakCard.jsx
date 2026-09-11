@@ -1,4 +1,5 @@
 import { Clock3, Play } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -15,9 +16,11 @@ function QuickIndoorBreakCard() {
           3 min
         </Badge>
         <p>Release tension and reset your shoulders.</p>
-        <Button className="w-fit" size="sm" type="button">
-          <Play size={15} fill="currentColor" />
-          Start guided break
+        <Button asChild className="w-fit" size="sm">
+          <Link to="/guided/indoor/desk-shoulder-release">
+            <Play size={15} fill="currentColor" />
+            Start guided break
+          </Link>
         </Button>
       </div>
 
