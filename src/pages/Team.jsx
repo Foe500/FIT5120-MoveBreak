@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
-import { addToTeamHistory, getTeamHistory, getTeamIdentity, leaveTeam, saveTeamIdentity } from '@/lib/team'
+import { addMembership, getMemberships, getTeamHistory, isJoined, leaveTeam } from '@/lib/team'
 
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
@@ -29,7 +29,7 @@ function formatTimeRemaining(endAtIso) {
   return 'Less than an hour left'
 }
 
-function TeamCreateJoinForm({ onJoined }) {
+function TeamCreateJoinForm({ hasMemberships, onJoined }) {
   const [mode, setMode] = useState('create')
   const [teamName, setTeamName] = useState('')
   const [joinCode, setJoinCode] = useState('')
@@ -70,12 +70,26 @@ function TeamCreateJoinForm({ onJoined }) {
 
         const createData = await createResponse.json()
         code = createData.joinCode
-      }
+      } else {
+        if (!code) {
+          setError('Enter a join code.')
+          setIsLoading(false)
+          return
+        }
 
-      if (!code) {
-        setError('Enter a join code.')
-        setIsLoading(false)
-        return
+        // Resolve the code to a team id before joining, so a code for a
+        // team you're already on doesn't create a second, duplicate
+        // membership under a different anonymous member id.
+        const lookupResponse = await fetch(`${API_BASE_URL}/teams/${code}`)
+        if (!lookupResponse.ok) {
+          throw new Error('Team not found')
+        }
+        const lookupData = await lookupResponse.json()
+        if (isJoined(lookupData.id)) {
+          setError("You're already on this team.")
+          setIsLoading(false)
+          return
+        }
       }
 
       const joinResponse = await fetch(`${API_BASE_URL}/teams/${code}/join`, {
@@ -90,16 +104,19 @@ function TeamCreateJoinForm({ onJoined }) {
 
       const joinData = await joinResponse.json()
 
-      saveTeamIdentity({
+      const membership = {
         teamId: joinData.team.id,
         joinCode: joinData.team.joinCode,
         teamName: joinData.team.name,
         memberId: joinData.memberId,
         nickname: joinData.nickname,
-      })
-      addToTeamHistory(joinData.team.id)
+      }
+      addMembership(membership)
 
-      onJoined()
+      setTeamName('')
+      setJoinCode('')
+      setNickname('')
+      onJoined(membership)
     } catch {
       setError(mode === 'create' ? 'Could not create the team right now.' : 'Could not find that team.')
     } finally {
@@ -111,11 +128,12 @@ function TeamCreateJoinForm({ onJoined }) {
     <Card className="team-setup-card">
       <div className="title-with-icon">
         <Users size={18} />
-        <h2>Team up for your breaks</h2>
+        <h2>{hasMemberships ? 'Join another team' : 'Team up for your breaks'}</h2>
       </div>
       <p className="team-setup-description">
         Create or join a team to compete on a shared leaderboard. No account, no email, no
-        real name required — just pick a nickname.
+        real name required — just pick a nickname. You can be on more than one team at once;
+        every break you finish counts toward all of them.
       </p>
 
       <div className="team-mode-tabs" role="tablist">
@@ -178,13 +196,13 @@ function TeamCreateJoinForm({ onJoined }) {
   )
 }
 
-function YourTeamsOverview({ highlightTeamId }) {
+function YourTeamsOverview({ excludeTeamIds }) {
   const [teams, setTeams] = useState(null)
   const [error, setError] = useState('')
-  const joinedTeamIds = getTeamHistory()
+  const pastTeamIds = getTeamHistory().filter((teamId) => !excludeTeamIds.includes(teamId))
 
   useEffect(() => {
-    if (!joinedTeamIds.length) {
+    if (!pastTeamIds.length) {
       setTeams([])
       return undefined
     }
@@ -198,7 +216,7 @@ function YourTeamsOverview({ highlightTeamId }) {
         }
 
         const data = await response.json()
-        setTeams(data.teams.filter((team) => joinedTeamIds.includes(team.id)))
+        setTeams(data.teams.filter((team) => pastTeamIds.includes(team.id)))
       } catch {
         setError('Teams overview is unavailable right now.')
       }
@@ -209,7 +227,7 @@ function YourTeamsOverview({ highlightTeamId }) {
     return () => window.clearInterval(interval)
     // Only the join-history membership matters here, not object identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [joinedTeamIds.join(',')])
+  }, [pastTeamIds.join(',')])
 
   if (error) {
     return null
@@ -223,16 +241,16 @@ function YourTeamsOverview({ highlightTeamId }) {
     <Card className="all-teams-card">
       <div className="title-with-icon">
         <Trophy size={18} />
-        <h2>Your teams</h2>
+        <h2>Teams you've left</h2>
       </div>
       <p className="team-setup-description">
-        Every team you've joined from this browser, ranked by this week's points.
+        Teams you were on before, from this browser. Rejoin any time with their code.
       </p>
 
       {teams ? (
         <ol className="all-teams-list">
           {teams.map((team, index) => (
-            <li className={team.id === highlightTeamId ? 'you' : ''} key={team.id}>
+            <li key={team.id}>
               {rankIcon(index)}
               <div>
                 <strong>{team.name}</strong>
@@ -404,11 +422,15 @@ function TeamLeaderboard({ identity, onLeave }) {
 }
 
 function Team() {
-  const [identity, setIdentity] = useState(() => getTeamIdentity())
+  const [memberships, setMemberships] = useState(() => getMemberships())
 
-  async function handleLeave() {
-    await leaveTeam()
-    setIdentity(null)
+  function handleJoined() {
+    setMemberships(getMemberships())
+  }
+
+  async function handleLeave(teamId) {
+    await leaveTeam(teamId)
+    setMemberships(getMemberships())
   }
 
   return (
@@ -419,13 +441,17 @@ function Team() {
       </div>
 
       <div className="team-page-layout">
-        {identity ? (
-          <TeamLeaderboard identity={identity} onLeave={handleLeave} />
-        ) : (
-          <TeamCreateJoinForm onJoined={() => setIdentity(getTeamIdentity())} />
-        )}
+        {memberships.map((membership) => (
+          <TeamLeaderboard
+            identity={membership}
+            key={membership.teamId}
+            onLeave={() => handleLeave(membership.teamId)}
+          />
+        ))}
 
-        <YourTeamsOverview highlightTeamId={identity?.teamId} />
+        <TeamCreateJoinForm hasMemberships={memberships.length > 0} onJoined={handleJoined} />
+
+        <YourTeamsOverview excludeTeamIds={memberships.map((membership) => membership.teamId)} />
       </div>
     </section>
   )
