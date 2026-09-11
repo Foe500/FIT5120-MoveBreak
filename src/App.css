@@ -4700,8 +4700,16 @@ main {
   color: #5f6f8a;
 }
 
+.team-page-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
 .team-setup-card,
-.team-leaderboard-card {
+.team-leaderboard-card,
+.all-teams-card {
   width: min(100%, 32rem);
   padding: 1.4rem;
 }
@@ -4859,7 +4867,8 @@ main {
   vertical-align: middle;
 }
 
-.team-leaderboard-list {
+.team-leaderboard-list,
+.all-teams-list {
   display: grid;
   gap: 0.65rem;
   margin-top: 1.1rem;
@@ -4867,7 +4876,8 @@ main {
   list-style: none;
 }
 
-.team-leaderboard-list li {
+.team-leaderboard-list li,
+.all-teams-list li {
   display: grid;
   grid-template-columns: 1.8rem minmax(0, 1fr) auto;
   align-items: center;
@@ -4878,18 +4888,21 @@ main {
   background: #ffffff;
 }
 
-.team-leaderboard-list li.you {
+.team-leaderboard-list li.you,
+.all-teams-list li.you {
   border-color: #0b66df;
   background: #f6f9ff;
 }
 
-.team-leaderboard-list li div {
+.team-leaderboard-list li div,
+.all-teams-list li div {
   display: grid;
   gap: 0.1rem;
   min-width: 0;
 }
 
-.team-leaderboard-list li strong {
+.team-leaderboard-list li strong,
+.all-teams-list li strong {
   color: #10275b;
   font-size: 0.92rem;
   overflow: hidden;
@@ -4897,7 +4910,8 @@ main {
   white-space: nowrap;
 }
 
-.team-leaderboard-list li small {
+.team-leaderboard-list li small,
+.all-teams-list li small {
   color: #7c8aa3;
   font-size: 0.76rem;
 }

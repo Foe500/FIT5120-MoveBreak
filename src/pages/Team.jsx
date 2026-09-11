@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
-import { clearTeamIdentity, getTeamIdentity, saveTeamIdentity } from '@/lib/team'
+import { getTeamIdentity, leaveTeam, saveTeamIdentity } from '@/lib/team'
 
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
@@ -91,6 +91,7 @@ function TeamCreateJoinForm({ onJoined }) {
       const joinData = await joinResponse.json()
 
       saveTeamIdentity({
+        teamId: joinData.team.id,
         joinCode: joinData.team.joinCode,
         teamName: joinData.team.name,
         memberId: joinData.memberId,
@@ -172,6 +173,72 @@ function TeamCreateJoinForm({ onJoined }) {
           {isLoading ? 'Please wait...' : mode === 'create' ? 'Create team' : 'Join team'}
         </Button>
       </form>
+    </Card>
+  )
+}
+
+function AllTeamsLeaderboard({ highlightTeamId }) {
+  const [teams, setTeams] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function loadTeams() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/teams`)
+
+        if (!response.ok) {
+          throw new Error('Failed to load teams')
+        }
+
+        const data = await response.json()
+        setTeams(data.teams)
+      } catch {
+        setError('Teams leaderboard is unavailable right now.')
+      }
+    }
+
+    loadTeams()
+    const interval = window.setInterval(loadTeams, 20000)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  if (error) {
+    return null
+  }
+
+  if (teams && !teams.length) {
+    return null
+  }
+
+  return (
+    <Card className="all-teams-card">
+      <div className="title-with-icon">
+        <Trophy size={18} />
+        <h2>Teams leaderboard</h2>
+      </div>
+      <p className="team-setup-description">
+        See how every team is doing this week. Team names and points only — you still need a
+        join code to actually join one.
+      </p>
+
+      {teams ? (
+        <ol className="all-teams-list">
+          {teams.map((team, index) => (
+            <li className={team.id === highlightTeamId ? 'you' : ''} key={team.id}>
+              {rankIcon(index)}
+              <div>
+                <strong>{team.name}</strong>
+                <small>
+                  {team.memberCount} member{team.memberCount === 1 ? '' : 's'} · Week {team.weekNumber}
+                </small>
+              </div>
+              <Badge variant="success">{team.points} pts</Badge>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="team-status-message">Loading teams...</p>
+      )}
     </Card>
   )
 }
@@ -331,8 +398,8 @@ function TeamLeaderboard({ identity, onLeave }) {
 function Team() {
   const [identity, setIdentity] = useState(() => getTeamIdentity())
 
-  function handleLeave() {
-    clearTeamIdentity()
+  async function handleLeave() {
+    await leaveTeam()
     setIdentity(null)
   }
 
@@ -343,11 +410,15 @@ function Team() {
         <p>Move together, compete a little, and keep each other accountable.</p>
       </div>
 
-      {identity ? (
-        <TeamLeaderboard identity={identity} onLeave={handleLeave} />
-      ) : (
-        <TeamCreateJoinForm onJoined={() => setIdentity(getTeamIdentity())} />
-      )}
+      <div className="team-page-layout">
+        {identity ? (
+          <TeamLeaderboard identity={identity} onLeave={handleLeave} />
+        ) : (
+          <TeamCreateJoinForm onJoined={() => setIdentity(getTeamIdentity())} />
+        )}
+
+        <AllTeamsLeaderboard highlightTeamId={identity?.teamId} />
+      </div>
     </section>
   )
 }

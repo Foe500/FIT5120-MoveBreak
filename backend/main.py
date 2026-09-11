@@ -100,16 +100,24 @@ def finalize_season_if_ended(season: Season, db: Session) -> Season:
         .all()
     )
 
+    # Only members still on the team are eligible — someone who left
+    # mid-week shouldn't be crowned winner of a team they're no longer on.
+    current_members = {
+        m.id: m.nickname
+        for m in db.query(TeamMember).filter(TeamMember.team_id == season.team_id).all()
+    }
+
     best_member_id, best_points = None, -1
     for member_id, seconds in totals.items():
+        if member_id not in current_members:
+            continue
         points = compute_points(counts.get(member_id, 0), seconds)
         if points > best_points:
             best_member_id, best_points = member_id, points
 
     if best_member_id:
-        winner = db.query(TeamMember).filter(TeamMember.id == best_member_id).first()
         season.winner_member_id = best_member_id
-        season.winner_nickname = winner.nickname if winner else None
+        season.winner_nickname = current_members[best_member_id]
         season.winner_points = best_points
 
     season.finalized_at = now
@@ -146,6 +154,10 @@ class CreateTeamRequest(BaseModel):
 
 class JoinTeamRequest(BaseModel):
     nickname: str
+
+
+class LeaveTeamRequest(BaseModel):
+    memberId: str
 
 
 class LogSessionRequest(BaseModel):
@@ -365,6 +377,57 @@ def create_team(request: CreateTeamRequest, db: Session = Depends(get_db)):
     return {"id": team.id, "name": team.name, "joinCode": team.join_code}
 
 
+@app.get("/teams")
+def list_teams(db: Session = Depends(get_db)):
+    """A public, anonymous cross-team leaderboard — team names, member
+    counts, and this week's combined points, so people can see how
+    different teams stack up. Join codes are never included here:
+    finding this list doesn't let you join a team, you still need to
+    be given its code directly."""
+    rows = []
+
+    for team in db.query(Team).all():
+        season = finalize_season_if_ended(get_current_season(team, db), db)
+        members = db.query(TeamMember).filter(TeamMember.team_id == team.id).all()
+
+        season_filter = [
+            SessionLog.team_id == team.id,
+            SessionLog.completed_at >= season.start_at,
+            SessionLog.completed_at < season.end_at,
+        ]
+        totals = dict(
+            db.query(SessionLog.member_id, func.sum(SessionLog.seconds))
+            .filter(*season_filter)
+            .group_by(SessionLog.member_id)
+            .all()
+        )
+        counts = dict(
+            db.query(SessionLog.member_id, func.count(SessionLog.id))
+            .filter(*season_filter)
+            .group_by(SessionLog.member_id)
+            .all()
+        )
+
+        team_points = sum(
+            compute_points(counts.get(member.id, 0), totals.get(member.id, 0))
+            for member in members
+        )
+
+        rows.append(
+            {
+                "id": team.id,
+                "name": team.name,
+                "memberCount": len(members),
+                "points": team_points,
+                "weekNumber": season.week_number,
+            }
+        )
+
+    rows.sort(key=lambda row: row["points"], reverse=True)
+
+    return {"teams": rows}
+
+
 @app.post("/teams/{join_code}/join")
 def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(get_db)):
     nickname = request.nickname.strip()
@@ -383,6 +446,24 @@ def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(ge
         "nickname": member.nickname,
         "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
     }
+
+
+@app.post("/teams/{join_code}/leave")
+def leave_team(join_code: str, request: LeaveTeamRequest, db: Session = Depends(get_db)):
+    team = get_team_by_code(join_code, db)
+
+    member = (
+        db.query(TeamMember)
+        .filter(TeamMember.id == request.memberId, TeamMember.team_id == team.id)
+        .first()
+    )
+    if not member:
+        raise HTTPException(status_code=404, detail="Team member not found")
+
+    db.delete(member)
+    db.commit()
+
+    return {"status": "left"}
 
 
 @app.get("/teams/{join_code}")
