@@ -79,3 +79,22 @@ class SessionLog(Base):
     label = Column(String, nullable=True)                     # activity/session title, for display only
     seconds = Column(Integer, nullable=False)
     completed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class Season(Base):
+    """A one-week competition window for a team. The leaderboard only
+    counts SessionLog rows that fall inside [start_at, end_at). When a
+    week ends, its winner is computed once and frozen onto this row —
+    starting a new week (renew) never deletes old session data, it
+    just opens a new window going forward."""
+    __tablename__ = "seasons"
+
+    id = Column(String, primary_key=True, index=True)       # uuid4 hex
+    team_id = Column(String, ForeignKey("teams.id"), nullable=False, index=True)
+    week_number = Column(Integer, nullable=False)
+    start_at = Column(DateTime, nullable=False)
+    end_at = Column(DateTime, nullable=False)
+    winner_member_id = Column(String, nullable=True)
+    winner_nickname = Column(String, nullable=True)          # denormalized so history reads without a join
+    winner_points = Column(Integer, nullable=True)
+    finalized_at = Column(DateTime, nullable=True)

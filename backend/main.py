@@ -3,6 +3,7 @@ import random
 import secrets
 import string
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -12,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from database import engine, get_db, Base
-from models import Activity, Place, Team, TeamMember, SessionLog
+from models import Activity, Place, Team, TeamMember, SessionLog, Season
 
 # Creates any tables that don't exist yet (e.g. the team/leaderboard
 # tables added after activities/places already existed) without
@@ -30,9 +31,107 @@ JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) 
 POINTS_PER_SESSION = 10
 POINTS_SECONDS_DIVISOR = 10
 
+SEASON_LENGTH = timedelta(days=7)
+
 
 def generate_join_code(length: int = 6) -> str:
     return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
+
+
+def compute_points(sessions_completed: int, total_seconds: int) -> int:
+    return sessions_completed * POINTS_PER_SESSION + total_seconds // POINTS_SECONDS_DIVISOR
+
+
+def as_utc(dt: datetime) -> datetime:
+    """SQLite drops tzinfo on round-trip, so datetimes read back from the
+    DB come back naive even though we always write them as UTC-aware."""
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def start_new_season(team: Team, week_number: int, db: Session) -> Season:
+    now = datetime.now(timezone.utc)
+    season = Season(
+        id=uuid.uuid4().hex,
+        team_id=team.id,
+        week_number=week_number,
+        start_at=now,
+        end_at=now + SEASON_LENGTH,
+    )
+    db.add(season)
+    db.commit()
+    db.refresh(season)
+    return season
+
+
+def get_current_season(team: Team, db: Session) -> Season:
+    season = (
+        db.query(Season)
+        .filter(Season.team_id == team.id)
+        .order_by(Season.week_number.desc())
+        .first()
+    )
+    # Defensive fallback for a team that predates the season feature.
+    return season or start_new_season(team, 1, db)
+
+
+def finalize_season_if_ended(season: Season, db: Session) -> Season:
+    now = datetime.now(timezone.utc)
+    if now < as_utc(season.end_at) or season.finalized_at is not None:
+        return season
+
+    totals = dict(
+        db.query(SessionLog.member_id, func.sum(SessionLog.seconds))
+        .filter(
+            SessionLog.team_id == season.team_id,
+            SessionLog.completed_at >= season.start_at,
+            SessionLog.completed_at < season.end_at,
+        )
+        .group_by(SessionLog.member_id)
+        .all()
+    )
+    counts = dict(
+        db.query(SessionLog.member_id, func.count(SessionLog.id))
+        .filter(
+            SessionLog.team_id == season.team_id,
+            SessionLog.completed_at >= season.start_at,
+            SessionLog.completed_at < season.end_at,
+        )
+        .group_by(SessionLog.member_id)
+        .all()
+    )
+
+    best_member_id, best_points = None, -1
+    for member_id, seconds in totals.items():
+        points = compute_points(counts.get(member_id, 0), seconds)
+        if points > best_points:
+            best_member_id, best_points = member_id, points
+
+    if best_member_id:
+        winner = db.query(TeamMember).filter(TeamMember.id == best_member_id).first()
+        season.winner_member_id = best_member_id
+        season.winner_nickname = winner.nickname if winner else None
+        season.winner_points = best_points
+
+    season.finalized_at = now
+    db.commit()
+    db.refresh(season)
+    return season
+
+
+def season_to_dict(season: Season) -> dict:
+    now = datetime.now(timezone.utc)
+
+    return {
+        "weekNumber": season.week_number,
+        "startAt": as_utc(season.start_at).isoformat(),
+        "endAt": as_utc(season.end_at).isoformat(),
+        "isActive": now < as_utc(season.end_at),
+        "winner": (
+            {"nickname": season.winner_nickname, "points": season.winner_points}
+            if season.finalized_at and season.winner_member_id
+            else None
+        ),
+    }
 
 
 class MissionRequest(BaseModel):
@@ -261,6 +360,8 @@ def create_team(request: CreateTeamRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(team)
 
+    start_new_season(team, 1, db)
+
     return {"id": team.id, "name": team.name, "joinCode": team.join_code}
 
 
@@ -329,19 +430,31 @@ def log_session(join_code: str, request: LogSessionRequest, db: Session = Depend
 @app.get("/teams/{join_code}/leaderboard")
 def get_leaderboard(join_code: str, db: Session = Depends(get_db)):
     team = get_team_by_code(join_code, db)
+    season = finalize_season_if_ended(get_current_season(team, db), db)
 
     members = db.query(TeamMember).filter(TeamMember.team_id == team.id).all()
 
+    season_filter = [
+        SessionLog.team_id == team.id,
+        SessionLog.completed_at >= season.start_at,
+        SessionLog.completed_at < season.end_at,
+    ]
     totals = dict(
         db.query(SessionLog.member_id, func.sum(SessionLog.seconds))
-        .filter(SessionLog.team_id == team.id)
+        .filter(*season_filter)
         .group_by(SessionLog.member_id)
         .all()
     )
     counts = dict(
         db.query(SessionLog.member_id, func.count(SessionLog.id))
-        .filter(SessionLog.team_id == team.id)
+        .filter(*season_filter)
         .group_by(SessionLog.member_id)
+        .all()
+    )
+    championships = dict(
+        db.query(Season.winner_member_id, func.count(Season.id))
+        .filter(Season.team_id == team.id, Season.winner_member_id.isnot(None))
+        .group_by(Season.winner_member_id)
         .all()
     )
 
@@ -349,9 +462,6 @@ def get_leaderboard(join_code: str, db: Session = Depends(get_db)):
     for member in members:
         total_seconds = totals.get(member.id, 0)
         sessions_completed = counts.get(member.id, 0)
-        # 10 points for showing up to a break, plus 1 point per 10 seconds
-        # actually moved — rewards frequent short breaks, not just minutes.
-        points = sessions_completed * POINTS_PER_SESSION + total_seconds // POINTS_SECONDS_DIVISOR
 
         rows.append(
             {
@@ -359,12 +469,26 @@ def get_leaderboard(join_code: str, db: Session = Depends(get_db)):
                 "nickname": member.nickname,
                 "totalSeconds": total_seconds,
                 "sessionsCompleted": sessions_completed,
-                "points": points,
+                "points": compute_points(sessions_completed, total_seconds),
+                "championships": championships.get(member.id, 0),
             }
         )
     rows.sort(key=lambda row: row["points"], reverse=True)
 
     return {
         "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
+        "season": season_to_dict(season),
         "members": rows,
     }
+
+
+@app.post("/teams/{join_code}/seasons/renew")
+def renew_season(join_code: str, db: Session = Depends(get_db)):
+    team = get_team_by_code(join_code, db)
+    season = finalize_season_if_ended(get_current_season(team, db), db)
+
+    if datetime.now(timezone.utc) < as_utc(season.end_at):
+        raise HTTPException(status_code=400, detail="This week hasn't ended yet")
+
+    new_season = start_new_season(team, season.week_number + 1, db)
+    return season_to_dict(new_season)

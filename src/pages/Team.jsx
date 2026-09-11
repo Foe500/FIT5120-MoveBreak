@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Copy, Crown, LogOut, Medal, Trophy, Users } from 'lucide-react'
+import { Award, Copy, Crown, LogOut, Medal, PartyPopper, RefreshCw, Trophy, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,6 +9,24 @@ import { clearTeamIdentity, getTeamIdentity, saveTeamIdentity } from '@/lib/team
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
   return `${minutes} min`
+}
+
+function formatTimeRemaining(endAtIso) {
+  const remainingMs = new Date(endAtIso).getTime() - Date.now()
+  if (remainingMs <= 0) {
+    return 'Ending soon'
+  }
+
+  const days = Math.floor(remainingMs / (24 * 60 * 60 * 1000))
+  const hours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000))
+
+  if (days > 0) {
+    return `${days} day${days === 1 ? '' : 's'} left`
+  }
+  if (hours > 0) {
+    return `${hours} hour${hours === 1 ? '' : 's'} left`
+  }
+  return 'Less than an hour left'
 }
 
 function TeamCreateJoinForm({ onJoined }) {
@@ -170,28 +188,30 @@ function TeamLeaderboard({ identity, onLeave }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [isRenewing, setIsRenewing] = useState(false)
+
+  async function loadLeaderboard() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams/${identity.joinCode}/leaderboard`)
+
+      if (!response.ok) {
+        throw new Error('Failed to load leaderboard')
+      }
+
+      const data = await response.json()
+      setLeaderboard(data)
+    } catch {
+      setError('Leaderboard is unavailable right now.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function loadLeaderboard() {
-      try {
-        const response = await fetch(`${API_BASE_URL}/teams/${identity.joinCode}/leaderboard`)
-
-        if (!response.ok) {
-          throw new Error('Failed to load leaderboard')
-        }
-
-        const data = await response.json()
-        setLeaderboard(data)
-      } catch {
-        setError('Leaderboard is unavailable right now.')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadLeaderboard()
     const interval = window.setInterval(loadLeaderboard, 15000)
     return () => window.clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity.joinCode])
 
   function handleCopyCode() {
@@ -199,6 +219,27 @@ function TeamLeaderboard({ identity, onLeave }) {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1500)
     })
+  }
+
+  async function handleRenew() {
+    setIsRenewing(true)
+    setError('')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams/${identity.joinCode}/seasons/renew`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to start a new week')
+      }
+
+      await loadLeaderboard()
+    } catch {
+      setError('Could not start the new week right now.')
+    } finally {
+      setIsRenewing(false)
+    }
   }
 
   return (
@@ -225,6 +266,30 @@ function TeamLeaderboard({ identity, onLeave }) {
       {error ? <p className="team-status-message">{error}</p> : null}
 
       {leaderboard ? (
+        <div className={`team-season-banner ${leaderboard.season.isActive ? 'active' : 'ended'}`}>
+          <div>
+            <strong>Week {leaderboard.season.weekNumber}</strong>
+            {leaderboard.season.isActive ? (
+              <span>{formatTimeRemaining(leaderboard.season.endAt)}</span>
+            ) : leaderboard.season.winner ? (
+              <span>
+                <PartyPopper size={14} />
+                {leaderboard.season.winner.nickname} won with {leaderboard.season.winner.points} pts!
+              </span>
+            ) : (
+              <span>No sessions were logged this week.</span>
+            )}
+          </div>
+          {!leaderboard.season.isActive ? (
+            <Button disabled={isRenewing} onClick={handleRenew} size="sm" type="button">
+              <RefreshCw size={14} />
+              {isRenewing ? 'Starting...' : 'Start new week'}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {leaderboard ? (
         <ol className="team-leaderboard-list">
           {leaderboard.members.map((member, index) => (
             <li
@@ -236,6 +301,12 @@ function TeamLeaderboard({ identity, onLeave }) {
                 <strong>
                   {member.nickname}
                   {member.memberId === identity.memberId ? ' (you)' : ''}
+                  {member.championships > 0 ? (
+                    <span className="championship-badge" title={`${member.championships} weekly win${member.championships === 1 ? '' : 's'}`}>
+                      <Award size={13} />
+                      {member.championships}
+                    </span>
+                  ) : null}
                 </strong>
                 <small>
                   {member.sessionsCompleted} session{member.sessionsCompleted === 1 ? '' : 's'} ·{' '}
