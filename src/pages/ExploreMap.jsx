@@ -168,7 +168,8 @@ function ExploreMap() {
 
         const data = await response.json()
         setPlaces(data)
-        setSelectedPlace(data[0] ?? null)
+        // No place is selected by default — the detail card only opens
+        // once the user actively picks one from the map or the list.
       } catch {
         setError('Map places are unavailable right now.')
       } finally {
