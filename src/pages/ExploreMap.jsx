@@ -149,8 +149,10 @@ function ExploreMap() {
       return
     }
 
-    // Keep the detail card aligned with the filtered map/list after search or category changes.
-    if (!selectedPlace || !filteredPlaces.some((place) => place.id === selectedPlace.id)) {
+    // Keep the detail card aligned with the filtered map/list after search or category
+    // changes — but only when the current selection became stale (filtered out), not when
+    // it's null because the user deliberately closed the card with the X button.
+    if (selectedPlace && !filteredPlaces.some((place) => place.id === selectedPlace.id)) {
       setSelectedPlace(filteredPlaces[0])
     }
   }, [filteredPlaces, selectedPlace])
