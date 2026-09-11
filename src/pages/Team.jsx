@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
-import { getTeamIdentity, leaveTeam, saveTeamIdentity } from '@/lib/team'
+import { addToTeamHistory, getTeamHistory, getTeamIdentity, leaveTeam, saveTeamIdentity } from '@/lib/team'
 
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
@@ -97,6 +97,7 @@ function TeamCreateJoinForm({ onJoined }) {
         memberId: joinData.memberId,
         nickname: joinData.nickname,
       })
+      addToTeamHistory(joinData.team.id)
 
       onJoined()
     } catch {
@@ -177,11 +178,17 @@ function TeamCreateJoinForm({ onJoined }) {
   )
 }
 
-function AllTeamsLeaderboard({ highlightTeamId }) {
+function YourTeamsOverview({ highlightTeamId }) {
   const [teams, setTeams] = useState(null)
   const [error, setError] = useState('')
+  const joinedTeamIds = getTeamHistory()
 
   useEffect(() => {
+    if (!joinedTeamIds.length) {
+      setTeams([])
+      return undefined
+    }
+
     async function loadTeams() {
       try {
         const response = await fetch(`${API_BASE_URL}/teams`)
@@ -191,16 +198,18 @@ function AllTeamsLeaderboard({ highlightTeamId }) {
         }
 
         const data = await response.json()
-        setTeams(data.teams)
+        setTeams(data.teams.filter((team) => joinedTeamIds.includes(team.id)))
       } catch {
-        setError('Teams leaderboard is unavailable right now.')
+        setError('Teams overview is unavailable right now.')
       }
     }
 
     loadTeams()
     const interval = window.setInterval(loadTeams, 20000)
     return () => window.clearInterval(interval)
-  }, [])
+    // Only the join-history membership matters here, not object identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joinedTeamIds.join(',')])
 
   if (error) {
     return null
@@ -214,11 +223,10 @@ function AllTeamsLeaderboard({ highlightTeamId }) {
     <Card className="all-teams-card">
       <div className="title-with-icon">
         <Trophy size={18} />
-        <h2>Teams leaderboard</h2>
+        <h2>Your teams</h2>
       </div>
       <p className="team-setup-description">
-        See how every team is doing this week. Team names and points only — you still need a
-        join code to actually join one.
+        Every team you've joined from this browser, ranked by this week's points.
       </p>
 
       {teams ? (
@@ -417,7 +425,7 @@ function Team() {
           <TeamCreateJoinForm onJoined={() => setIdentity(getTeamIdentity())} />
         )}
 
-        <AllTeamsLeaderboard highlightTeamId={identity?.teamId} />
+        <YourTeamsOverview highlightTeamId={identity?.teamId} />
       </div>
     </section>
   )

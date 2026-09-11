@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '@/lib/api'
 
 const STORAGE_KEY = 'movebreak_team_identity'
+const HISTORY_KEY = 'movebreak_team_history'
 
 /**
  * Team identity lives only in this browser's localStorage: a team join
@@ -29,6 +30,33 @@ export function clearTeamIdentity() {
     window.localStorage.removeItem(STORAGE_KEY)
   } catch {
     // Nothing to do if storage isn't available.
+  }
+}
+
+/**
+ * A browser can only actively belong to one team at a time, but may
+ * have joined (and left) several over time. This is just a list of
+ * team ids this browser has ever joined, so the "teams leaderboard"
+ * can be scoped to teams the person actually has a connection to
+ * instead of showing every team in the database.
+ */
+export function getTeamHistory() {
+  try {
+    const raw = window.localStorage.getItem(HISTORY_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+export function addToTeamHistory(teamId) {
+  try {
+    const history = getTeamHistory()
+    if (!history.includes(teamId)) {
+      window.localStorage.setItem(HISTORY_KEY, JSON.stringify([...history, teamId]))
+    }
+  } catch {
+    // Not critical — worst case the team just won't show in the overview list.
   }
 }
 
