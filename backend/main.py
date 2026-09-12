@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -14,6 +14,12 @@ from sqlalchemy import func
 
 from database import engine, get_db, Base
 from models import Activity, Place, Team, TeamMember, SessionLog, Season
+from recommendations import (
+    MELBOURNE_TOWN_HALL,
+    build_recommendation_response,
+    calculate_recommendations,
+    load_recommendation_places,
+)
 
 # Creates any tables that don't exist yet (e.g. the team/leaderboard
 # tables added after activities/places already existed) without
@@ -143,9 +149,11 @@ def season_to_dict(season: Season) -> dict:
 
 
 class MissionRequest(BaseModel):
-    duration: int = 10
+    duration: int = 15
     setting: str = "Indoor"
     need: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class CreateTeamRequest(BaseModel):
@@ -254,33 +262,65 @@ def get_activity(activity_id: str, db: Session = Depends(get_db)):
 
 @app.get("/places")
 def get_places(db: Session = Depends(get_db)):
+    csv_places = load_recommendation_places()
+    if csv_places:
+        return csv_places
+
     places = db.query(Place).all()
     return [place_to_dict(p) for p in places]
+
+
+@app.get("/recommendations")
+def get_recommendations(
+    lat: float = Query(MELBOURNE_TOWN_HALL[0]),
+    lng: float = Query(MELBOURNE_TOWN_HALL[1]),
+    break_time: int = Query(15),
+    limit: int = Query(5, ge=1, le=10),
+):
+    try:
+        return build_recommendation_response(lat, lng, break_time, limit)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.post("/missions/recommend")
 def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
     activities = [activity_to_dict(a) for a in db.query(Activity).all()]
-    places = [place_to_dict(p) for p in db.query(Place).all()]
 
     setting = request.setting.lower()
 
     if setting == "outdoor":
-        # Pick from all available places so Surprise Me and Try Another can show varied outdoor options.
-        place = random.choice(places) if places else None
+        origin = (
+            request.latitude if request.latitude is not None else MELBOURNE_TOWN_HALL[0],
+            request.longitude if request.longitude is not None else MELBOURNE_TOWN_HALL[1],
+        )
+
+        try:
+            recommendations = calculate_recommendations(
+                origin[0],
+                origin[1],
+                request.duration,
+                limit=1,
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+        place = recommendations[0] if recommendations else None
 
         return {
             "id": f"{place['id']}-fresh-air-reset" if place else "fresh-air-reset",
             "title": f"{place['name']} Fresh-Air Reset" if place else "Fresh-Air Reset",
-            "description": "A short outdoor reset through a nearby open-data location.",
-            "duration": min(request.duration, 15),
+            "description": place["explanation"] if place else "No time-safe outdoor option was found for this break.",
+            "duration": place["estimated_total_time"] if place else request.duration,
             "setting": "Outdoor",
             "place": place,
             "steps": [
-                {"label": "Walk out", "duration": 4},
-                {"label": "Reset", "duration": 2},
-                {"label": "Walk back", "duration": 4},
+                {"label": "Walk there", "duration": place["walking_time_one_way"] if place else 0},
+                {"label": "Rest", "duration": place["activity_time"] if place else 0},
+                {"label": "Walk back", "duration": place["walking_time_one_way"] if place else 0},
+                {"label": "Buffer", "duration": place["buffer_time"] if place else 0},
             ],
+            "recommendation": place,
         }
 
     matching_activities = [
