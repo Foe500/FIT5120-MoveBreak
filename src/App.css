@@ -1227,16 +1227,22 @@ main {
   line-height: 1.25;
 }
 
-.surprise-button {
-  display: flex;
-  width: 9.5rem;
-  margin: 0.7rem auto 0;
-}
-
 .need-chip-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.55rem;
+}
+
+.mission-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  gap: 0.7rem;
+  margin-top: 0.72rem;
+}
+
+.mission-action-row button {
+  width: 100%;
+  min-width: 0;
 }
 
 .need-chip-row button {
@@ -3155,7 +3161,8 @@ main {
   .guided-break-layout,
   .planner-board-layout,
   .movement-choice-grid,
-  .need-chip-row {
+  .need-chip-row,
+  .mission-action-row {
     grid-template-columns: 1fr;
   }
 

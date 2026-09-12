@@ -105,6 +105,10 @@ function getSurpriseMovementType(currentMovementType) {
   return Math.random() > 0.5 ? currentMovementType : otherMovementType
 }
 
+function getRandomOption(options) {
+  return options[Math.floor(Math.random() * options.length)]
+}
+
 function Mission() {
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
@@ -174,7 +178,7 @@ function Mission() {
     }
   }
 
-  async function loadMission(nextMovementType = movementType) {
+  async function loadMission(nextMovementType = movementType, nextNeed = need) {
     setIsLoading(true)
     setError('')
 
@@ -190,7 +194,7 @@ function Mission() {
         body: JSON.stringify({
           duration,
           setting: nextMovementType,
-          need: apiNeedByLabel[need] ?? need,
+          need: apiNeedByLabel[nextNeed] ?? nextNeed,
         }),
       })
 
@@ -220,12 +224,15 @@ function Mission() {
   }
 
   function handleSurpriseMe() {
-    // Surprise Me reuses the recommendation API, but lets MoveBreak choose the break setting.
     const nextMovementType = getSurpriseMovementType(movementType)
+    const nextNeedOptions = nextMovementType === 'Indoor' ? needOptions : outdoorNeedOptions
+    const nextNeed = getRandomOption(nextNeedOptions).label
 
     setIsSurpriseRecommendation(true)
     handleMovementTypeChange(nextMovementType)
-    loadMission(nextMovementType)
+    setNeed(nextNeed)
+    setIsPreviewOpen(true)
+    loadMission(nextMovementType, nextNeed)
   }
 
   return (
@@ -278,16 +285,6 @@ function Mission() {
                 ))}
               </div>
 
-              <Button
-                className="surprise-button"
-                onClick={handleSurpriseMe}
-                size="sm"
-                variant="outline"
-                type="button"
-              >
-                <Shuffle size={15} />
-                {isLoading && isSurpriseRecommendation ? 'Finding surprise' : 'Surprise me'}
-              </Button>
             </div>
 
             <div className="builder-section">
@@ -314,10 +311,21 @@ function Mission() {
                 })}
               </div>
 
-              <Button className="mt-[0.72rem] w-full" onClick={handleShowOptions} type="button">
-                <Footprints size={17} />
-                {isLoading ? 'Finding options' : 'Show my options'}
-              </Button>
+              <div className="mission-action-row">
+                <Button
+                  disabled={isLoading}
+                  onClick={handleSurpriseMe}
+                  type="button"
+                  variant="outline"
+                >
+                  <Shuffle size={17} />
+                  {isLoading && isSurpriseRecommendation ? 'Picking for you' : 'Pick for me'}
+                </Button>
+                <Button disabled={isLoading} onClick={handleShowOptions} type="button">
+                  <Footprints size={17} />
+                  {isLoading && !isSurpriseRecommendation ? 'Finding options' : 'Show my options'}
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
