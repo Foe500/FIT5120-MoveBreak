@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import {
+  Armchair,
   CalendarDays,
   Footprints,
   HomeIcon,
@@ -23,6 +24,7 @@ import OutdoorGuidedBreak from './pages/OutdoorGuidedBreak.jsx'
 import Team from './pages/Team.jsx'
 import Planner from './pages/Planner.jsx'
 import Privacy from './pages/Privacy.jsx'
+import { getStoredIndoorBreak } from './lib/indoorBreak'
 import { getStoredOutdoorBreak } from './lib/outdoorBreak'
 
 const navItems = [
@@ -90,6 +92,42 @@ function ActiveOutdoorBreakBanner() {
   )
 }
 
+function ActiveIndoorBreakBanner() {
+  const location = useLocation()
+  const [activeSession, setActiveSession] = useState(() => getStoredIndoorBreak())
+
+  useEffect(() => {
+    function refreshActiveSession() {
+      setActiveSession(getStoredIndoorBreak())
+    }
+
+    window.addEventListener('movebreak:indoor-break-change', refreshActiveSession)
+    window.addEventListener('storage', refreshActiveSession)
+
+    return () => {
+      window.removeEventListener('movebreak:indoor-break-change', refreshActiveSession)
+      window.removeEventListener('storage', refreshActiveSession)
+    }
+  }, [])
+
+  if (!activeSession?.path || location.pathname.startsWith('/guided/indoor')) {
+    return null
+  }
+
+  return (
+    <div className="active-break-banner indoor">
+      <div>
+        <Armchair size={17} />
+        <span>
+          {activeSession.type} in progress · <strong>{activeSession.label}</strong>
+        </span>
+      </div>
+      <span>Timer ready to resume</span>
+      <Link to={activeSession.path}>Resume timer</Link>
+    </div>
+  )
+}
+
 function App() {
   return (
     <div className="app-shell">
@@ -115,6 +153,7 @@ function App() {
         </nav>
       </header>
 
+      <ActiveIndoorBreakBanner />
       <ActiveOutdoorBreakBanner />
 
       <main>

@@ -118,6 +118,16 @@
   text-decoration: none;
 }
 
+.active-break-banner.indoor {
+  border-bottom-color: #d7e2ee;
+  color: #34455d;
+  background: #eef5fb;
+}
+
+.active-break-banner.indoor a {
+  color: #17365f;
+}
+
 .nav-links a,
 button,
 .brand,

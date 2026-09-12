@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   Armchair,
   ArrowLeft,
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
+import { clearIndoorBreakSession, saveIndoorBreakSession } from '@/lib/indoorBreak'
 import { logTeamSession } from '@/lib/team'
 
 function formatTime(totalSeconds) {
@@ -37,6 +38,7 @@ function flattenSteps(activities) {
 }
 
 function IndoorGuidedSession() {
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const activityIds = useMemo(
     () => (searchParams.get('ids') ?? '').split(',').filter(Boolean),
@@ -76,6 +78,11 @@ function IndoorGuidedSession() {
         setStepSecondsLeft(nextFlatSteps[0]?.seconds ?? 0)
         setIsTimerRunning(false)
         setIsComplete(false)
+        saveIndoorBreakSession({
+          label: `${data.length}-exercise session`,
+          path: `${location.pathname}${location.search}`,
+          type: 'Indoor guided session',
+        })
       } catch {
         setError('This guided session is unavailable right now.')
       } finally {
@@ -86,7 +93,7 @@ function IndoorGuidedSession() {
     loadSessionActivities()
     // Only re-run when the requested activity ids actually change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityIds.join(',')])
+  }, [activityIds.join(','), location.pathname, location.search])
 
   const flatSteps = useMemo(() => flattenSteps(activities), [activities])
   const currentStepDurationSeconds = flatSteps[currentIndex]?.seconds ?? 0
@@ -110,6 +117,7 @@ function IndoorGuidedSession() {
         label: `${activities.length}-exercise session`,
         seconds: totalSeconds,
       })
+      clearIndoorBreakSession()
     }
     // Only log once per completion, not on every render while complete.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,6 +152,11 @@ function IndoorGuidedSession() {
 
   function handleStartPause() {
     if (isComplete) {
+      saveIndoorBreakSession({
+        label: `${activities.length || 1}-exercise session`,
+        path: `${location.pathname}${location.search}`,
+        type: 'Indoor guided session',
+      })
       setCurrentIndex(0)
       setStepSecondsLeft(flatSteps[0]?.seconds ?? 0)
       setIsComplete(false)

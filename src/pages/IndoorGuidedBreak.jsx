@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import {
   Armchair,
   ArrowLeft,
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
+import { clearIndoorBreakSession, saveIndoorBreakSession } from '@/lib/indoorBreak'
 import { logTeamSession } from '@/lib/team'
 
 function formatTime(totalSeconds) {
@@ -26,6 +27,7 @@ function formatTime(totalSeconds) {
 }
 
 function IndoorGuidedBreak() {
+  const location = useLocation()
   const { activityId } = useParams()
   const [activity, setActivity] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -52,6 +54,11 @@ function IndoorGuidedBreak() {
         setStepSecondsLeft(nextSteps[0]?.seconds ?? 0)
         setIsTimerRunning(false)
         setIsComplete(false)
+        saveIndoorBreakSession({
+          label: data.title,
+          path: `${location.pathname}${location.search}`,
+          type: 'Indoor guided break',
+        })
       } catch {
         setError('Guided break details are unavailable right now.')
       } finally {
@@ -60,7 +67,7 @@ function IndoorGuidedBreak() {
     }
 
     loadActivity()
-  }, [activityId])
+  }, [activityId, location.pathname, location.search])
 
   const steps = useMemo(() => activity?.steps ?? [], [activity])
   const currentStepDurationSeconds = steps[currentStepIndex]?.seconds ?? 0
@@ -77,6 +84,7 @@ function IndoorGuidedBreak() {
   useEffect(() => {
     if (isComplete && activity) {
       logTeamSession({ setting: 'Indoor', label: activity.title, seconds: totalSeconds })
+      clearIndoorBreakSession()
     }
     // Only log once per completion, not on every render while complete.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,6 +119,11 @@ function IndoorGuidedBreak() {
 
   function handleStartPause() {
     if (isComplete) {
+      saveIndoorBreakSession({
+        label: activity?.title ?? 'Indoor guided break',
+        path: `${location.pathname}${location.search}`,
+        type: 'Indoor guided break',
+      })
       setCurrentStepIndex(0)
       setStepSecondsLeft(steps[0]?.seconds ?? 0)
       setIsComplete(false)
