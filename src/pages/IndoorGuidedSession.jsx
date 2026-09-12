@@ -69,7 +69,13 @@ function IndoorGuidedSession() {
         }
 
         const data = await Promise.all(responses.map((response) => response.json()))
+        const nextFlatSteps = flattenSteps(data)
+
         setActivities(data)
+        setCurrentIndex(0)
+        setStepSecondsLeft(nextFlatSteps[0]?.seconds ?? 0)
+        setIsTimerRunning(false)
+        setIsComplete(false)
       } catch {
         setError('This guided session is unavailable right now.')
       } finally {
@@ -108,19 +114,6 @@ function IndoorGuidedSession() {
     // Only log once per completion, not on every render while complete.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isComplete])
-
-  useEffect(() => {
-    if (!flatSteps.length) {
-      return
-    }
-
-    setCurrentIndex(0)
-    setStepSecondsLeft(flatSteps[0].seconds)
-    setIsTimerRunning(false)
-    setIsComplete(false)
-    // Only reset when the loaded activity list changes, not on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activities])
 
   useEffect(() => {
     if (!isTimerRunning || isComplete || !currentStepDurationSeconds) {
