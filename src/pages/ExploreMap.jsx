@@ -12,6 +12,7 @@ import {
   Leaf,
   MapPin,
   Navigation,
+  Play,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -97,6 +98,23 @@ function getSavedPlannerBreaks() {
     return Array.isArray(savedBreaks) ? savedBreaks : []
   } catch {
     return []
+  }
+}
+
+function getOutdoorBreakPlan(place, duration, origin) {
+  return {
+    placeId: place.id,
+    placeName: place.name,
+    category: getPlaceCategory(place),
+    address: place.address,
+    availableTime: duration,
+    walkThereMinutes: place.walking_time_one_way,
+    restMinutes: place.activity_time,
+    walkBackMinutes: place.walking_time_one_way,
+    bufferMinutes: place.buffer_time,
+    estimatedTotalMinutes: place.estimated_total_time,
+    remainingMinutes: place.remaining_time,
+    directionsUrl: getPlaceDirectionsUrl(place, origin),
   }
 }
 
@@ -503,6 +521,15 @@ function ExploreMap() {
 
           <div className="selected-place-actions">
             <Button asChild variant="success">
+              <Link
+                to="/guided/outdoor"
+                state={{ breakPlan: getOutdoorBreakPlan(selectedPlace, selectedDuration, currentPosition) }}
+              >
+                <Play size={17} fill="currentColor" />
+                Start break
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
               <a href={getPlaceDirectionsUrl(selectedPlace, currentPosition)} rel="noreferrer" target="_blank">
                 <Navigation size={17} />
                 Directions

@@ -1939,7 +1939,7 @@ main {
 
 .selected-place-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(8.8rem, 1fr));
   gap: 0.6rem;
   margin-top: 1.05rem;
 }
@@ -2582,6 +2582,136 @@ main {
   margin-top: 1rem;
   color: #527092;
   font-size: 0.82rem;
+}
+
+.outdoor-session-page {
+  min-height: calc(100vh - 4.8rem);
+}
+
+.outdoor-session-shell {
+  display: grid;
+  justify-items: center;
+  width: min(42rem, 100%);
+  margin: 1rem auto 0;
+  text-align: center;
+}
+
+.outdoor-session-kicker {
+  margin: 0;
+  color: #55735b;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.outdoor-session-shell h1 {
+  margin-top: 0.45rem;
+  color: #121826;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  line-height: 1.08;
+}
+
+.outdoor-session-subtitle {
+  margin-top: 0.45rem;
+  color: #756555;
+  font-size: 1rem;
+}
+
+.outdoor-timer-ring {
+  display: grid;
+  width: min(19rem, 76vw);
+  aspect-ratio: 1;
+  margin-top: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  box-shadow: 0 18px 42px rgba(53, 97, 74, 0.13);
+}
+
+.outdoor-timer-ring > div {
+  display: grid;
+  width: calc(100% - 1.25rem);
+  height: calc(100% - 1.25rem);
+  place-items: center;
+  align-content: center;
+  gap: 0.55rem;
+  border-radius: inherit;
+  color: #17365f;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.92), transparent 5.2rem),
+    #e8f8ee;
+}
+
+.outdoor-timer-ring svg {
+  color: #121826;
+}
+
+.outdoor-timer-ring strong {
+  color: #121826;
+  font-size: clamp(2.3rem, 9vw, 4rem);
+  line-height: 0.95;
+}
+
+.outdoor-timer-ring span {
+  color: #66726b;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.outdoor-session-instruction {
+  max-width: 34rem;
+  margin-top: 1.6rem;
+  color: #2c2f36;
+  font-size: 1.15rem;
+  line-height: 1.35;
+}
+
+.outdoor-session-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.outdoor-session-dots span {
+  min-width: 4rem;
+  min-height: 1.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 0.65rem;
+  color: #8d857f;
+  background: #e2ddd6;
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
+.outdoor-session-dots .active {
+  color: #ffffff;
+  background: #121826;
+}
+
+.outdoor-session-actions,
+.outdoor-session-complete-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.9rem;
+}
+
+.outdoor-session-actions a,
+.outdoor-session-actions button,
+.outdoor-session-complete-actions a,
+.outdoor-session-complete-actions button {
+  min-width: 9rem;
+}
+
+.outdoor-session-note {
+  margin-top: 1.05rem;
+  color: #9a8d84;
+  font-size: 0.84rem;
 }
 
 .planner-page {
