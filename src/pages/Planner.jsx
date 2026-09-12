@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CalendarDays,
@@ -24,7 +24,7 @@ const initialBreaks = [
     type: 'Indoor',
     period: 'Morning',
     status: 'Completed',
-    icon: Eye,
+    iconKey: 'Eye',
   },
   {
     id: 'desk-shoulder-release',
@@ -34,7 +34,7 @@ const initialBreaks = [
     type: 'Indoor',
     period: 'Afternoon',
     status: 'Start',
-    icon: CalendarDays,
+    iconKey: 'CalendarDays',
   },
   {
     id: 'flagstaff-loop',
@@ -44,9 +44,16 @@ const initialBreaks = [
     type: 'Outdoor',
     period: 'Afternoon',
     status: 'View route',
-    icon: Footprints,
+    iconKey: 'Footprints',
   },
 ]
+
+const plannerStorageKey = 'movebreak-planned-breaks'
+const plannerIcons = {
+  CalendarDays,
+  Eye,
+  Footprints,
+}
 
 const activitySuggestions = [
   {
@@ -55,7 +62,7 @@ const activitySuggestions = [
     duration: 2,
     type: 'Indoor',
     added: false,
-    icon: Eye,
+    iconKey: 'Eye',
   },
   {
     id: 'desk-shoulder-release-suggestion',
@@ -71,16 +78,30 @@ const activitySuggestions = [
     duration: 5,
     type: 'Indoor',
     added: false,
-    icon: CalendarDays,
+    iconKey: 'CalendarDays',
   },
 ]
 
+function getInitialPlannedBreaks() {
+  try {
+    const savedBreaks = JSON.parse(localStorage.getItem(plannerStorageKey) ?? '[]')
+
+    return Array.isArray(savedBreaks) && savedBreaks.length ? savedBreaks : initialBreaks
+  } catch {
+    return initialBreaks
+  }
+}
+
 function Planner() {
-  const [plannedBreaks, setPlannedBreaks] = useState(initialBreaks)
+  const [plannedBreaks, setPlannedBreaks] = useState(getInitialPlannedBreaks)
   const totalMinutes = plannedBreaks.reduce(
     (sum, plannedBreak) => sum + plannedBreak.duration,
     0,
   )
+
+  useEffect(() => {
+    localStorage.setItem(plannerStorageKey, JSON.stringify(plannedBreaks))
+  }, [plannedBreaks])
 
   function addSuggestedBreak(activity) {
     const newBreak = {
@@ -91,7 +112,7 @@ function Planner() {
       type: activity.type,
       period: 'Afternoon',
       status: 'Start',
-      icon: activity.icon ?? CalendarDays,
+      iconKey: activity.iconKey ?? 'CalendarDays',
     }
 
     setPlannedBreaks([...plannedBreaks, newBreak])
@@ -105,7 +126,7 @@ function Planner() {
         <h2>{period}</h2>
 
         {periodBreaks.map((plannedBreak) => {
-          const Icon = plannedBreak.icon
+          const Icon = plannerIcons[plannedBreak.iconKey] ?? CalendarDays
 
           return (
             <article className="planner-row" key={plannedBreak.id}>
@@ -125,20 +146,28 @@ function Planner() {
                   </Badge>
                 </div>
                 <span className="planner-duration">{plannedBreak.duration} min</span>
-                <Button
-                  size="sm"
-                  type="button"
-                  variant={plannedBreak.status === 'Completed' ? 'ghost' : 'outline'}
-                >
-                  {plannedBreak.status === 'Completed' ? (
-                    <>
-                      <CheckCircle2 size={15} />
-                      Completed
-                    </>
-                  ) : (
-                    plannedBreak.status
-                  )}
-                </Button>
+                {plannedBreak.directionsUrl ? (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={plannedBreak.directionsUrl} rel="noreferrer" target="_blank">
+                      {plannedBreak.status}
+                    </a>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    type="button"
+                    variant={plannedBreak.status === 'Completed' ? 'ghost' : 'outline'}
+                  >
+                    {plannedBreak.status === 'Completed' ? (
+                      <>
+                        <CheckCircle2 size={15} />
+                        Completed
+                      </>
+                    ) : (
+                      plannedBreak.status
+                    )}
+                  </Button>
+                )}
                 <div className="planner-row-actions">
                   <button aria-label="Edit break" type="button">
                     <Pencil size={15} />
@@ -207,7 +236,7 @@ function Planner() {
 
           <div className="suggestion-list">
             {activitySuggestions.map((activity) => {
-              const Icon = activity.icon
+              const Icon = plannerIcons[activity.iconKey] ?? CalendarDays
 
               return (
                 <article key={activity.id}>
