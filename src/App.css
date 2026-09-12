@@ -118,6 +118,17 @@
   text-decoration: none;
 }
 
+.active-break-banner button {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border: 1px solid rgba(49, 91, 60, 0.2);
+  border-radius: 999px;
+  color: #315b3c;
+  background: rgba(255, 255, 255, 0.58);
+}
+
 .active-break-banner.indoor {
   border-bottom-color: #d7e2ee;
   color: #34455d;

@@ -1,25 +1,22 @@
-export const indoorBreakStorageKey = 'movebreak-active-indoor-break'
+import {
+  clearActiveBreakSession,
+  getStoredActiveBreak,
+  saveActiveBreakSession,
+} from './activeBreak'
 
 export function getStoredIndoorBreak() {
-  try {
-    return JSON.parse(sessionStorage.getItem(indoorBreakStorageKey) ?? 'null')
-  } catch {
-    return null
-  }
+  const activeBreak = getStoredActiveBreak()
+
+  return activeBreak?.setting === 'Indoor' ? activeBreak : null
 }
 
 export function saveIndoorBreakSession(session) {
-  sessionStorage.setItem(
-    indoorBreakStorageKey,
-    JSON.stringify({
-      ...session,
-      updatedAt: Date.now(),
-    }),
-  )
-  window.dispatchEvent(new Event('movebreak:indoor-break-change'))
+  return saveActiveBreakSession({
+    ...session,
+    setting: 'Indoor',
+  })
 }
 
 export function clearIndoorBreakSession() {
-  sessionStorage.removeItem(indoorBreakStorageKey)
-  window.dispatchEvent(new Event('movebreak:indoor-break-change'))
+  clearActiveBreakSession()
 }

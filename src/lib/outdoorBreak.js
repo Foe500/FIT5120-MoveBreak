@@ -1,26 +1,23 @@
-export const outdoorBreakStorageKey = 'movebreak-active-outdoor-break'
+import {
+  clearActiveBreakSession,
+  getStoredActiveBreak,
+  saveActiveBreakSession,
+} from './activeBreak'
 
 export function getStoredOutdoorBreak() {
-  try {
-    return JSON.parse(sessionStorage.getItem(outdoorBreakStorageKey) ?? 'null')
-  } catch {
-    return null
-  }
+  const activeBreak = getStoredActiveBreak()
+
+  return activeBreak?.setting === 'Outdoor' ? activeBreak : null
 }
 
 export function saveOutdoorBreakSession(breakPlan, startedAt = Date.now()) {
-  const session = {
+  return saveActiveBreakSession({
     breakPlan,
+    setting: 'Outdoor',
     startedAt,
-  }
-
-  sessionStorage.setItem(outdoorBreakStorageKey, JSON.stringify(session))
-  window.dispatchEvent(new Event('movebreak:outdoor-break-change'))
-
-  return session
+  })
 }
 
 export function clearOutdoorBreakSession() {
-  sessionStorage.removeItem(outdoorBreakStorageKey)
-  window.dispatchEvent(new Event('movebreak:outdoor-break-change'))
+  clearActiveBreakSession()
 }

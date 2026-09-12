@@ -11,6 +11,7 @@ import {
   Sprout,
   StretchHorizontal,
   Trophy,
+  X,
 } from 'lucide-react'
 import './App.css'
 import Home from './pages/Home.jsx'
@@ -24,8 +25,7 @@ import OutdoorGuidedBreak from './pages/OutdoorGuidedBreak.jsx'
 import Team from './pages/Team.jsx'
 import Planner from './pages/Planner.jsx'
 import Privacy from './pages/Privacy.jsx'
-import { getStoredIndoorBreak } from './lib/indoorBreak'
-import { getStoredOutdoorBreak } from './lib/outdoorBreak'
+import { clearActiveBreakSession, getStoredActiveBreak } from './lib/activeBreak'
 
 const navItems = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -56,74 +56,53 @@ function getOutdoorBreakStatus(session) {
   return `Return reminder in ${minutes} min`
 }
 
-function ActiveOutdoorBreakBanner() {
+function ActiveBreakBanner() {
   const location = useLocation()
-  const [activeSession, setActiveSession] = useState(() => getStoredOutdoorBreak())
+  const [activeSession, setActiveSession] = useState(() => getStoredActiveBreak())
 
   useEffect(() => {
     function refreshActiveSession() {
-      setActiveSession(getStoredOutdoorBreak())
+      setActiveSession(getStoredActiveBreak())
     }
 
-    window.addEventListener('movebreak:outdoor-break-change', refreshActiveSession)
+    window.addEventListener('movebreak:active-break-change', refreshActiveSession)
     window.addEventListener('storage', refreshActiveSession)
 
     return () => {
-      window.removeEventListener('movebreak:outdoor-break-change', refreshActiveSession)
+      window.removeEventListener('movebreak:active-break-change', refreshActiveSession)
       window.removeEventListener('storage', refreshActiveSession)
     }
   }, [])
 
-  if (!activeSession?.breakPlan || location.pathname === '/guided/outdoor') {
+  if (!activeSession) {
     return null
   }
 
-  return (
-    <div className="active-break-banner">
-      <div>
-        <Footprints size={17} />
-        <span>
-          Outdoor break in progress · <strong>{activeSession.breakPlan.placeName}</strong>
-        </span>
-      </div>
-      <span>{getOutdoorBreakStatus(activeSession)}</span>
-      <Link to="/guided/outdoor">Resume timer</Link>
-    </div>
-  )
-}
+  const isOutdoor = activeSession.setting === 'Outdoor'
+  const isIndoor = activeSession.setting === 'Indoor'
 
-function ActiveIndoorBreakBanner() {
-  const location = useLocation()
-  const [activeSession, setActiveSession] = useState(() => getStoredIndoorBreak())
-
-  useEffect(() => {
-    function refreshActiveSession() {
-      setActiveSession(getStoredIndoorBreak())
-    }
-
-    window.addEventListener('movebreak:indoor-break-change', refreshActiveSession)
-    window.addEventListener('storage', refreshActiveSession)
-
-    return () => {
-      window.removeEventListener('movebreak:indoor-break-change', refreshActiveSession)
-      window.removeEventListener('storage', refreshActiveSession)
-    }
-  }, [])
-
-  if (!activeSession?.path || location.pathname.startsWith('/guided/indoor')) {
+  if ((isOutdoor && location.pathname === '/guided/outdoor') || (isIndoor && location.pathname.startsWith('/guided/indoor'))) {
     return null
   }
 
+  const Icon = isOutdoor ? Footprints : Armchair
+  const label = isOutdoor ? activeSession.breakPlan?.placeName : activeSession.label
+  const status = isOutdoor ? getOutdoorBreakStatus(activeSession) : 'Timer ready to resume'
+  const resumePath = isOutdoor ? '/guided/outdoor' : activeSession.path
+
   return (
-    <div className="active-break-banner indoor">
+    <div className={`active-break-banner ${isIndoor ? 'indoor' : ''}`}>
       <div>
-        <Armchair size={17} />
+        <Icon size={17} />
         <span>
-          {activeSession.type} in progress · <strong>{activeSession.label}</strong>
+          {isOutdoor ? 'Outdoor break' : activeSession.type} in progress · <strong>{label}</strong>
         </span>
       </div>
-      <span>Timer ready to resume</span>
-      <Link to={activeSession.path}>Resume timer</Link>
+      <span>{status}</span>
+      <Link to={resumePath}>Resume timer</Link>
+      <button aria-label="Dismiss active break timer" onClick={clearActiveBreakSession} type="button">
+        <X size={15} />
+      </button>
     </div>
   )
 }
@@ -153,8 +132,7 @@ function App() {
         </nav>
       </header>
 
-      <ActiveIndoorBreakBanner />
-      <ActiveOutdoorBreakBanner />
+      <ActiveBreakBanner />
 
       <main>
         <Routes>
