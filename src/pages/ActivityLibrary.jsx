@@ -19,7 +19,7 @@ import { Card } from '@/components/ui/card'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 import { API_BASE_URL } from '@/lib/api'
 
-const durationFilters = [5, 10, 15, 'Any']
+const durationFilters = [5, 15, 30, 'Any']
 const postureFilters = ['Any posture', 'Seated', 'Standing']
 
 const activityVisuals = {

@@ -24,7 +24,7 @@ import { createMarkerIcon } from '@/lib/mapMarkers'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
-const durationOptions = [5, 10, 15]
+const durationOptions = [5, 15, 30]
 
 const movementOptions = [
   {
@@ -74,8 +74,8 @@ function getInitialDuration(searchParams) {
   // URL search params are strings, so convert duration before comparing with numeric options.
   const duration = Number(searchParams.get('duration'))
 
-  // Fall back to 10 minutes if the URL is missing duration or contains an unsupported value.
-  return durationOptions.includes(duration) ? duration : 10
+  // Fall back to 15 minutes if the URL is missing duration or contains an unsupported value.
+  return durationOptions.includes(duration) ? duration : 15
 }
 
 function getFlowTarget(movementType, duration, sessionActivities) {
@@ -132,9 +132,10 @@ function Mission() {
     : (mission?.duration ?? duration)
   const previewSteps =
     mission?.steps ?? [
-      { label: 'Walk out', duration: 4 },
-      { label: 'Reset', duration: 2 },
+      { label: 'Walk there', duration: 4 },
+      { label: 'Rest', duration: 4 },
       { label: 'Walk back', duration: 4 },
+      { label: 'Buffer', duration: 1 },
     ]
   const flowTarget = getFlowTarget(movementType, duration, sessionActivities)
   const primaryActionLabel = isIndoor
@@ -406,9 +407,15 @@ function Mission() {
               <div className="route-breakdown">
                 {previewSteps.map((step) => (
                   <span key={step.label}>
-                    {step.label === 'Reset' ? <Leaf size={16} /> : <Footprints size={16} />}
+                    {step.label === 'Rest' ? (
+                      <Leaf size={16} />
+                    ) : step.label === 'Buffer' ? (
+                      <TimerReset size={16} />
+                    ) : (
+                      <Footprints size={16} />
+                    )}
                     <strong>{step.label}</strong>
-                    {step.duration} min
+                    {Math.round(step.duration)} min
                   </span>
                 ))}
               </div>
