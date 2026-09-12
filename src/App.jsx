@@ -1,6 +1,8 @@
-import { Link, NavLink, Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import {
   CalendarDays,
+  Footprints,
   HomeIcon,
   MapPinned,
   ShieldCheck,
@@ -21,6 +23,7 @@ import OutdoorGuidedBreak from './pages/OutdoorGuidedBreak.jsx'
 import Team from './pages/Team.jsx'
 import Planner from './pages/Planner.jsx'
 import Privacy from './pages/Privacy.jsx'
+import { getStoredOutdoorBreak } from './lib/outdoorBreak'
 
 const navItems = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -30,6 +33,62 @@ const navItems = [
   { to: '/team', label: 'Team', icon: Trophy },
   { to: '/planner', label: 'Planner', icon: CalendarDays },
 ]
+
+function getOutdoorBreakStatus(session) {
+  const breakPlan = session?.breakPlan
+
+  if (!breakPlan) {
+    return ''
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - session.startedAt) / 1000)
+  const returnAtSeconds = (breakPlan.walkThereMinutes + breakPlan.restMinutes) * 60
+  const remainingToReturn = Math.max(0, returnAtSeconds - elapsedSeconds)
+
+  if (remainingToReturn === 0) {
+    return 'Time to head back'
+  }
+
+  const minutes = Math.ceil(remainingToReturn / 60)
+
+  return `Return reminder in ${minutes} min`
+}
+
+function ActiveOutdoorBreakBanner() {
+  const location = useLocation()
+  const [activeSession, setActiveSession] = useState(() => getStoredOutdoorBreak())
+
+  useEffect(() => {
+    function refreshActiveSession() {
+      setActiveSession(getStoredOutdoorBreak())
+    }
+
+    window.addEventListener('movebreak:outdoor-break-change', refreshActiveSession)
+    window.addEventListener('storage', refreshActiveSession)
+
+    return () => {
+      window.removeEventListener('movebreak:outdoor-break-change', refreshActiveSession)
+      window.removeEventListener('storage', refreshActiveSession)
+    }
+  }, [])
+
+  if (!activeSession?.breakPlan || location.pathname === '/guided/outdoor') {
+    return null
+  }
+
+  return (
+    <div className="active-break-banner">
+      <div>
+        <Footprints size={17} />
+        <span>
+          Outdoor break in progress · <strong>{activeSession.breakPlan.placeName}</strong>
+        </span>
+      </div>
+      <span>{getOutdoorBreakStatus(activeSession)}</span>
+      <Link to="/guided/outdoor">Resume timer</Link>
+    </div>
+  )
+}
 
 function App() {
   return (
@@ -55,6 +114,8 @@ function App() {
           })}
         </nav>
       </header>
+
+      <ActiveOutdoorBreakBanner />
 
       <main>
         <Routes>

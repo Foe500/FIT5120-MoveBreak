@@ -85,6 +85,39 @@
   box-shadow: inset 0 -2px 0 #2f80ed;
 }
 
+.active-break-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.58rem 1rem;
+  border-bottom: 1px solid #d8e2d5;
+  color: #3d4f42;
+  background: #edf5ea;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.active-break-banner > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.active-break-banner strong {
+  color: #17365f;
+}
+
+.active-break-banner > span {
+  color: #66726b;
+}
+
+.active-break-banner a {
+  color: #315b3c;
+  font-weight: 900;
+  text-decoration: none;
+}
+
 .nav-links a,
 button,
 .brand,
@@ -3269,6 +3302,12 @@ main {
     align-items: flex-start;
     flex-direction: column;
     padding: 1rem;
+  }
+
+  .active-break-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.35rem;
   }
 
   .page,

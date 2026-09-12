@@ -11,9 +11,12 @@ import {
   TimerReset,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  clearOutdoorBreakSession,
+  getStoredOutdoorBreak,
+  saveOutdoorBreakSession,
+} from '@/lib/outdoorBreak'
 import { logTeamSession } from '@/lib/team'
-
-const outdoorBreakStorageKey = 'movebreak-active-outdoor-break'
 
 function formatClock(totalSeconds) {
   const safeSeconds = Math.max(0, Math.round(totalSeconds))
@@ -23,29 +26,26 @@ function formatClock(totalSeconds) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-function getStoredBreak() {
-  try {
-    return JSON.parse(sessionStorage.getItem(outdoorBreakStorageKey) ?? 'null')
-  } catch {
-    return null
+function getOutdoorBreakSession(locationState) {
+  if (locationState?.breakPlan) {
+    return saveOutdoorBreakSession(locationState.breakPlan)
   }
-}
 
-function getOutdoorBreak(locationState) {
-  return locationState?.breakPlan ?? getStoredBreak()
+  return getStoredOutdoorBreak()
 }
 
 function OutdoorGuidedBreak() {
   const location = useLocation()
   const navigate = useNavigate()
-  const breakPlan = useMemo(() => getOutdoorBreak(location.state), [location.state])
+  const breakSession = useMemo(() => getOutdoorBreakSession(location.state), [location.state])
+  const breakPlan = breakSession?.breakPlan
   const walkThereSeconds = (breakPlan?.walkThereMinutes ?? 0) * 60
   const restSeconds = (breakPlan?.restMinutes ?? 0) * 60
   const walkBackSeconds = (breakPlan?.walkBackMinutes ?? 0) * 60
   const bufferSeconds = (breakPlan?.bufferMinutes ?? 0) * 60
   const returnAtSeconds = walkThereSeconds + restSeconds
   const totalSeconds = returnAtSeconds + walkBackSeconds + bufferSeconds
-  const [startedAt, setStartedAt] = useState(() => Date.now())
+  const [startedAt, setStartedAt] = useState(() => breakSession?.startedAt ?? Date.now())
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const [hasArrived, setHasArrived] = useState(false)
   const [hasStartedReturn, setHasStartedReturn] = useState(false)
@@ -61,12 +61,6 @@ function OutdoorGuidedBreak() {
   const circleStyle = {
     background: `conic-gradient(#13b981 ${progressPercent * 3.6}deg, #e8f3ec 0deg)`,
   }
-
-  useEffect(() => {
-    if (breakPlan) {
-      sessionStorage.setItem(outdoorBreakStorageKey, JSON.stringify(breakPlan))
-    }
-  }, [breakPlan])
 
   useEffect(() => {
     if (!breakPlan || isComplete) {
@@ -121,14 +115,18 @@ function OutdoorGuidedBreak() {
   function handleFinishBreak() {
     setElapsedSeconds(totalSeconds)
     setIsComplete(true)
+    clearOutdoorBreakSession()
   }
 
   function handleRestart() {
-    setStartedAt(Date.now())
+    const nextStartedAt = Date.now()
+
+    setStartedAt(nextStartedAt)
     setElapsedSeconds(0)
     setHasArrived(false)
     setHasStartedReturn(false)
     setIsComplete(false)
+    saveOutdoorBreakSession(breakPlan, nextStartedAt)
   }
 
   if (!breakPlan) {

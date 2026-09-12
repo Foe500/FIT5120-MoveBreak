@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/card'
 import { melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
 import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
+import { saveOutdoorBreakSession } from '@/lib/outdoorBreak'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
@@ -289,6 +290,14 @@ function ExploreMap() {
     }
   }
 
+  function handleStartOutdoorBreak() {
+    if (!selectedPlace) {
+      return
+    }
+
+    saveOutdoorBreakSession(getOutdoorBreakPlan(selectedPlace, selectedDuration, currentPosition))
+  }
+
   return (
     <section className="explore-workspace">
       <MapContainer
@@ -522,6 +531,7 @@ function ExploreMap() {
           <div className="selected-place-actions">
             <Button asChild variant="success">
               <Link
+                onClick={handleStartOutdoorBreak}
                 to="/guided/outdoor"
                 state={{ breakPlan: getOutdoorBreakPlan(selectedPlace, selectedDuration, currentPosition) }}
               >
