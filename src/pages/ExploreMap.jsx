@@ -3,17 +3,17 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import {
   Building2,
+  CalendarPlus,
+  CheckCircle2,
   Clock3,
   Crosshair,
+  Footprints,
   Landmark,
   Leaf,
   MapPin,
   Navigation,
-  Route,
-  Search,
   X,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { melbourneCenter } from '@/data/mapPlaces'
@@ -22,34 +22,33 @@ import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
-const defaultOutdoorBreakDuration = 10
+const defaultOutdoorBreakDuration = 15
 const maxVisiblePlaces = 40
-const durationOptions = [5, 10, 15]
+const durationOptions = [5, 15, 30]
+const plannerStorageKey = 'movebreak-planned-breaks'
+const testOriginOptions = [
+  { label: 'Docklands', position: [-37.8183, 144.9467] },
+  { label: 'Southbank', position: [-37.8215, 144.9646] },
+  { label: 'Carlton', position: [-37.8001, 144.9671] },
+  { label: 'Fitzroy', position: [-37.7984, 144.9783] },
+  { label: 'South Yarra', position: [-37.8384, 144.9910] },
+]
 
 const placeIcons = {
   'Green space': Leaf,
   'Waterfront green space': Leaf,
   'Quiet public space': Building2,
   'Open public square': Landmark,
-}
-
-const defaultDataSource = {
-  provider: 'City of Melbourne Open Data',
-  dataset: 'Open Space / Public Places',
-  sourceType: 'Open Data',
+  'Outdoor Space': Leaf,
+  Seat: Landmark,
+  Amenity: Building2,
+  'Food and Drink': Building2,
+  'Food Shopping': Building2,
 }
 
 function getPlaceCategory(place) {
   // Prefer the future DS-provided category, but keep type as a fallback for the current dataset.
   return place.category ?? place.type
-}
-
-function getPlaceDataSource(place) {
-  // Keep the UI data-driven when DS adds source metadata, while still showing a safe I1 fallback.
-  return {
-    ...defaultDataSource,
-    ...place.dataSource,
-  }
 }
 
 function getInitialDuration(searchParams) {
@@ -58,17 +57,47 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : defaultOutdoorBreakDuration
 }
 
-function getPlaceSuitability(place, duration) {
-  const savedSuitability = place.suitabilityByDuration?.[duration]
+function getPlaceFitLabel(place, duration) {
+  return place.is_time_safe ? `Fits your ${duration} min break` : 'Outside current time range'
+}
 
-  if (savedSuitability) {
-    return savedSuitability
+function getPlaceSpareLabel(place) {
+  return place.remaining_time !== undefined ? `${Math.round(place.remaining_time)} min spare` : 'Spare time unavailable'
+}
+
+function getWalkTimeLabel(place) {
+  return place.walking_time_one_way_label ?? `${place.walking_time_one_way} min`
+}
+
+function getPlaceDirectionsUrl(place, origin) {
+  const destination = place.position ?? [place.latitude, place.longitude]
+
+  if (!destination?.[0] || !destination?.[1]) {
+    const query = encodeURIComponent(`${place.name} ${place.address ?? ''}`.trim())
+    return `https://www.google.com/maps/search/?api=1&query=${query}`
   }
 
-  // I1 uses a basic time-fit indicator until DS provides route-based walking time fields.
-  const bestDuration = Number(place.bestDurationMinutes ?? defaultOutdoorBreakDuration)
+  const params = new URLSearchParams({
+    api: '1',
+    destination: `${destination[0]},${destination[1]}`,
+    travelmode: 'walking',
+  })
 
-  return duration >= bestDuration ? 'Suitable' : 'Outside current time range'
+  if (origin) {
+    params.set('origin', `${origin[0]},${origin[1]}`)
+  }
+
+  return `https://www.google.com/maps/dir/?${params.toString()}`
+}
+
+function getSavedPlannerBreaks() {
+  try {
+    const savedBreaks = JSON.parse(localStorage.getItem(plannerStorageKey) ?? '[]')
+
+    return Array.isArray(savedBreaks) ? savedBreaks : []
+  } catch {
+    return []
+  }
 }
 
 function CurrentLocationView({ position }) {
@@ -90,21 +119,21 @@ function CurrentLocationView({ position }) {
 }
 
 function ExploreMap() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const selectedDuration = getInitialDuration(searchParams)
   const [places, setPlaces] = useState([])
   const [selectedPlace, setSelectedPlace] = useState(null)
-  const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [currentPosition, setCurrentPosition] = useState(null)
+  const [originLabel, setOriginLabel] = useState('Melbourne CBD')
   const [locationStatus, setLocationStatus] = useState('')
   const [isLocating, setIsLocating] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const selectedPlaceDataSource = selectedPlace ? getPlaceDataSource(selectedPlace) : null
-  const selectedPlaceSuitability = selectedPlace
-    ? getPlaceSuitability(selectedPlace, selectedDuration)
-    : null
+  const [plannedPlaceIds, setPlannedPlaceIds] = useState(
+    () => new Set(getSavedPlannerBreaks().map((plannedBreak) => plannedBreak.placeId).filter(Boolean)),
+  )
+  const selectedPlaceSuitability = selectedPlace ? getPlaceFitLabel(selectedPlace, selectedDuration) : null
   const categoryOptions = useMemo(
     // Build category buttons from place data so new DS categories appear without frontend changes.
     () => ['All', ...new Set(places.map((place) => getPlaceCategory(place)).filter(Boolean))],
@@ -114,25 +143,10 @@ function ExploreMap() {
     () =>
       places.filter((place) => {
         const category = getPlaceCategory(place)
-        const dataSource = getPlaceDataSource(place)
-        const searchText = [
-          place.name,
-          category,
-          place.type,
-          place.address,
-          place.status,
-          dataSource.provider,
-          dataSource.dataset,
-        ]
-          .filter(Boolean)
-          .join(' ')
-          .toLowerCase()
-        const matchesSearch = searchText.includes(searchQuery.trim().toLowerCase())
-        const matchesCategory = selectedCategory === 'All' || category === selectedCategory
 
-        return matchesSearch && matchesCategory
+        return selectedCategory === 'All' || category === selectedCategory
       }),
-    [places, searchQuery, selectedCategory],
+    [places, selectedCategory],
   )
   const visiblePlaces = useMemo(
     () =>
@@ -144,41 +158,38 @@ function ExploreMap() {
   )
 
   useEffect(() => {
-    if (!filteredPlaces.length) {
-      setSelectedPlace(null)
-      return
-    }
+    async function loadRecommendations() {
+      setIsLoading(true)
+      setError('')
 
-    // Keep the detail card aligned with the filtered map/list after search or category
-    // changes — but only when the current selection became stale (filtered out), not when
-    // it's null because the user deliberately closed the card with the X button.
-    if (selectedPlace && !filteredPlaces.some((place) => place.id === selectedPlace.id)) {
-      setSelectedPlace(filteredPlaces[0])
-    }
-  }, [filteredPlaces, selectedPlace])
-
-  useEffect(() => {
-    async function loadPlaces() {
       try {
-        const response = await fetch(`${API_BASE_URL}/places`)
+        const origin = currentPosition ?? melbourneCenter
+        const query = new URLSearchParams({
+          lat: String(origin[0]),
+          lng: String(origin[1]),
+          break_time: String(selectedDuration),
+          limit: '5',
+        })
+        const response = await fetch(`${API_BASE_URL}/recommendations?${query.toString()}`)
 
         if (!response.ok) {
-          throw new Error('Failed to load places')
+          throw new Error('Failed to load recommendations')
         }
 
         const data = await response.json()
-        setPlaces(data)
+        setPlaces(data.recommendations ?? [])
+        setSelectedPlace(null)
         // No place is selected by default — the detail card only opens
         // once the user actively picks one from the map or the list.
       } catch {
-        setError('Map places are unavailable right now.')
+        setError('Time-safe recommendations are unavailable right now.')
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadPlaces()
-  }, [])
+    loadRecommendations()
+  }, [currentPosition, selectedDuration])
 
   function handleUseCurrentLocation() {
     if (!navigator.geolocation) {
@@ -194,6 +205,7 @@ function ExploreMap() {
         const nextPosition = [position.coords.latitude, position.coords.longitude]
 
         setCurrentPosition(nextPosition)
+        setOriginLabel('Current location')
         setLocationStatus('')
         setIsLocating(false)
       },
@@ -207,6 +219,56 @@ function ExploreMap() {
         timeout: 10000,
       },
     )
+  }
+
+  function handleDurationChange(duration) {
+    const nextSearchParams = new URLSearchParams(searchParams)
+    nextSearchParams.set('duration', String(duration))
+    setSearchParams(nextSearchParams)
+    setSelectedPlace(null)
+  }
+
+  function handleTestOriginChange(testOrigin) {
+    setCurrentPosition(testOrigin.position)
+    setOriginLabel(testOrigin.label)
+    setLocationStatus(`Recommendations from ${testOrigin.label}.`)
+    setSelectedPlace(null)
+  }
+
+  function handleRandomTestOrigin() {
+    const nextOrigin = testOriginOptions[Math.floor(Math.random() * testOriginOptions.length)]
+    handleTestOriginChange(nextOrigin)
+  }
+
+  function handleAddSelectedPlaceToPlanner() {
+    if (!selectedPlace) {
+      return
+    }
+
+    const savedBreak = {
+      id: `outdoor-${selectedPlace.id}`,
+      placeId: selectedPlace.id,
+      time: 'Next break',
+      activity: selectedPlace.name,
+      duration: selectedDuration,
+      type: 'Outdoor',
+      period: 'Afternoon',
+      status: 'View route',
+      iconKey: 'Footprints',
+      address: selectedPlace.address,
+      directionsUrl: getPlaceDirectionsUrl(selectedPlace, currentPosition),
+    }
+
+    try {
+      const planItems = getSavedPlannerBreaks().filter(
+        (plannedBreak) => plannedBreak.placeId !== selectedPlace.id,
+      )
+
+      localStorage.setItem(plannerStorageKey, JSON.stringify([...planItems, savedBreak]))
+      setPlannedPlaceIds((currentIds) => new Set(currentIds).add(selectedPlace.id))
+    } catch {
+      setError('This break could not be added to your planner.')
+    }
   }
 
   return (
@@ -237,9 +299,9 @@ function ExploreMap() {
               <br />
               {getPlaceCategory(place)}
               <br />
-              Time fit: {getPlaceSuitability(place, selectedDuration)}
+              Total: {place.estimated_total_time ?? 'Unknown'} min
               <br />
-              Source: {getPlaceDataSource(place).provider}
+              {getPlaceFitLabel(place, selectedDuration)}
             </Popup>
           </Marker>
         ))}
@@ -247,9 +309,9 @@ function ExploreMap() {
         {currentPosition ? (
           <Marker icon={createCurrentLocationIcon()} position={currentPosition}>
             <Popup>
-              <strong>You are here</strong>
+              <strong>{originLabel}</strong>
               <br />
-              Current location
+              Starting point
             </Popup>
           </Marker>
         ) : null}
@@ -257,20 +319,10 @@ function ExploreMap() {
 
       <Card className="map-control-panel">
         <h1>Explore nearby breaks</h1>
-        <label className="map-search-box">
-          <Search size={18} />
-          <input
-            aria-label="Search map locations"
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search parks, quiet spaces..."
-            type="search"
-            value={searchQuery}
-          />
-        </label>
 
         <div className="near-heading-row">
           <h2>
-            Near <strong>Melbourne CBD</strong>
+            Near <strong>{originLabel}</strong>
           </h2>
           <button
             aria-label="Use current location"
@@ -285,6 +337,42 @@ function ExploreMap() {
 
         {locationStatus ? <p className="map-status-message">{locationStatus}</p> : null}
 
+        <div className="map-test-origin-control" aria-label="Choose where recommendations start from">
+          <span>Recommend from</span>
+          <div>
+            {testOriginOptions.map((testOrigin) => (
+              <button
+                className={originLabel === testOrigin.label ? 'selected' : ''}
+                key={testOrigin.label}
+                onClick={() => handleTestOriginChange(testOrigin)}
+                type="button"
+              >
+                {testOrigin.label}
+              </button>
+            ))}
+            <button onClick={handleRandomTestOrigin} type="button">
+              Random
+            </button>
+          </div>
+        </div>
+
+        <div className="map-duration-control" aria-label="Choose available break time">
+          <span>Available time</span>
+          <div>
+            {durationOptions.map((duration) => (
+              <button
+                aria-pressed={duration === selectedDuration}
+                className={duration === selectedDuration ? 'selected' : ''}
+                key={duration}
+                onClick={() => handleDurationChange(duration)}
+                type="button"
+              >
+                {duration} min
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="category-tabs" aria-label="Map category filters">
           {categoryOptions.map((category) => (
             <button
@@ -298,18 +386,18 @@ function ExploreMap() {
           ))}
         </div>
 
-        <div className="nearby-results-heading">Nearby break spots</div>
+        <div className="nearby-results-heading">Recommended nearby breaks</div>
 
         {error ? <p className="map-status-message">{error}</p> : null}
         {!isLoading && !error && filteredPlaces.length === 0 ? (
-          <p className="map-status-message">No locations match the current search or category.</p>
+          <p className="map-status-message">No locations match the current category.</p>
         ) : null}
 
         <div className="map-result-list">
           {visiblePlaces.map((place) => {
             const PlaceIcon = placeIcons[getPlaceCategory(place)] ?? placeIcons[place.type] ?? MapPin
             const isSelected = selectedPlace?.id === place.id
-            const suitability = getPlaceSuitability(place, selectedDuration)
+            const suitability = getPlaceFitLabel(place, selectedDuration)
 
             return (
               <button
@@ -324,14 +412,14 @@ function ExploreMap() {
                   <p>{getPlaceCategory(place)}</p>
                   <small>
                     <Navigation size={13} />
-                    {place.distance ?? 'Distance unavailable'}
+                    {place.distance_m ? `${place.distance_m} m · ` : ''}
+                    {getWalkTimeLabel(place)} each way
                   </small>
                   <small className="time-fit-status">
                     <Clock3 size={13} />
                     {suitability}
                   </small>
                 </div>
-                <Badge variant="secondary">{place.status ?? 'Open data'}</Badge>
                 <PlaceIcon className="result-icon" size={18} />
               </button>
             )
@@ -341,8 +429,8 @@ function ExploreMap() {
         <div className="panel-footer-row">
           <span>
             {isLoading
-              ? 'Loading nearby options'
-              : `Showing ${visiblePlaces.length} of ${filteredPlaces.length} options`}
+              ? 'Calculating time-safe options'
+              : `Showing ${visiblePlaces.length} of ${filteredPlaces.length} recommendations`}
           </span>
           <span>{selectedDuration} min break</span>
           <Link to="/mission">View mission options</Link>
@@ -366,7 +454,7 @@ function ExploreMap() {
             </span>
             <div>
               <h2>{selectedPlace.name}</h2>
-              <Badge variant="success">{selectedPlace.status ?? 'Open data'}</Badge>
+              <p>{getPlaceCategory(selectedPlace)}</p>
             </div>
           </div>
 
@@ -375,46 +463,61 @@ function ExploreMap() {
               <MapPin size={16} />
               {selectedPlace.address ?? 'Address unavailable'}
             </span>
+          </div>
+
+          <div className="route-breakdown place-breakdown">
             <span>
-              <Navigation size={16} />
-              {selectedPlace.distance ?? 'Distance unavailable'}
+              <Footprints size={16} />
+              <strong>Walk there</strong>
+              {getWalkTimeLabel(selectedPlace)}
+            </span>
+            <span>
+              <Leaf size={16} />
+              <strong>Rest</strong>
+              {selectedPlace.activity_time} min
+            </span>
+            <span>
+              <Footprints size={16} />
+              <strong>Walk back</strong>
+              {getWalkTimeLabel(selectedPlace)}
             </span>
             <span>
               <Clock3 size={16} />
-              {selectedPlaceSuitability} for a {selectedDuration} min break
+              <strong>Buffer</strong>
+              {selectedPlace.buffer_time} min
             </span>
+          </div>
+
+          <div className="selected-detail-list compact">
             <span>
               <Clock3 size={16} />
-              Basic I1 indicator, not a full route-time calculation
-            </span>
-            <span>
-              <Landmark size={16} />
-              {getPlaceCategory(selectedPlace)}
-            </span>
-            <span>
-              <Building2 size={16} />
-              Source: {selectedPlaceDataSource.provider}
-            </span>
-            <span>
-              <Building2 size={16} />
-              Dataset: {selectedPlaceDataSource.dataset}
+              About {selectedPlace.estimated_total_time} min including buffer
             </span>
           </div>
 
-          <div className="accepted-tags">
-            <span>{selectedPlaceSuitability}</span>
-            <span>Green</span>
-            <span>Quiet</span>
-            <span>Seating</span>
-            <span>Low traffic</span>
+          <div className="selected-break-summary">
+            <strong>{selectedPlaceSuitability}</strong>
+            <span>{getPlaceSpareLabel(selectedPlace)}</span>
+            <span>{selectedPlace.distance_m} m away</span>
           </div>
 
-          <Button asChild className="mt-[1.05rem] w-full" variant="success">
-            <Link to="/mission">
-              <Route size={17} />
-              Use this break spot
-            </Link>
-          </Button>
+          <div className="selected-place-actions">
+            <Button asChild variant="success">
+              <a href={getPlaceDirectionsUrl(selectedPlace, currentPosition)} rel="noreferrer" target="_blank">
+                <Navigation size={17} />
+                Directions
+              </a>
+            </Button>
+            <Button
+              disabled={plannedPlaceIds.has(selectedPlace.id)}
+              onClick={handleAddSelectedPlaceToPlanner}
+              type="button"
+              variant="outline"
+            >
+              {plannedPlaceIds.has(selectedPlace.id) ? <CheckCircle2 size={17} /> : <CalendarPlus size={17} />}
+              {plannedPlaceIds.has(selectedPlace.id) ? 'Added' : 'Add to planner'}
+            </Button>
+          </div>
         </Card>
       ) : null}
     </section>
