@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import {
   Armchair,
   ArrowLeft,
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
+import { clearIndoorBreakSession, saveIndoorBreakSession } from '@/lib/indoorBreak'
 import { logTeamSession } from '@/lib/team'
 
 function formatTime(totalSeconds) {
@@ -26,6 +27,7 @@ function formatTime(totalSeconds) {
 }
 
 function IndoorGuidedBreak() {
+  const location = useLocation()
   const { activityId } = useParams()
   const [activity, setActivity] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -45,7 +47,18 @@ function IndoorGuidedBreak() {
         }
 
         const data = await response.json()
+        const nextSteps = data.steps ?? []
+
         setActivity(data)
+        setCurrentStepIndex(0)
+        setStepSecondsLeft(nextSteps[0]?.seconds ?? 0)
+        setIsTimerRunning(false)
+        setIsComplete(false)
+        saveIndoorBreakSession({
+          label: data.title,
+          path: `${location.pathname}${location.search}`,
+          type: 'Indoor guided break',
+        })
       } catch {
         setError('Guided break details are unavailable right now.')
       } finally {
@@ -54,9 +67,9 @@ function IndoorGuidedBreak() {
     }
 
     loadActivity()
-  }, [activityId])
+  }, [activityId, location.pathname, location.search])
 
-  const steps = activity?.steps ?? []
+  const steps = useMemo(() => activity?.steps ?? [], [activity])
   const currentStepDurationSeconds = steps[currentStepIndex]?.seconds ?? 0
   const totalSeconds = steps.reduce((sum, step) => sum + step.seconds, 0)
   const remainingStepsSeconds = steps
@@ -71,23 +84,11 @@ function IndoorGuidedBreak() {
   useEffect(() => {
     if (isComplete && activity) {
       logTeamSession({ setting: 'Indoor', label: activity.title, seconds: totalSeconds })
+      clearIndoorBreakSession()
     }
     // Only log once per completion, not on every render while complete.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isComplete])
-
-  useEffect(() => {
-    if (!activity || !steps.length) {
-      return
-    }
-
-    setCurrentStepIndex(0)
-    setStepSecondsLeft(steps[0].seconds)
-    setIsTimerRunning(false)
-    setIsComplete(false)
-    // Only re-run when a different activity loads, not on every render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activity])
 
   useEffect(() => {
     if (!isTimerRunning || isComplete || !currentStepDurationSeconds) {
@@ -118,6 +119,11 @@ function IndoorGuidedBreak() {
 
   function handleStartPause() {
     if (isComplete) {
+      saveIndoorBreakSession({
+        label: activity?.title ?? 'Indoor guided break',
+        path: `${location.pathname}${location.search}`,
+        type: 'Indoor guided break',
+      })
       setCurrentStepIndex(0)
       setStepSecondsLeft(steps[0]?.seconds ?? 0)
       setIsComplete(false)

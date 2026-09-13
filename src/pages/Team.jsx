@@ -228,9 +228,12 @@ function TeamLeaderboard({ identity, onLeave }) {
   }
 
   useEffect(() => {
-    loadLeaderboard()
+    const timeout = window.setTimeout(loadLeaderboard, 0)
     const interval = window.setInterval(loadLeaderboard, 15000)
-    return () => window.clearInterval(interval)
+    return () => {
+      window.clearTimeout(timeout)
+      window.clearInterval(interval)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity.joinCode])
 
