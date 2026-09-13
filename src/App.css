@@ -1858,19 +1858,29 @@ main {
   font-size: 0.76rem;
 }
 
+.result-meta-row {
+  display: grid;
+  justify-items: start;
+  gap: 0.32rem;
+  margin-top: 0.42rem;
+}
+
 .map-result-list small {
   display: inline-flex;
   align-items: center;
   gap: 0.28rem;
-  margin-top: 0.44rem;
-  margin-right: 0.7rem;
   color: #08713f;
   font-size: 0.74rem;
   font-weight: 800;
 }
 
-.map-result-list .time-fit-status {
-  color: #0b66df;
+.map-result-list .time-total-status {
+  padding: 0.13rem 0.42rem;
+  border: 1px solid #d5e2d2;
+  border-radius: 999px;
+  color: #477050;
+  background: #eef3ea;
+  font-size: 0.68rem;
 }
 
 .result-icon {
@@ -4672,7 +4682,7 @@ main {
   color: #17365f;
 }
 
-.map-result-list .time-fit-status {
+.map-result-list .time-total-status {
   color: #477050;
 }
 

@@ -71,6 +71,10 @@ function getWalkTimeLabel(place) {
   return place.walking_time_one_way_label ?? `${place.walking_time_one_way} min`
 }
 
+function getPlaceTotalTimeLabel(place) {
+  return place.estimated_total_time ? `${place.estimated_total_time} min total` : 'Total time unavailable'
+}
+
 function getPlaceDirectionsUrl(place, origin) {
   const destination = place.position ?? [place.latitude, place.longitude]
 
@@ -424,7 +428,6 @@ function ExploreMap() {
           {visiblePlaces.map((place) => {
             const PlaceIcon = placeIcons[getPlaceCategory(place)] ?? placeIcons[place.type] ?? MapPin
             const isSelected = selectedPlace?.id === place.id
-            const suitability = getPlaceFitLabel(place, selectedDuration)
 
             return (
               <button
@@ -437,15 +440,17 @@ function ExploreMap() {
                 <div>
                   <h3>{place.name}</h3>
                   <p>{getPlaceCategory(place)}</p>
-                  <small>
-                    <Navigation size={13} />
-                    {place.distance_m ? `${place.distance_m} m · ` : ''}
-                    {getWalkTimeLabel(place)} each way
-                  </small>
-                  <small className="time-fit-status">
-                    <Clock3 size={13} />
-                    {suitability}
-                  </small>
+                  <div className="result-meta-row">
+                    <small>
+                      <Navigation size={13} />
+                      {place.distance_m ? `${place.distance_m} m · ` : ''}
+                      {getWalkTimeLabel(place)} each way
+                    </small>
+                    <small className="time-total-status">
+                      <Clock3 size={13} />
+                      {getPlaceTotalTimeLabel(place)}
+                    </small>
+                  </div>
                 </div>
                 <PlaceIcon className="result-icon" size={18} />
               </button>
