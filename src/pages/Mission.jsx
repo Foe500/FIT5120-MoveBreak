@@ -24,7 +24,7 @@ import { createMarkerIcon } from '@/lib/mapMarkers'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
-const durationOptions = [5, 10, 15]
+const durationOptions = [5, 15, 30]
 
 const movementOptions = [
   {
@@ -74,8 +74,8 @@ function getInitialDuration(searchParams) {
   // URL search params are strings, so convert duration before comparing with numeric options.
   const duration = Number(searchParams.get('duration'))
 
-  // Fall back to 10 minutes if the URL is missing duration or contains an unsupported value.
-  return durationOptions.includes(duration) ? duration : 10
+  // Fall back to 15 minutes if the URL is missing duration or contains an unsupported value.
+  return durationOptions.includes(duration) ? duration : 15
 }
 
 function getFlowTarget(movementType, duration, sessionActivities) {
@@ -105,6 +105,10 @@ function getSurpriseMovementType(currentMovementType) {
   return Math.random() > 0.5 ? currentMovementType : otherMovementType
 }
 
+function getRandomOption(options) {
+  return options[Math.floor(Math.random() * options.length)]
+}
+
 function Mission() {
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
@@ -132,9 +136,10 @@ function Mission() {
     : (mission?.duration ?? duration)
   const previewSteps =
     mission?.steps ?? [
-      { label: 'Walk out', duration: 4 },
-      { label: 'Reset', duration: 2 },
+      { label: 'Walk there', duration: 4 },
+      { label: 'Rest', duration: 4 },
       { label: 'Walk back', duration: 4 },
+      { label: 'Buffer', duration: 1 },
     ]
   const flowTarget = getFlowTarget(movementType, duration, sessionActivities)
   const primaryActionLabel = isIndoor
@@ -173,7 +178,7 @@ function Mission() {
     }
   }
 
-  async function loadMission(nextMovementType = movementType) {
+  async function loadMission(nextMovementType = movementType, nextNeed = need) {
     setIsLoading(true)
     setError('')
 
@@ -189,7 +194,7 @@ function Mission() {
         body: JSON.stringify({
           duration,
           setting: nextMovementType,
-          need: apiNeedByLabel[need] ?? need,
+          need: apiNeedByLabel[nextNeed] ?? nextNeed,
         }),
       })
 
@@ -219,12 +224,15 @@ function Mission() {
   }
 
   function handleSurpriseMe() {
-    // Surprise Me reuses the recommendation API, but lets MoveBreak choose the break setting.
     const nextMovementType = getSurpriseMovementType(movementType)
+    const nextNeedOptions = nextMovementType === 'Indoor' ? needOptions : outdoorNeedOptions
+    const nextNeed = getRandomOption(nextNeedOptions).label
 
     setIsSurpriseRecommendation(true)
     handleMovementTypeChange(nextMovementType)
-    loadMission(nextMovementType)
+    setNeed(nextNeed)
+    setIsPreviewOpen(true)
+    loadMission(nextMovementType, nextNeed)
   }
 
   return (
@@ -277,16 +285,6 @@ function Mission() {
                 ))}
               </div>
 
-              <Button
-                className="surprise-button"
-                onClick={handleSurpriseMe}
-                size="sm"
-                variant="outline"
-                type="button"
-              >
-                <Shuffle size={15} />
-                {isLoading && isSurpriseRecommendation ? 'Finding surprise' : 'Surprise me'}
-              </Button>
             </div>
 
             <div className="builder-section">
@@ -313,10 +311,21 @@ function Mission() {
                 })}
               </div>
 
-              <Button className="mt-[0.72rem] w-full" onClick={handleShowOptions} type="button">
-                <Footprints size={17} />
-                {isLoading ? 'Finding options' : 'Show my options'}
-              </Button>
+              <div className="mission-action-row">
+                <Button
+                  disabled={isLoading}
+                  onClick={handleSurpriseMe}
+                  type="button"
+                  variant="outline"
+                >
+                  <Shuffle size={17} />
+                  {isLoading && isSurpriseRecommendation ? 'Picking for you' : 'Pick for me'}
+                </Button>
+                <Button disabled={isLoading} onClick={handleShowOptions} type="button">
+                  <Footprints size={17} />
+                  {isLoading && !isSurpriseRecommendation ? 'Finding options' : 'Show my options'}
+                </Button>
+              </div>
             </div>
           </Card>
         </div>
@@ -406,9 +415,15 @@ function Mission() {
               <div className="route-breakdown">
                 {previewSteps.map((step) => (
                   <span key={step.label}>
-                    {step.label === 'Reset' ? <Leaf size={16} /> : <Footprints size={16} />}
+                    {step.label === 'Rest' ? (
+                      <Leaf size={16} />
+                    ) : step.label === 'Buffer' ? (
+                      <TimerReset size={16} />
+                    ) : (
+                      <Footprints size={16} />
+                    )}
                     <strong>{step.label}</strong>
-                    {step.duration} min
+                    {Math.round(step.duration)} min
                   </span>
                 ))}
               </div>

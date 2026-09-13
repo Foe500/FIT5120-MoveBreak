@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { createElement, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -117,7 +117,7 @@ function ActivityDetail() {
       <div className="activity-detail-layout">
         <Card className="activity-detail-main">
           <div className="activity-detail-hero">
-            <VisualIcon size={88} strokeWidth={1.4} />
+            {createElement(VisualIcon, { size: 88, strokeWidth: 1.4 })}
             <span>{activity.area}</span>
             <strong>{activity.category}</strong>
           </div>

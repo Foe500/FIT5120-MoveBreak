@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, TimerReset } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-const breakOptions = [5, 10, 15]
+const breakOptions = [5, 15, 30]
 
 function BreakHero({ durationError, selectedDuration, onDurationChange, onMissingDuration }) {
   const navigate = useNavigate()
