@@ -1,6 +1,6 @@
 # MoveBreak Melbourne
 
-MoveBreak is an Iteration 1 web prototype for helping users find short indoor or outdoor breaks around Melbourne CBD.
+MoveBreak is a web prototype for helping users find short indoor or outdoor breaks around Melbourne CBD.
 
 The project includes a React frontend and a FastAPI backend. The frontend renders the user interface, while the backend provides activity data, map place data, and a basic mission recommendation API.
 
@@ -18,7 +18,7 @@ Health:   https://movebreak-api.onrender.com/health
 
 - Frontend: React, Vite, React Router, Tailwind CSS, Leaflet
 - Backend: Python, FastAPI, SQLite, SQLAlchemy
-- Data source for Iteration 1: local JSON files in `backend/data`, loaded into a local SQLite database
+- Data sources: indoor activities are loaded from local JSON; Melbourne place recommendations are refreshed from City of Melbourne Open Data into SQLite during development or deployment
 
 ## Project Structure
 
@@ -32,7 +32,7 @@ backend/
   requirements.txt        Python backend dependencies
   data/
     activities.json       Indoor activity data
-    places.json           Melbourne CBD place data
+    recommendation_places.csv  Legacy fallback place data, no longer used by the live recommendation API
 
 src/
   pages/                  Main React pages
@@ -79,13 +79,16 @@ Install backend dependencies:
 pip install -r backend\requirements.txt
 ```
 
-Initialise the local SQLite database:
+Initialise or refresh the local SQLite database:
 
 ```bash
 cd backend
 python migrate_json_to_db.py
 python build_places_to_db.py
 ```
+
+`migrate_json_to_db.py` loads indoor activity content from `backend/data/activities.json`.
+`build_places_to_db.py` downloads City of Melbourne Open Data and rebuilds only the `places` table. Run it during development setup or deployment refresh, not inside normal user requests.
 
 Start the FastAPI server:
 
@@ -151,7 +154,7 @@ Example fields:
 GET /places
 ```
 
-Returns Melbourne CBD place data used by the Home map and Explore Map page.
+Returns Melbourne CBD place data used by the Home map and Explore Map page. The live endpoint reads from SQLite after `python build_places_to_db.py` has refreshed the `places` table.
 
 Example fields:
 
@@ -159,11 +162,18 @@ Example fields:
 {
   "id": "flagstaff-gardens",
   "name": "Flagstaff Gardens",
-  "type": "Green space",
-  "distance": "4 min walk",
-  "status": "Best match",
+  "record_id": "park-flagstaff-gardens",
+  "dataset_type": "park",
+  "type": "Outdoor Space",
+  "category": "Outdoor Space",
+  "description": "Informal Outdoor Facility (Park/Garden/Reserve)",
+  "distance": null,
+  "status": "Open data",
   "position": [-37.8101, 144.955],
-  "address": "William Street, West Melbourne"
+  "address": "Flagstaff Gardens, Melbourne VIC",
+  "latitude": -37.8101,
+  "longitude": 144.955,
+  "source_dataset": "landmarks-and-places-of-interest-including-schools-theatres-health-services-spor"
 }
 ```
 
@@ -226,6 +236,8 @@ run:
 npm run lint
 npm run build
 cd backend
+python migrate_json_to_db.py
+python build_places_to_db.py
 python -m compileall .
 ```
 
@@ -240,6 +252,6 @@ Then manually check:
 
 ## Notes For Iteration 1
 
-- The backend uses a local SQLite database generated from the JSON files in `backend/data`.
+- The backend uses a local SQLite database. Activities come from `backend/data/activities.json`; places are refreshed from City of Melbourne Open Data before development demos or deployment.
 - Planner data is not stored in the backend because the project does not currently include login or user accounts.
-- Future iterations can replace JSON files with a database or open data pipeline.
+- User-facing recommendation requests read from SQLite and do not call the open-data APIs in real time.

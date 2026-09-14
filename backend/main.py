@@ -209,14 +209,21 @@ def activity_to_dict(a: Activity) -> dict:
 def place_to_dict(p: Place) -> dict:
     return {
         "id": p.id,
+        "record_id": p.id,
+        "dataset_type": p.dataset_type,
         "name": p.name,
         "type": p.type,
+        "category": p.category,
+        "description": p.description or "",
         "distance": p.distance,
         "status": p.status,
-        "marker": p.marker,
+        "marker": None,
         "markerTone": p.markerTone,
         "position": p.position,
-        "address": p.address,
+        "address": p.address or "Address unavailable",
+        "latitude": p.latitude,
+        "longitude": p.longitude,
+        "source_dataset": p.source_dataset,
     }
 
 
@@ -262,12 +269,7 @@ def get_activity(activity_id: str, db: Session = Depends(get_db)):
 
 @app.get("/places")
 def get_places(db: Session = Depends(get_db)):
-    csv_places = load_recommendation_places()
-    if csv_places:
-        return csv_places
-
-    places = db.query(Place).all()
-    return [place_to_dict(p) for p in places]
+    return load_recommendation_places(db)
 
 
 @app.get("/recommendations")
@@ -276,9 +278,12 @@ def get_recommendations(
     lng: float = Query(MELBOURNE_TOWN_HALL[1]),
     break_time: int = Query(15),
     limit: int = Query(5, ge=1, le=10),
+    db: Session = Depends(get_db),
 ):
     try:
-        return build_recommendation_response(lat, lng, break_time, limit)
+        return build_recommendation_response(
+            lat, lng, break_time, db=db, limit=limit
+        )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
 
@@ -300,6 +305,7 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
                 origin[0],
                 origin[1],
                 request.duration,
+                db=db,
                 limit=1,
             )
         except ValueError as error:

@@ -201,6 +201,7 @@ function ExploreMap() {
         const data = await response.json()
         setPlaces(data.recommendations ?? [])
         setSelectedPlace(null)
+        setSelectedCategory('All')
         // No place is selected by default — the detail card only opens
         // once the user actively picks one from the map or the list.
       } catch {
