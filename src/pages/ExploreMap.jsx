@@ -59,8 +59,8 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : defaultOutdoorBreakDuration
 }
 
-function getPlaceFitLabel(place, duration) {
-  return place.is_time_safe ? `Fits your ${duration} min break` : 'Outside current time range'
+function getPlaceFitLabel(place) {
+  return place.is_time_safe ? 'Recommended for this break' : 'Outside current time range'
 }
 
 function getPlaceSpareLabel(place) {
@@ -156,7 +156,6 @@ function ExploreMap() {
   const [plannedPlaceIds, setPlannedPlaceIds] = useState(
     () => new Set(getSavedPlannerBreaks().map((plannedBreak) => plannedBreak.placeId).filter(Boolean)),
   )
-  const selectedPlaceSuitability = selectedPlace ? getPlaceFitLabel(selectedPlace, selectedDuration) : null
   const categoryOptions = useMemo(
     // Build category buttons from place data so new DS categories appear without frontend changes.
     () => ['All', ...new Set(places.map((place) => getPlaceCategory(place)).filter(Boolean))],
@@ -202,6 +201,7 @@ function ExploreMap() {
         const data = await response.json()
         setPlaces(data.recommendations ?? [])
         setSelectedPlace(null)
+        setSelectedCategory('All')
         // No place is selected by default — the detail card only opens
         // once the user actively picks one from the map or the list.
       } catch {
@@ -332,7 +332,7 @@ function ExploreMap() {
               <br />
               Total: {place.estimated_total_time ?? 'Unknown'} min
               <br />
-              {getPlaceFitLabel(place, selectedDuration)}
+              {getPlaceFitLabel(place)}
             </Popup>
           </Marker>
         ))}
@@ -520,15 +520,12 @@ function ExploreMap() {
             </span>
           </div>
 
-          <div className="selected-detail-list compact">
-            <span>
-              <Clock3 size={16} />
-              About {selectedPlace.estimated_total_time} min including buffer
-            </span>
+          <div className="selected-total-time">
+            <Clock3 size={16} />
+            Estimated total: {selectedPlace.estimated_total_time} min
           </div>
 
           <div className="selected-break-summary">
-            <strong>{selectedPlaceSuitability}</strong>
             <span>{getPlaceSpareLabel(selectedPlace)}</span>
             <span>{selectedPlace.distance_m} m away</span>
           </div>

@@ -1976,15 +1976,28 @@ main {
   color: #172a56;
 }
 
+.selected-total-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  color: #4f607d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.selected-total-time svg {
+  color: #172a56;
+}
+
 .selected-break-summary {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-  margin-top: 1rem;
+  margin-top: 0.55rem;
 }
 
-.selected-break-summary strong,
 .selected-break-summary span {
   padding: 0.45rem 0.65rem;
   border: 1px solid #d8e5f6;
@@ -1993,12 +2006,6 @@ main {
   background: #ffffff;
   font-size: 0.75rem;
   font-weight: 800;
-}
-
-.selected-break-summary strong {
-  border-color: #bdd8c4;
-  color: #315b3c;
-  background: #edf5ea;
 }
 
 .selected-place-actions {
@@ -4640,7 +4647,6 @@ main {
 }
 
 .category-tabs button,
-.selected-break-summary strong,
 .selected-break-summary span {
   border-radius: 999px;
 }

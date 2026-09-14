@@ -1,15 +1,15 @@
-import csv
 import math
-from functools import lru_cache
-from pathlib import Path
+
+from sqlalchemy.orm import Session
+
+from models import Place
 
 
-DATA_PATH = Path(__file__).parent / "data" / "recommendation_places.csv"
 MELBOURNE_TOWN_HALL = (-37.8150, 144.9669)
 STRAIGHT_LINE_DETOUR_FACTOR = 1.35
 GRID_ROUTE_DETOUR_FACTOR = 1.15
 WALKING_SPEED_METRES_PER_MINUTE = 70
-EARTH_RADIUS_METRES = 6371000
+EARTH_RADIUS_METRES = 6_371_000
 
 BREAK_CONFIG = {
     5: {"activity_time": 1, "buffer_time": 1},
@@ -19,25 +19,16 @@ BREAK_CONFIG = {
 
 CATEGORY_WEIGHTS = {
     5: {
-        "public_seat": 38,
-        "drinking_fountain": 34,
-        "cafe_restaurant": 16,
-        "supermarket": 10,
-        "park": 8,
+        "public_seat": 38, "drinking_fountain": 34,
+        "cafe_restaurant": 16, "supermarket": 10, "park": 8,
     },
     15: {
-        "park": 34,
-        "public_seat": 26,
-        "drinking_fountain": 22,
-        "cafe_restaurant": 22,
-        "supermarket": 12,
+        "park": 34, "public_seat": 26, "drinking_fountain": 22,
+        "cafe_restaurant": 22, "supermarket": 12,
     },
     30: {
-        "park": 42,
-        "cafe_restaurant": 20,
-        "public_seat": 18,
-        "drinking_fountain": 16,
-        "supermarket": 10,
+        "park": 42, "cafe_restaurant": 20, "public_seat": 18,
+        "drinking_fountain": 16, "supermarket": 10,
     },
 }
 
@@ -50,45 +41,24 @@ MARKER_TONES = {
 }
 
 
-def _to_float(value):
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return None
-
-
-@lru_cache(maxsize=1)
-def load_recommendation_places():
-    places = []
-    with DATA_PATH.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        for index, row in enumerate(reader, start=1):
-            latitude = _to_float(row.get("latitude"))
-            longitude = _to_float(row.get("longitude"))
-            if latitude is None or longitude is None:
-                continue
-
-            dataset_type = row.get("dataset_type", "").strip()
-            places.append(
-                {
-                    "id": row.get("record_id", "").strip() or f"place-{index}",
-                    "record_id": row.get("record_id", "").strip() or f"place-{index}",
-                    "dataset_type": dataset_type,
-                    "name": row.get("name", "").strip() or "Unnamed place",
-                    "category": row.get("category", "").strip() or dataset_type,
-                    "type": row.get("category", "").strip() or dataset_type,
-                    "description": row.get("description", "").strip(),
-                    "address": row.get("address", "").strip(),
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "position": [latitude, longitude],
-                    "source_dataset": row.get("source_dataset", "").strip(),
-                    "marker": str(index),
-                    "markerTone": MARKER_TONES.get(dataset_type, "blue"),
-                    "status": "Open data",
-                }
-            )
-    return places
+def place_to_recommendation_dict(place):
+    return {
+        "id": place.id,
+        "record_id": place.id,
+        "dataset_type": place.dataset_type,
+        "name": place.name,
+        "category": place.category,
+        "type": place.type or place.category,
+        "description": place.description or "",
+        "address": place.address or "Address unavailable",
+        "latitude": place.latitude,
+        "longitude": place.longitude,
+        "position": [place.latitude, place.longitude],
+        "source_dataset": place.source_dataset,
+        "marker": None,
+        "markerTone": place.markerTone or MARKER_TONES.get(place.dataset_type, "blue"),
+        "status": place.status or "Open data",
+    }
 
 
 def haversine_distance_metres(origin, destination):
@@ -106,19 +76,40 @@ def haversine_distance_metres(origin, destination):
 
 
 def estimate_walking_distance_metres(origin, destination):
-    # Without a live routing API, combine straight-line and city-grid estimates
-    # so recommendations stay conservative around roads, blocks and waterfronts.
     lat1, lon1 = origin
     lat2, lon2 = destination
-    north_south_metres = haversine_distance_metres((lat1, lon1), (lat2, lon1))
-    east_west_metres = haversine_distance_metres((lat2, lon1), (lat2, lon2))
-    grid_distance_m = north_south_metres + east_west_metres
-    straight_distance_m = haversine_distance_metres(origin, destination)
-
+    north_south = haversine_distance_metres((lat1, lon1), (lat2, lon1))
+    east_west = haversine_distance_metres((lat2, lon1), (lat2, lon2))
+    straight = haversine_distance_metres(origin, destination)
     return max(
-        straight_distance_m * STRAIGHT_LINE_DETOUR_FACTOR,
-        grid_distance_m * GRID_ROUTE_DETOUR_FACTOR,
+        straight * STRAIGHT_LINE_DETOUR_FACTOR,
+        (north_south + east_west) * GRID_ROUTE_DETOUR_FACTOR,
     )
+
+
+def _maximum_straight_distance(break_time):
+    config = BREAK_CONFIG[break_time]
+    one_way_minutes = (
+        break_time - config["activity_time"] - config["buffer_time"]
+    ) / 2
+    maximum_walking_distance = one_way_minutes * WALKING_SPEED_METRES_PER_MINUTE
+    return maximum_walking_distance / STRAIGHT_LINE_DETOUR_FACTOR
+
+
+def load_recommendation_places(db: Session, latitude=None, longitude=None,
+                               break_time=None):
+    """Read places from SQLite, optionally prefiltered by a SQL bounding box."""
+    query = db.query(Place)
+    if latitude is not None and longitude is not None and break_time in BREAK_CONFIG:
+        radius = _maximum_straight_distance(break_time)
+        latitude_delta = radius / 111_320
+        longitude_scale = max(0.1, math.cos(math.radians(latitude)))
+        longitude_delta = radius / (111_320 * longitude_scale)
+        query = query.filter(
+            Place.latitude.between(latitude - latitude_delta, latitude + latitude_delta),
+            Place.longitude.between(longitude - longitude_delta, longitude + longitude_delta),
+        )
+    return [place_to_recommendation_dict(place) for place in query.all()]
 
 
 def _distance_score(distance_m):
@@ -141,10 +132,8 @@ def _duration_fit_score(remaining_time):
 
 def _display_minutes(value, minimum=0):
     display_value = round(value)
-
     if value > 0:
         display_value = max(1, display_value)
-
     return max(minimum, display_value)
 
 
@@ -156,115 +145,94 @@ def _display_minute_label(value):
     return f"{round(value)} min"
 
 
-def _build_explanation(place, available_break_time, estimated_total_time, remaining_time):
-    return (
-        f"Fits within your {available_break_time}-minute break with "
-        f"{remaining_time} minutes spare. Estimated total time is "
-        f"{estimated_total_time} minutes including the round trip walk, rest time and buffer."
-    )
-
-
-def calculate_recommendations(
-    latitude,
-    longitude,
-    break_time,
-    limit=5,
-    places=None,
-):
+def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
+                              places=None):
     if break_time not in BREAK_CONFIG:
         raise ValueError("break_time must be one of 5, 15 or 30")
 
     origin = (latitude, longitude)
     config = BREAK_CONFIG[break_time]
-    source_places = places if places is not None else load_recommendation_places()
+    source_places = places if places is not None else load_recommendation_places(
+        db, latitude, longitude, break_time
+    )
     recommendations = []
 
     for place in source_places:
         destination = (place["latitude"], place["longitude"])
-        straight_distance_m = haversine_distance_metres(origin, destination)
-        walking_distance_m = estimate_walking_distance_metres(origin, destination)
-        walking_time_one_way = walking_distance_m / WALKING_SPEED_METRES_PER_MINUTE
-        estimated_total_time = (
-            walking_time_one_way * 2
-            + config["activity_time"]
-            + config["buffer_time"]
+        straight_distance = haversine_distance_metres(origin, destination)
+        walking_distance = estimate_walking_distance_metres(origin, destination)
+        one_way_exact = walking_distance / WALKING_SPEED_METRES_PER_MINUTE
+        total_exact = (
+            one_way_exact * 2 + config["activity_time"] + config["buffer_time"]
         )
-        remaining_time = break_time - estimated_total_time
-
-        if remaining_time < 0:
+        remaining_exact = break_time - total_exact
+        if remaining_exact < 0:
             continue
 
-        walking_time_display = _display_minutes(walking_time_one_way, minimum=1)
-        walking_round_trip_display = walking_time_display * 2
-        estimated_total_display = (
-            walking_round_trip_display
-            + config["activity_time"]
-            + config["buffer_time"]
+        one_way_display = _display_minutes(one_way_exact, minimum=1)
+        round_trip_display = one_way_display * 2
+        total_display = (
+            round_trip_display + config["activity_time"] + config["buffer_time"]
         )
-        remaining_time_display = max(0, break_time - estimated_total_display)
-        category_score = CATEGORY_WEIGHTS[break_time].get(place["dataset_type"], 6)
-        recommendation_score = round(
-            _distance_score(straight_distance_m)
-            + category_score
-            + _duration_fit_score(remaining_time),
+        remaining_display = max(0, break_time - total_display)
+        score = round(
+            _distance_score(straight_distance)
+            + CATEGORY_WEIGHTS[break_time].get(place["dataset_type"], 6)
+            + _duration_fit_score(remaining_exact),
             2,
         )
 
-        recommendations.append(
-            {
-                **place,
-                "distance_m": round(straight_distance_m),
-                "walking_distance_m": round(walking_distance_m),
-                "walking_time_one_way": walking_time_display,
-                "walking_time_one_way_label": _display_minute_label(walking_time_one_way),
-                "walking_time_round_trip": walking_round_trip_display,
-                "activity_time": config["activity_time"],
-                "buffer_time": config["buffer_time"],
-                "estimated_total_time": estimated_total_display,
-                "available_break_time": break_time,
-                "remaining_time": remaining_time_display,
-                "is_time_safe": True,
-                "recommendation_score": recommendation_score,
-                "distance": f"{_display_minute_label(walking_time_one_way)} each way",
-                "explanation": _build_explanation(
-                    place,
-                    break_time,
-                    estimated_total_display,
-                    remaining_time_display,
-                ),
-            }
-        )
+        recommendations.append({
+            **place,
+            "distance_m": round(straight_distance),
+            "walking_distance_m": round(walking_distance),
+            "walking_time_one_way": one_way_display,
+            "walking_time_one_way_label": _display_minute_label(one_way_exact),
+            "walking_time_round_trip": round_trip_display,
+            "activity_time": config["activity_time"],
+            "buffer_time": config["buffer_time"],
+            "estimated_total_time": total_display,
+            "available_break_time": break_time,
+            "remaining_time": remaining_display,
+            "is_time_safe": True,
+            "recommendation_score": score,
+            "distance": f"{_display_minute_label(one_way_exact)} each way",
+            "explanation": (
+                f"Fits within your {break_time}-minute break with "
+                f"{remaining_display} minutes spare. Estimated total time is "
+                f"{total_display} minutes including return walking, rest and buffer."
+            ),
+        })
 
-    recommendations.sort(
-        key=lambda item: (
-            -item["recommendation_score"],
-            item["estimated_total_time"],
-            item["distance_m"],
-            item["name"],
-        )
-    )
+    recommendations.sort(key=lambda item: (
+        -item["recommendation_score"], item["estimated_total_time"],
+        item["distance_m"], item["name"],
+    ))
     return recommendations[:limit]
 
 
-def build_recommendation_response(latitude, longitude, break_time, limit=5):
-    recommendations = calculate_recommendations(latitude, longitude, break_time, limit)
+def build_recommendation_response(latitude, longitude, break_time, db, limit=5):
+    recommendations = calculate_recommendations(
+        latitude, longitude, break_time, db=db, limit=limit
+    )
     return {
         "origin": {"latitude": latitude, "longitude": longitude},
         "available_break_time": break_time,
         "recommendations": recommendations,
         "calculation": {
-            "distance_method": "Haversine straight-line distance",
+            "distance_method": (
+                "Approximate walking distance using Haversine and city-grid detours"
+            ),
             "straight_line_detour_factor": STRAIGHT_LINE_DETOUR_FACTOR,
             "grid_route_detour_factor": GRID_ROUTE_DETOUR_FACTOR,
             "walking_speed_m_per_min": WALKING_SPEED_METRES_PER_MINUTE,
             "activity_time": BREAK_CONFIG[break_time]["activity_time"],
             "buffer_time": BREAK_CONFIG[break_time]["buffer_time"],
             "formula": "2 * walking_time_one_way + activity_time + buffer_time",
-            "walking_distance_method": "max(straight-line detour, city-grid detour)",
         },
         "data_status": {
-            "source": "City of Melbourne Open Data CSV",
-            "record_count": len(load_recommendation_places()),
-            "message": "Recommendations are calculated from the outdoor POI dataset.",
+            "source": "City of Melbourne Open Data stored in SQLite",
+            "record_count": db.query(Place).count(),
+            "message": "Recommendations are queried from the places table, not CSV.",
         },
     }
