@@ -7,7 +7,7 @@ so the frontend and Mission API don't need any changes.
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Integer, Float, JSON
+from sqlalchemy import Column, DateTime, ForeignKey, String, Integer, Float, JSON, Index, Text
 from database import Base
 
 
@@ -41,6 +41,19 @@ class Place(Base):
     markerTone = Column(String, nullable=True)
     position = Column(JSON, nullable=False)              # [lat, lng] stored as JSON array
     address = Column(String, nullable=True)
+
+    # Normalised open-data fields used by the Iteration 2 recommendation engine.
+    # Legacy fields above remain so existing frontend responses do not break.
+    dataset_type = Column(String, nullable=False, index=True)
+    category = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    source_dataset = Column(String, nullable=False)
+
+    __table_args__ = (
+        Index("ix_places_latitude_longitude", "latitude", "longitude"),
+    )
 
 
 class Team(Base):
