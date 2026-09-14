@@ -1,3 +1,4 @@
+// Fetches the activity catalogue and filters it by the user's available time, area and posture.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
@@ -31,12 +32,14 @@ const activityVisuals = {
   'low-impact-energy': { icon: Dumbbell },
 }
 
+// Read the optional mission duration from the URL without accepting unsupported values.
 function getInitialDuration(searchParams) {
   const duration = Number(searchParams.get('duration'))
 
   return durationFilters.includes(duration) ? duration : 'Any'
 }
 
+// Fetch the library once and derive visible activities from the selected filters.
 function ActivityLibrary() {
   const [searchParams] = useSearchParams()
   const [selectedDuration, setSelectedDuration] = useState(() => getInitialDuration(searchParams))
@@ -45,10 +48,12 @@ function ActivityLibrary() {
   const [activities, setActivities] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  // Build the area menu from live activity data so new body areas need no frontend change.
   const areaOptions = useMemo(
     () => ['All areas', ...new Set(activities.map((activity) => activity.area))],
     [activities],
   )
+  // Apply all filters together before rendering activity cards.
   const filteredActivities = useMemo(
     () =>
       activities.filter((activity) => {
@@ -63,12 +68,14 @@ function ActivityLibrary() {
     [activities, selectedArea, selectedDuration, selectedPosture],
   )
 
+  // Restore the full catalogue after a user clears the current filter selections.
   function handleClearFilters() {
     setSelectedArea('All areas')
     setSelectedDuration('Any')
     setSelectedPosture('Any posture')
   }
 
+  // Request the activity catalogue when the library page first mounts.
   useEffect(() => {
     async function loadActivities() {
       try {

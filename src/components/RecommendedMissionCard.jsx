@@ -1,3 +1,4 @@
+// Shows a featured outdoor mission and carries the selected duration into the next step.
 import { Link } from 'react-router-dom'
 import { CalendarDays, Clock3, MapPin, Play } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 
+// Render a prominent outdoor suggestion that adapts its displayed time to the current selection.
 function RecommendedMissionCard({ duration }) {
   const displayDuration = duration ? `${duration} min` : 'Choose time'
 

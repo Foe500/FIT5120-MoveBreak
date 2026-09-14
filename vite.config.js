@@ -1,3 +1,4 @@
+// Configures Vite with React, Tailwind and the @ alias used throughout the frontend.
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'

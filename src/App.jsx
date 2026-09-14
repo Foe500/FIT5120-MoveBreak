@@ -1,3 +1,4 @@
+// Defines the application shell, navigation and resume banner shared across every page.
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import {
@@ -36,6 +37,7 @@ const navItems = [
   { to: '/planner', label: 'Planner', icon: CalendarDays },
 ]
 
+// Calculate the remaining outbound portion of an outdoor break for the resume banner.
 function getOutdoorBreakStatus(session) {
   const breakPlan = session?.breakPlan
 
@@ -56,10 +58,12 @@ function getOutdoorBreakStatus(session) {
   return `Return reminder in ${minutes} min`
 }
 
+// Listen for session-storage changes and offer a consistent way to resume an unfinished break.
 function ActiveBreakBanner() {
   const location = useLocation()
   const [activeSession, setActiveSession] = useState(() => getStoredActiveBreak())
 
+  // Refresh local state for both same-tab custom events and cross-tab storage changes.
   useEffect(() => {
     function refreshActiveSession() {
       setActiveSession(getStoredActiveBreak())
@@ -107,6 +111,7 @@ function ActiveBreakBanner() {
   )
 }
 
+// Compose the persistent navigation, routed page content and optional active-break reminder.
 function App() {
   return (
     <div className="app-shell">

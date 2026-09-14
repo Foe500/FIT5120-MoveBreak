@@ -1,3 +1,4 @@
+// Explains the prototype's data handling, location choices and external data sources in plain language.
 import {
   CheckCircle2,
   Database,
@@ -8,12 +9,14 @@ import {
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 
+// Keep the high-level privacy promises in one list for the hero summary.
 const privacyFacts = [
   'No account required',
   'No advertising trackers',
   'No saved location history',
 ]
 
+// Render the plain-language privacy explanation and attribution links for the prototype.
 function Privacy() {
   return (
     <section className="page privacy-page">

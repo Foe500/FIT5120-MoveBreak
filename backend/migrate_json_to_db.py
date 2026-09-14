@@ -28,6 +28,7 @@ DATA_DIR = Path(__file__).parent / "data"
 
 
 def load_json(filename):
+    """Read one optional JSON fixture and return an empty list when it is unavailable."""
     path = DATA_DIR / filename
     if not path.exists():
         print(f"  Skipped: {filename} not found at {path}")
@@ -37,6 +38,7 @@ def load_json(filename):
 
 
 def migrate():
+    """Replace activity rows from the bundled fixture without touching the places table."""
     # Create tables if they don't exist yet
     Base.metadata.create_all(bind=engine)
 

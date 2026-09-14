@@ -1,3 +1,4 @@
+// Builds the landing dashboard and keeps the user's selected break duration before navigation.
 import { useState } from 'react'
 import {
   CheckCircle2,
@@ -17,6 +18,7 @@ function Home() {
   const [selectedDuration, setSelectedDuration] = useState(null)
   const [durationError, setDurationError] = useState('')
 
+  // Store a valid choice and remove any message from a previous incomplete attempt.
   function handleDurationChange(duration) {
     setSelectedDuration(duration)
     setDurationError('')
@@ -27,6 +29,7 @@ function Home() {
     setDurationError('Choose how much time you have before finding your break.')
   }
 
+  // Assemble the dashboard hero, onboarding steps and supporting quick-action cards.
   return (
     <section className="home-dashboard home-redesign">
       <section className="home-hero-shell">

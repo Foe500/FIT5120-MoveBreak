@@ -1,3 +1,4 @@
+// Shows the sample daily break timeline and links users to the editable planner.
 import { Link } from 'react-router-dom'
 import { CalendarDays } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,6 +8,7 @@ const planItems = [
   { time: '15:00', title: 'Flagstaff Gardens walk', duration: '10 min' },
 ]
 
+// Render the sample timeline and route users to the planner for detailed scheduling.
 function TodayPlanCard() {
   return (
     <Card className="mini-card today-plan-card p-4">

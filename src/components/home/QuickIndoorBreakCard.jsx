@@ -1,3 +1,4 @@
+// Displays a shortcut to a ready-to-start indoor shoulder-release activity.
 import { Clock3, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
+// Render a compact card that launches a fixed, beginner-friendly indoor activity.
 function QuickIndoorBreakCard() {
   return (
     <Card className="mini-card quick-break-card p-4">

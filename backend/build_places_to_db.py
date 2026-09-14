@@ -47,6 +47,7 @@ MARKER_TONES = {
 
 
 def slugify(value):
+    """Create a stable URL-safe fragment for generated ids and normalised names."""
     text = str(value or "unknown").lower().strip()
     text = re.sub(r"[^a-z0-9]+", "-", text)
     return text.strip("-") or "unknown"
@@ -88,6 +89,7 @@ def fetch_all(dataset, where=None):
 
 
 def valid_coordinates(latitude, longitude):
+    """Accept only numeric latitude and longitude values within geographic bounds."""
     try:
         latitude = float(latitude)
         longitude = float(longitude)
@@ -100,6 +102,7 @@ def valid_coordinates(latitude, longitude):
 
 def make_place(record_id, dataset_type, name, category, description, address,
                latitude, longitude, source_dataset):
+    """Normalise one source record into the SQLAlchemy Place schema used by recommendations."""
     return Place(
         id=record_id,
         name=name,
@@ -120,6 +123,7 @@ def make_place(record_id, dataset_type, name, category, description, address,
 
 
 def build_park_rows():
+    """Fetch, filter and normalise public outdoor landmarks into park records."""
     rows = []
     used_ids = set()
     for record in fetch_all(LANDMARKS_DATASET):
@@ -149,6 +153,7 @@ def build_park_rows():
 
 
 def build_seat_rows():
+    """Fetch street-furniture records and keep public seating with usable coordinates."""
     rows = []
     for record in fetch_all(STREET_FURNITURE_DATASET):
         if (record.get("type") or "").strip().lower() != "seat":
@@ -169,6 +174,7 @@ def build_seat_rows():
 
 
 def build_fountain_rows():
+    """Fetch drinking-fountain records and convert them into amenity recommendations."""
     rows = []
     for record in fetch_all(FOUNTAINS_DATASET):
         coordinates = record.get("geo_point_2d") or {}
@@ -188,6 +194,7 @@ def build_fountain_rows():
 
 
 def build_cafe_rows():
+    """Fetch recent commercial hospitality records suitable for short refresh breaks."""
     records = fetch_all(
         CAFE_DATASET,
         where=f"year(census_year)={LATEST_COMMERCIAL_YEAR}",
@@ -228,6 +235,7 @@ def build_cafe_rows():
 
 
 def build_supermarket_rows():
+    """Fetch recent food-shopping records with valid Melbourne CBD coordinates."""
     where = (
         f"year(census_year)={LATEST_COMMERCIAL_YEAR} "
         'AND industry_anzsic4_code="4110"'
@@ -252,10 +260,12 @@ def build_supermarket_rows():
 
 
 def deduplicate(rows):
+    """Remove duplicate source records while preserving the first normalised place row."""
     return list({row.id: row for row in rows}.values())
 
 
 def main():
+    """Build all place categories, then replace only the places table in one transaction."""
     # Complete network and cleaning work before replacing database data.
     rows = deduplicate(
         build_park_rows() + build_seat_rows() + build_fountain_rows()

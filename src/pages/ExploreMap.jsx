@@ -1,3 +1,4 @@
+// Maps recommended outdoor places, calculates a time-fit plan and saves the chosen break for guidance.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
@@ -48,33 +49,40 @@ const placeIcons = {
   'Food Shopping': Building2,
 }
 
+// Normalise current and future dataset category fields for filtering and icon selection.
 function getPlaceCategory(place) {
   // Prefer the future DS-provided category, but keep type as a fallback for the current dataset.
   return place.category ?? place.type
 }
 
+// Respect the duration passed from Mission, using the outdoor default when it is absent or invalid.
 function getInitialDuration(searchParams) {
   const duration = Number(searchParams.get('duration'))
 
   return durationOptions.includes(duration) ? duration : defaultOutdoorBreakDuration
 }
 
+// Turn backend timing flags into the short recommendation label shown on place cards.
 function getPlaceFitLabel(place) {
   return place.is_time_safe ? 'Recommended for this break' : 'Outside current time range'
 }
 
+// Show unused break time only when the recommendation includes a calculated value.
 function getPlaceSpareLabel(place) {
   return place.remaining_time !== undefined ? `${Math.round(place.remaining_time)} min spare` : 'Spare time unavailable'
 }
 
+// Prefer a backend-provided walking label while supporting older numeric data.
 function getWalkTimeLabel(place) {
   return place.walking_time_one_way_label ?? `${place.walking_time_one_way} min`
 }
 
+// Display a total trip duration only when the backend can estimate it.
 function getPlaceTotalTimeLabel(place) {
   return place.estimated_total_time ? `${place.estimated_total_time} min total` : 'Total time unavailable'
 }
 
+// Build a walking Google Maps URL from coordinates when available, otherwise from a place search.
 function getPlaceDirectionsUrl(place, origin) {
   const destination = place.position ?? [place.latitude, place.longitude]
 
@@ -96,6 +104,7 @@ function getPlaceDirectionsUrl(place, origin) {
   return `https://www.google.com/maps/dir/?${params.toString()}`
 }
 
+// Restore locally planned breaks defensively so malformed storage does not break the map.
 function getSavedPlannerBreaks() {
   try {
     const savedBreaks = JSON.parse(localStorage.getItem(plannerStorageKey) ?? '[]')
@@ -106,6 +115,7 @@ function getSavedPlannerBreaks() {
   }
 }
 
+// Convert an API recommendation into the persistent plan required by outdoor guidance.
 function getOutdoorBreakPlan(place, duration, origin) {
   return {
     placeId: place.id,
@@ -123,6 +133,7 @@ function getOutdoorBreakPlan(place, duration, origin) {
   }
 }
 
+// Re-centre the Leaflet map after the browser supplies an optional current location.
 function CurrentLocationView({ position }) {
   const map = useMap()
 
@@ -141,6 +152,7 @@ function CurrentLocationView({ position }) {
   return null
 }
 
+// Fetch, filter and present nearby places while supporting location and controlled test origins.
 function ExploreMap() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedDuration = getInitialDuration(searchParams)
@@ -161,6 +173,7 @@ function ExploreMap() {
     () => ['All', ...new Set(places.map((place) => getPlaceCategory(place)).filter(Boolean))],
     [places],
   )
+  // Apply the selected category before drawing cards and map markers.
   const filteredPlaces = useMemo(
     () =>
       places.filter((place) => {
@@ -170,6 +183,7 @@ function ExploreMap() {
       }),
     [places, selectedCategory],
   )
+  // Keep map rendering bounded while assigning stable display markers to visible places.
   const visiblePlaces = useMemo(
     () =>
       filteredPlaces.slice(0, maxVisiblePlaces).map((place, index) => ({
@@ -179,6 +193,7 @@ function ExploreMap() {
     [filteredPlaces],
   )
 
+  // Refresh recommendations when the user changes origin or available outdoor break time.
   useEffect(() => {
     async function loadRecommendations() {
       setIsLoading(true)
@@ -214,6 +229,7 @@ function ExploreMap() {
     loadRecommendations()
   }, [currentPosition, selectedDuration])
 
+  // Ask the browser for a location and retain it only in component state after consent.
   function handleUseCurrentLocation() {
     if (!navigator.geolocation) {
       setLocationStatus('Current location is not supported in this browser.')
@@ -244,6 +260,7 @@ function ExploreMap() {
     )
   }
 
+  // Keep selected duration in the URL so browser refreshes and shared links reproduce the same view.
   function handleDurationChange(duration) {
     const nextSearchParams = new URLSearchParams(searchParams)
     nextSearchParams.set('duration', String(duration))
@@ -251,6 +268,7 @@ function ExploreMap() {
     setSelectedPlace(null)
   }
 
+  // Use a deterministic test origin for comparing recommendations during product evaluation.
   function handleTestOriginChange(testOrigin) {
     setCurrentPosition(testOrigin.position)
     setOriginLabel(testOrigin.label)
@@ -258,11 +276,13 @@ function ExploreMap() {
     setSelectedPlace(null)
   }
 
+  // Choose a different preset test origin without relying on device geolocation.
   function handleRandomTestOrigin() {
     const nextOrigin = testOriginOptions[Math.floor(Math.random() * testOriginOptions.length)]
     handleTestOriginChange(nextOrigin)
   }
 
+  // Store the selected place in the browser-local planner while replacing any earlier copy of it.
   function handleAddSelectedPlaceToPlanner() {
     if (!selectedPlace) {
       return
@@ -294,6 +314,7 @@ function ExploreMap() {
     }
   }
 
+  // Save a resumable route plan before the user opens the outdoor guidance page.
   function handleStartOutdoorBreak() {
     if (!selectedPlace) {
       return

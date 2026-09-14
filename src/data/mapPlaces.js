@@ -1,3 +1,4 @@
+// Supplies local fallback map places and icon metadata when API place data is unavailable.
 import { Building2, Landmark, Leaf } from 'lucide-react'
 
 export const melbourneCenter = [-37.8136, 144.9631]

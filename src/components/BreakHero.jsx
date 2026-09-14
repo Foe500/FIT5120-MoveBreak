@@ -1,9 +1,11 @@
+// Renders the home-page duration selector and directs a validated choice to the mission builder.
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, TimerReset } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const breakOptions = [5, 15, 30]
 
+// Collect the available time on the home page before opening the personalised mission flow.
 function BreakHero({ durationError, selectedDuration, onDurationChange, onMissingDuration }) {
   const navigate = useNavigate()
 

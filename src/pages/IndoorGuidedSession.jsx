@@ -1,3 +1,4 @@
+// Chains several indoor activities into one guided session with a single progress timer.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
@@ -19,6 +20,7 @@ import { API_BASE_URL } from '@/lib/api'
 import { clearIndoorBreakSession, saveIndoorBreakSession } from '@/lib/indoorBreak'
 import { logTeamSession } from '@/lib/team'
 
+// Format a countdown value as minutes and zero-padded seconds for the combined session view.
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
@@ -26,6 +28,7 @@ function formatTime(totalSeconds) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+// Flatten activity-specific instructions into one ordered timeline while retaining activity context.
 function flattenSteps(activities) {
   return activities.flatMap((activity, activityIndex) =>
     activity.steps.map((step, stepIndex) => ({
@@ -37,9 +40,11 @@ function flattenSteps(activities) {
   )
 }
 
+// Fetch selected activities and guide the user through their combined timed sequence.
 function IndoorGuidedSession() {
   const location = useLocation()
   const [searchParams] = useSearchParams()
+  // Parse and deduplicate the activity ids passed in the mission URL.
   const activityIds = useMemo(
     () => (searchParams.get('ids') ?? '').split(',').filter(Boolean),
     [searchParams],
@@ -53,6 +58,7 @@ function IndoorGuidedSession() {
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
 
+  // Load every requested activity in parallel and handle missing or invalid selections gracefully.
   useEffect(() => {
     async function loadSessionActivities() {
       if (!activityIds.length) {
@@ -95,6 +101,7 @@ function IndoorGuidedSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityIds.join(','), location.pathname, location.search])
 
+  // Recalculate progress inputs whenever the fetched activity sequence changes.
   const flatSteps = useMemo(() => flattenSteps(activities), [activities])
   const currentStepDurationSeconds = flatSteps[currentIndex]?.seconds ?? 0
   const totalSeconds = flatSteps.reduce((sum, step) => sum + step.seconds, 0)
@@ -110,6 +117,7 @@ function IndoorGuidedSession() {
   const currentActivity = activities[currentActivityIndex]
   const currentStepText = flatSteps[currentIndex]?.text ?? 'Ready to begin.'
 
+  // Submit one team log only after the full session reaches completion.
   useEffect(() => {
     if (isComplete && activities.length) {
       logTeamSession({
@@ -123,6 +131,7 @@ function IndoorGuidedSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isComplete])
 
+  // Decrease the current step timer and advance the timeline while it is running.
   useEffect(() => {
     if (!isTimerRunning || isComplete || !currentStepDurationSeconds) {
       return undefined
@@ -150,6 +159,7 @@ function IndoorGuidedSession() {
     return () => window.clearInterval(timer)
   }, [currentIndex, isComplete, isTimerRunning, currentStepDurationSeconds, flatSteps])
 
+  // Toggle the combined session timer without changing the current timeline position.
   function handleStartPause() {
     if (isComplete) {
       saveIndoorBreakSession({
@@ -167,6 +177,7 @@ function IndoorGuidedSession() {
     setIsTimerRunning((running) => !running)
   }
 
+  // Move to the next step, completing the whole session after the final instruction.
   function handleSkipStep() {
     if (isComplete) {
       return
@@ -184,6 +195,7 @@ function IndoorGuidedSession() {
     setStepSecondsLeft(flatSteps[nextIndex].seconds)
   }
 
+  // End the combined session explicitly and remove its resumable state.
   function handleFinish() {
     setIsTimerRunning(false)
     setIsComplete(true)

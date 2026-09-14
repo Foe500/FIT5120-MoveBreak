@@ -1,3 +1,4 @@
+// Supports anonymous team creation, membership and shared weekly leaderboard views.
 import { useEffect, useState } from 'react'
 import { Award, Copy, Crown, LogOut, Medal, PartyPopper, RefreshCw, Trophy, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -6,11 +7,13 @@ import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
 import { addMembership, getMemberships, isJoined, leaveTeam } from '@/lib/team'
 
+// Convert a leaderboard total to the rounded minute label used in team summaries.
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
   return `${minutes} min`
 }
 
+// Describe the remaining season time in days or hours for the leaderboard banner.
 function formatTimeRemaining(endAtIso) {
   const remainingMs = new Date(endAtIso).getTime() - Date.now()
   if (remainingMs <= 0) {
@@ -29,6 +32,7 @@ function formatTimeRemaining(endAtIso) {
   return 'Less than an hour left'
 }
 
+// Create a new anonymous team or join one by code, then save the resulting membership locally.
 function TeamCreateJoinForm({ hasMemberships, onJoined }) {
   const [mode, setMode] = useState('create')
   const [teamName, setTeamName] = useState('')
@@ -37,6 +41,7 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Validate form fields, resolve a join code and create the browser's anonymous team membership.
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
@@ -196,6 +201,7 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
   )
 }
 
+// Return the medal or numeric rank marker for a sorted leaderboard position.
 function rankIcon(index) {
   if (index === 0) return <Crown className="rank-icon gold" size={18} />
   if (index === 1) return <Medal className="rank-icon silver" size={18} />
@@ -203,6 +209,7 @@ function rankIcon(index) {
   return <span className="rank-number">{index + 1}</span>
 }
 
+// Load one team's current season standings and provide sharing, renewal and leave controls.
 function TeamLeaderboard({ identity, onLeave }) {
   const [leaderboard, setLeaderboard] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -210,6 +217,7 @@ function TeamLeaderboard({ identity, onLeave }) {
   const [copied, setCopied] = useState(false)
   const [isRenewing, setIsRenewing] = useState(false)
 
+  // Fetch the latest server-calculated standings for this membership's join code.
   async function loadLeaderboard() {
     try {
       const response = await fetch(`${API_BASE_URL}/teams/${identity.joinCode}/leaderboard`)
@@ -227,6 +235,7 @@ function TeamLeaderboard({ identity, onLeave }) {
     }
   }
 
+  // Poll every fifteen seconds so team members see completed breaks without a WebSocket connection.
   useEffect(() => {
     const timeout = window.setTimeout(loadLeaderboard, 0)
     const interval = window.setInterval(loadLeaderboard, 15000)
@@ -237,6 +246,7 @@ function TeamLeaderboard({ identity, onLeave }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [identity.joinCode])
 
+  // Copy the shareable code and briefly confirm that the browser accepted the clipboard write.
   function handleCopyCode() {
     navigator.clipboard?.writeText(identity.joinCode).then(() => {
       setCopied(true)
@@ -244,6 +254,7 @@ function TeamLeaderboard({ identity, onLeave }) {
     })
   }
 
+  // Start the next weekly season after the API confirms that the current season has ended.
   async function handleRenew() {
     setIsRenewing(true)
     setError('')
@@ -351,9 +362,11 @@ function TeamLeaderboard({ identity, onLeave }) {
   )
 }
 
+// Combine saved memberships, leaderboard cards and the create-or-join form on the team page.
 function Team() {
   const [memberships, setMemberships] = useState(() => getMemberships())
 
+  // Refresh membership state after the form writes a newly joined team to local storage.
   function handleJoined() {
     setMemberships(getMemberships())
   }

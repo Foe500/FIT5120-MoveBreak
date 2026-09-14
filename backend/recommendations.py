@@ -1,3 +1,5 @@
+"""Ranks nearby open-data places that fit a requested outdoor break time budget."""
+
 import math
 
 from sqlalchemy.orm import Session
@@ -42,6 +44,7 @@ MARKER_TONES = {
 
 
 def place_to_recommendation_dict(place):
+    """Map a database place row to the stable frontend recommendation shape."""
     return {
         "id": place.id,
         "record_id": place.id,
@@ -62,6 +65,7 @@ def place_to_recommendation_dict(place):
 
 
 def haversine_distance_metres(origin, destination):
+    """Calculate straight-line distance between two latitude/longitude pairs in metres."""
     lat1, lon1 = origin
     lat2, lon2 = destination
     d_lat = math.radians(lat2 - lat1)
@@ -76,6 +80,7 @@ def haversine_distance_metres(origin, destination):
 
 
 def estimate_walking_distance_metres(origin, destination):
+    """Estimate a conservative CBD walking distance from direct and grid-style detours."""
     lat1, lon1 = origin
     lat2, lon2 = destination
     north_south = haversine_distance_metres((lat1, lon1), (lat2, lon1))
@@ -88,6 +93,7 @@ def estimate_walking_distance_metres(origin, destination):
 
 
 def _maximum_straight_distance(break_time):
+    """Return the furthest direct distance that can still fit the full return-break budget."""
     config = BREAK_CONFIG[break_time]
     one_way_minutes = (
         break_time - config["activity_time"] - config["buffer_time"]
@@ -113,6 +119,7 @@ def load_recommendation_places(db: Session, latitude=None, longitude=None,
 
 
 def _distance_score(distance_m):
+    """Convert shorter walking distance into a bounded ranking contribution."""
     if distance_m <= 80:
         return 40
     if distance_m >= 1600:
@@ -121,6 +128,7 @@ def _distance_score(distance_m):
 
 
 def _duration_fit_score(remaining_time):
+    """Reward plans that leave useful spare time without exceeding the time budget."""
     if remaining_time < 0:
         return 0
     if remaining_time <= 2:
@@ -131,6 +139,7 @@ def _duration_fit_score(remaining_time):
 
 
 def _display_minutes(value, minimum=0):
+    """Round calculated minutes for UI display while honouring a required lower bound."""
     display_value = round(value)
     if value > 0:
         display_value = max(1, display_value)
@@ -138,6 +147,7 @@ def _display_minutes(value, minimum=0):
 
 
 def _display_minute_label(value):
+    """Format a numeric duration as a compact human-readable minute label."""
     if value <= 0:
         return "0 min"
     if value < 1:
@@ -147,6 +157,7 @@ def _display_minute_label(value):
 
 def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
                               places=None):
+    """Rank time-safe places by distance, category suitability and spare break time."""
     if break_time not in BREAK_CONFIG:
         raise ValueError("break_time must be one of 5, 15 or 30")
 
@@ -212,6 +223,7 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
 
 
 def build_recommendation_response(latitude, longitude, break_time, db, limit=5):
+    """Package ranked places with the origin and calculation assumptions used by the frontend."""
     recommendations = calculate_recommendations(
         latitude, longitude, break_time, db=db, limit=limit
     )

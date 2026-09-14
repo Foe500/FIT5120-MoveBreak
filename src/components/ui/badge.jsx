@@ -1,3 +1,4 @@
+// Exposes a reusable label component with consistent semantic colour variants.
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,7 @@ const badgeVariants = cva('inline-flex w-fit items-center gap-1 rounded-full px-
   },
 })
 
+// Apply a semantic style variant while forwarding regular span attributes to the badge.
 function Badge({ className, variant, ...props }) {
   return <span className={cn(badgeVariants({ variant, className }))} {...props} />
 }

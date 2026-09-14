@@ -1,3 +1,4 @@
+// Presents the compact session-badge summary shown on the home dashboard.
 import { Award, Eye, Leaf } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -7,6 +8,7 @@ const badges = [
   { icon: Award, title: 'Posture Reset', state: 'In progress' },
 ]
 
+// Render the illustrative status badges used in the home dashboard summary.
 function SessionBadgesCard() {
   return (
     <Card className="mini-card session-badges-card p-4">

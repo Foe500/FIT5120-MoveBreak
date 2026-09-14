@@ -1,3 +1,4 @@
+// Guides users through break preferences and requests either an indoor session or outdoor recommendation.
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
@@ -70,6 +71,7 @@ const apiNeedByLabel = {
   'Low effort': 'Low effort',
 }
 
+// Read a supported break duration from the URL so the home-page selection carries into this flow.
 function getInitialDuration(searchParams) {
   // URL search params are strings, so convert duration before comparing with numeric options.
   const duration = Number(searchParams.get('duration'))
@@ -78,6 +80,7 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : 15
 }
 
+// Choose the next page based on whether the recommendation is a multi-activity indoor or outdoor break.
 function getFlowTarget(movementType, duration, sessionActivities) {
   if (movementType === 'Indoor') {
     const ids = sessionActivities.map((activity) => activity.id).join(',')
@@ -88,6 +91,7 @@ function getFlowTarget(movementType, duration, sessionActivities) {
   return `/explore?duration=${duration}`
 }
 
+// Present the total duration of an indoor session in a compact, human-readable form.
 function formatSessionTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
@@ -99,16 +103,19 @@ function formatSessionTime(totalSeconds) {
   return seconds ? `${minutes}m ${seconds}s` : `${minutes} min`
 }
 
+// Randomise only the movement setting while keeping the current selection as an equally likely option.
 function getSurpriseMovementType(currentMovementType) {
   const otherMovementType = currentMovementType === 'Indoor' ? 'Outdoor' : 'Indoor'
 
   return Math.random() > 0.5 ? currentMovementType : otherMovementType
 }
 
+// Pick one option from a validated list for the surprise-me experience.
 function getRandomOption(options) {
   return options[Math.floor(Math.random() * options.length)]
 }
 
+// Collect preferences, call the relevant recommendation API and build a preview before navigation.
 function Mission() {
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
@@ -154,6 +161,7 @@ function Mission() {
       ? 'What do you need?'
       : 'What kind of outdoor reset do you want?'
 
+  // Close the preview with Escape without changing the user's saved option selections.
   useEffect(() => {
     function closePreviewOnEscape(event) {
       if (event.key === 'Escape') {
@@ -165,6 +173,7 @@ function Mission() {
     return () => window.removeEventListener('keydown', closePreviewOnEscape)
   }, [])
 
+  // Keep the selected need compatible with the newly chosen indoor or outdoor setting.
   function handleMovementTypeChange(nextMovementType) {
     setMovementType(nextMovementType)
 
@@ -178,6 +187,7 @@ function Mission() {
     }
   }
 
+  // Request the matching recommendation endpoint and store its outdoor mission or indoor activity sequence.
   async function loadMission(nextMovementType = movementType, nextNeed = need) {
     setIsLoading(true)
     setError('')
@@ -217,12 +227,14 @@ function Mission() {
     }
   }
 
+  // Open the preview and fetch a recommendation for the current manually selected choices.
   function handleShowOptions() {
     setIsSurpriseRecommendation(false)
     setIsPreviewOpen(true)
     loadMission()
   }
 
+  // Generate a valid random setting and need, then load it through the same API path.
   function handleSurpriseMe() {
     const nextMovementType = getSurpriseMovementType(movementType)
     const nextNeedOptions = nextMovementType === 'Indoor' ? needOptions : outdoorNeedOptions

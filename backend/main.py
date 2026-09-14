@@ -1,3 +1,5 @@
+"""Defines the FastAPI routes for activities, recommendations, places and anonymous team leaderboards."""
+
 import os
 import random
 import secrets
@@ -41,10 +43,12 @@ SEASON_LENGTH = timedelta(days=7)
 
 
 def generate_join_code(length: int = 6) -> str:
+    """Create a short human-shareable code that avoids visually ambiguous characters."""
     return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
 
 
 def compute_points(sessions_completed: int, total_seconds: int) -> int:
+    """Calculate a member score from completed sessions and total movement duration."""
     return sessions_completed * POINTS_PER_SESSION + total_seconds // POINTS_SECONDS_DIVISOR
 
 
@@ -55,6 +59,7 @@ def as_utc(dt: datetime) -> datetime:
 
 
 def start_new_season(team: Team, week_number: int, db: Session) -> Season:
+    """Create and persist the next seven-day competition window for one team."""
     now = datetime.now(timezone.utc)
     season = Season(
         id=uuid.uuid4().hex,
@@ -70,6 +75,7 @@ def start_new_season(team: Team, week_number: int, db: Session) -> Season:
 
 
 def get_current_season(team: Team, db: Session) -> Season:
+    """Return the newest team season, creating an initial one for legacy teams when necessary."""
     season = (
         db.query(Season)
         .filter(Season.team_id == team.id)
@@ -81,6 +87,7 @@ def get_current_season(team: Team, db: Session) -> Season:
 
 
 def finalize_season_if_ended(season: Season, db: Session) -> Season:
+    """Freeze a finished season winner once using only members still active on the team."""
     now = datetime.now(timezone.utc)
     if now < as_utc(season.end_at) or season.finalized_at is not None:
         return season
@@ -133,6 +140,7 @@ def finalize_season_if_ended(season: Season, db: Session) -> Season:
 
 
 def season_to_dict(season: Season) -> dict:
+    """Convert a season model into the camelCase response used by the leaderboard UI."""
     now = datetime.now(timezone.utc)
 
     return {
@@ -189,6 +197,7 @@ app.add_middleware(
 
 
 def activity_to_dict(a: Activity) -> dict:
+    """Expose an activity database row with its optional guided-step fields intact."""
     return {
         "id": a.id,
         "area": a.area,
@@ -207,6 +216,7 @@ def activity_to_dict(a: Activity) -> dict:
 
 
 def place_to_dict(p: Place) -> dict:
+    """Expose a place row in the backward-compatible shape used by existing map views."""
     return {
         "id": p.id,
         "record_id": p.id,
@@ -228,6 +238,7 @@ def place_to_dict(p: Place) -> dict:
 
 
 def matches_need(activity_dict: dict, need: Optional[str]) -> bool:
+    """Check whether a free-text wellbeing need appears in searchable activity fields."""
     if not need:
         return True
     search_text = " ".join(
@@ -243,22 +254,26 @@ def matches_need(activity_dict: dict, need: Optional[str]) -> bool:
 
 @app.get("/")
 def read_root():
+    """Return a minimal service identity response for the API root."""
     return {"name": "MoveBreak API", "status": "running"}
 
 
 @app.get("/health")
 def health_check():
+    """Return a lightweight liveness response for deployment health checks."""
     return {"status": "ok"}
 
 
 @app.get("/activities")
 def get_activities(db: Session = Depends(get_db)):
+    """Return the complete indoor activity catalogue."""
     activities = db.query(Activity).all()
     return [activity_to_dict(a) for a in activities]
 
 
 @app.get("/activities/{activity_id}")
 def get_activity(activity_id: str, db: Session = Depends(get_db)):
+    """Return one activity by id or a clear not-found response."""
     activity = db.query(Activity).filter(Activity.id == activity_id).first()
 
     if not activity:
@@ -269,6 +284,7 @@ def get_activity(activity_id: str, db: Session = Depends(get_db)):
 
 @app.get("/places")
 def get_places(db: Session = Depends(get_db)):
+    """Return all normalised place records for map consumers that need the full dataset."""
     return load_recommendation_places(db)
 
 
@@ -280,6 +296,7 @@ def get_recommendations(
     limit: int = Query(5, ge=1, le=10),
     db: Session = Depends(get_db),
 ):
+    """Return ranked time-safe places for an origin and a supported break duration."""
     try:
         return build_recommendation_response(
             lat, lng, break_time, db=db, limit=limit
@@ -290,6 +307,7 @@ def get_recommendations(
 
 @app.post("/missions/recommend")
 def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
+    """Return one recommendation tailored to indoor need matching or time-safe outdoor routing."""
     activities = [activity_to_dict(a) for a in db.query(Activity).all()]
 
     setting = request.setting.lower()
@@ -396,6 +414,7 @@ def recommend_indoor_session(request: MissionRequest, db: Session = Depends(get_
 
 
 def get_team_by_code(join_code: str, db: Session) -> Team:
+    """Resolve a case-insensitive join code or raise the API's consistent team-not-found error."""
     team = db.query(Team).filter(Team.join_code == join_code.upper()).first()
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -404,6 +423,7 @@ def get_team_by_code(join_code: str, db: Session) -> Team:
 
 @app.post("/teams")
 def create_team(request: CreateTeamRequest, db: Session = Depends(get_db)):
+    """Create an anonymous team, issue its unique join code and start its first weekly season."""
     team_name = request.teamName.strip()
     if not team_name:
         raise HTTPException(status_code=400, detail="Team name is required")
@@ -476,6 +496,7 @@ def list_teams(db: Session = Depends(get_db)):
 
 @app.post("/teams/{join_code}/join")
 def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(get_db)):
+    """Add an anonymous nickname to an existing team and return the generated member id."""
     nickname = request.nickname.strip()
     if not nickname:
         raise HTTPException(status_code=400, detail="Nickname is required")
@@ -496,6 +517,7 @@ def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(ge
 
 @app.post("/teams/{join_code}/leave")
 def leave_team(join_code: str, request: LeaveTeamRequest, db: Session = Depends(get_db)):
+    """Remove an existing member so they disappear from future leaderboard calculations."""
     team = get_team_by_code(join_code, db)
 
     member = (
@@ -514,6 +536,7 @@ def leave_team(join_code: str, request: LeaveTeamRequest, db: Session = Depends(
 
 @app.get("/teams/{join_code}")
 def get_team(join_code: str, db: Session = Depends(get_db)):
+    """Return basic team metadata and its current member count for join-code validation."""
     team = get_team_by_code(join_code, db)
     member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
 
@@ -527,6 +550,7 @@ def get_team(join_code: str, db: Session = Depends(get_db)):
 
 @app.post("/teams/{join_code}/log-session")
 def log_session(join_code: str, request: LogSessionRequest, db: Session = Depends(get_db)):
+    """Validate an anonymous membership and append one completed break to the team log."""
     team = get_team_by_code(join_code, db)
 
     member = (
@@ -556,6 +580,7 @@ def log_session(join_code: str, request: LogSessionRequest, db: Session = Depend
 
 @app.get("/teams/{join_code}/leaderboard")
 def get_leaderboard(join_code: str, db: Session = Depends(get_db)):
+    """Calculate the active-season standings, totals and historical championships for one team."""
     team = get_team_by_code(join_code, db)
     season = finalize_season_if_ended(get_current_season(team, db), db)
 
@@ -611,6 +636,7 @@ def get_leaderboard(join_code: str, db: Session = Depends(get_db)):
 
 @app.post("/teams/{join_code}/seasons/renew")
 def renew_season(join_code: str, db: Session = Depends(get_db)):
+    """Open a new weekly season only after the current one has expired and been finalised."""
     team = get_team_by_code(join_code, db)
     season = finalize_season_if_ended(get_current_season(team, db), db)
 

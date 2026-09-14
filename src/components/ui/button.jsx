@@ -1,3 +1,4 @@
+// Exposes a reusable button that can style either a native button or a child link.
 import { cloneElement, isValidElement } from 'react'
 import { cva } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
@@ -28,6 +29,7 @@ const buttonVariants = cva(
   },
 )
 
+// Apply the selected button style and optionally transfer it onto a navigational child element.
 function Button({ asChild = false, className, variant, size, ...props }) {
   const classes = cn(buttonVariants({ variant, size, className }))
 

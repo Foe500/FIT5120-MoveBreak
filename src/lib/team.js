@@ -1,3 +1,4 @@
+// Manages anonymous multi-team membership in local storage and logs completed breaks to each team.
 import { API_BASE_URL } from '@/lib/api'
 
 const MEMBERSHIPS_KEY = 'movebreak_team_memberships'
@@ -26,10 +27,12 @@ function saveMemberships(memberships) {
   }
 }
 
+// Check whether this browser already has an active anonymous membership for a team.
 export function isJoined(teamId) {
   return getMemberships().some((membership) => membership.teamId === teamId)
 }
 
+// Add a new membership once, then retain the team id for the user's personal team overview.
 export function addMembership(membership) {
   const memberships = getMemberships()
   if (memberships.some((existing) => existing.teamId === membership.teamId)) {
@@ -53,6 +56,7 @@ export function getTeamHistory() {
   }
 }
 
+// Remember a team connection without restoring a membership that the user has left.
 export function addToTeamHistory(teamId) {
   try {
     const history = getTeamHistory()

@@ -12,6 +12,7 @@ from database import Base
 
 
 class Activity(Base):
+    """Stores one guided break with display metadata, timed steps and safety guidance."""
     __tablename__ = "activities"
 
     id = Column(String, primary_key=True, index=True)
@@ -30,6 +31,7 @@ class Activity(Base):
 
 
 class Place(Base):
+    """Stores a normalised Melbourne place record and legacy map fields for compatibility."""
     __tablename__ = "places"
 
     id = Column(String, primary_key=True, index=True)

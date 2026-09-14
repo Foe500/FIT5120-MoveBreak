@@ -1,3 +1,4 @@
+// Guides an outdoor break through walk, pause and return stages using the saved route plan.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
@@ -18,6 +19,7 @@ import {
 } from '@/lib/outdoorBreak'
 import { logTeamSession } from '@/lib/team'
 
+// Format a non-negative elapsed or remaining duration for the outdoor break timer.
 function formatClock(totalSeconds) {
   const safeSeconds = Math.max(0, Math.round(totalSeconds))
   const minutes = Math.floor(safeSeconds / 60)
@@ -26,6 +28,7 @@ function formatClock(totalSeconds) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+// Prefer a newly selected route plan, otherwise restore an unfinished outdoor session from storage.
 function getOutdoorBreakSession(locationState) {
   if (locationState?.breakPlan) {
     return saveOutdoorBreakSession(locationState.breakPlan)
@@ -34,9 +37,11 @@ function getOutdoorBreakSession(locationState) {
   return getStoredOutdoorBreak()
 }
 
+// Guide the outbound walk, pause and return stages while keeping the plan resumable across navigation.
 function OutdoorGuidedBreak() {
   const location = useLocation()
   const navigate = useNavigate()
+  // Resolve the session once for the incoming navigation state and derive all stage durations from it.
   const breakSession = useMemo(() => getOutdoorBreakSession(location.state), [location.state])
   const breakPlan = breakSession?.breakPlan
   const walkThereSeconds = (breakPlan?.walkThereMinutes ?? 0) * 60
@@ -62,6 +67,7 @@ function OutdoorGuidedBreak() {
     background: `conic-gradient(#13b981 ${progressPercent * 3.6}deg, #e8f3ec 0deg)`,
   }
 
+  // Keep elapsed time aligned with wall-clock time until the plan completes.
   useEffect(() => {
     if (!breakPlan || isComplete) {
       return undefined
@@ -82,6 +88,7 @@ function OutdoorGuidedBreak() {
     return () => window.clearInterval(interval)
   }, [breakPlan, isComplete, startedAt, totalSeconds])
 
+  // Log a completed outdoor break once for all teams joined in this browser.
   useEffect(() => {
     if (isComplete && breakPlan) {
       logTeamSession({
@@ -94,6 +101,7 @@ function OutdoorGuidedBreak() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isComplete])
 
+  // Let the user start the return stage early and align the timer with its planned handoff.
   function handleReturnNow() {
     setHasStartedReturn(true)
 
@@ -103,6 +111,7 @@ function OutdoorGuidedBreak() {
     }
   }
 
+  // Let the user confirm arrival early so the rest stage begins immediately.
   function handleArrived() {
     setHasArrived(true)
 
@@ -112,12 +121,14 @@ function OutdoorGuidedBreak() {
     }
   }
 
+  // Finish the plan manually and clear the saved session.
   function handleFinishBreak() {
     setElapsedSeconds(totalSeconds)
     setIsComplete(true)
     clearOutdoorBreakSession()
   }
 
+  // Reset every stage flag and persist a fresh start time for another attempt.
   function handleRestart() {
     const nextStartedAt = Date.now()
 

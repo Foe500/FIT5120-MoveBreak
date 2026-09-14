@@ -1,3 +1,4 @@
+// Runs a step-by-step timer for one indoor activity and records completion for any joined teams.
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import {
@@ -19,6 +20,7 @@ import { API_BASE_URL } from '@/lib/api'
 import { clearIndoorBreakSession, saveIndoorBreakSession } from '@/lib/indoorBreak'
 import { logTeamSession } from '@/lib/team'
 
+// Format a countdown value as minutes and zero-padded seconds for the guidance screen.
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
@@ -26,6 +28,7 @@ function formatTime(totalSeconds) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+// Run one fetched activity step by step, retaining enough context to resume it within the session.
 function IndoorGuidedBreak() {
   const location = useLocation()
   const { activityId } = useParams()
@@ -37,6 +40,7 @@ function IndoorGuidedBreak() {
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
 
+  // Load the requested activity and initialise the first timed instruction whenever its id changes.
   useEffect(() => {
     async function loadActivity() {
       try {
@@ -69,6 +73,7 @@ function IndoorGuidedBreak() {
     loadActivity()
   }, [activityId, location.pathname, location.search])
 
+  // Derive duration and progress values from the activity steps instead of storing duplicate totals.
   const steps = useMemo(() => activity?.steps ?? [], [activity])
   const currentStepDurationSeconds = steps[currentStepIndex]?.seconds ?? 0
   const totalSeconds = steps.reduce((sum, step) => sum + step.seconds, 0)
@@ -81,6 +86,7 @@ function IndoorGuidedBreak() {
     : 0
   const currentStep = steps[currentStepIndex]?.text ?? 'Ready to begin.'
 
+  // Record a completed break once, then remove the resumable indoor session.
   useEffect(() => {
     if (isComplete && activity) {
       logTeamSession({ setting: 'Indoor', label: activity.title, seconds: totalSeconds })
@@ -90,6 +96,7 @@ function IndoorGuidedBreak() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isComplete])
 
+  // Tick the current instruction only while the user has started the timer.
   useEffect(() => {
     if (!isTimerRunning || isComplete || !currentStepDurationSeconds) {
       return undefined
@@ -117,6 +124,7 @@ function IndoorGuidedBreak() {
     return () => window.clearInterval(timer)
   }, [currentStepIndex, isComplete, isTimerRunning, currentStepDurationSeconds, steps])
 
+  // Toggle the guided timer without losing the current step or remaining seconds.
   function handleStartPause() {
     if (isComplete) {
       saveIndoorBreakSession({
@@ -134,6 +142,7 @@ function IndoorGuidedBreak() {
     setIsTimerRunning((running) => !running)
   }
 
+  // Advance to the next instruction, or complete the activity after the final step.
   function handleSkipStep() {
     if (isComplete) {
       return
@@ -151,6 +160,7 @@ function IndoorGuidedBreak() {
     setStepSecondsLeft(steps[nextIndex].seconds)
   }
 
+  // Allow the user to end a break explicitly and clear its stored resume state.
   function handleFinish() {
     setIsTimerRunning(false)
     setIsComplete(true)

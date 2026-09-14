@@ -1,3 +1,4 @@
+// Fetches one activity and presents its steps, safety guidance and link into the guided timer.
 import { createElement, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
@@ -39,10 +40,12 @@ const categoryVisuals = {
   Stretch: Armchair,
 }
 
+// Choose a meaningful Lucide icon from the activity's body area or category.
 function getActivityVisual(activity) {
   return areaVisuals[activity.area] ?? categoryVisuals[activity.category] ?? Dumbbell
 }
 
+// Convert a step duration into the compact label shown in the guided instructions.
 function formatStepDuration(seconds) {
   if (seconds >= 60) {
     const minutes = Math.floor(seconds / 60)
@@ -52,12 +55,14 @@ function formatStepDuration(seconds) {
   return `${seconds} sec`
 }
 
+// Load and display one activity, including its metadata, guided steps and safety notes.
 function ActivityDetail() {
   const { activityId } = useParams()
   const [activity, setActivity] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Refetch whenever the route parameter identifies a different activity.
   useEffect(() => {
     async function loadActivityDetail() {
       try {
@@ -79,6 +84,7 @@ function ActivityDetail() {
     loadActivityDetail()
   }, [activityId])
 
+  // Keep loading and error states separate from the complete activity layout.
   if (isLoading) {
     return (
       <section className="page activity-detail-page">

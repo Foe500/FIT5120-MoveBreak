@@ -1,3 +1,4 @@
+/* Defines global design tokens, resets and typography used by the React application. */
 @import "tailwindcss";
 
 :root {

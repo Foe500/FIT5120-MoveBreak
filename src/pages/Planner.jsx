@@ -1,3 +1,4 @@
+// Lets users maintain a lightweight daily break plan that is saved in this browser.
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -82,6 +83,7 @@ const activitySuggestions = [
   },
 ]
 
+// Restore browser-local plan items and fall back to the example schedule on first use or invalid data.
 function getInitialPlannedBreaks() {
   try {
     const savedBreaks = JSON.parse(localStorage.getItem(plannerStorageKey) ?? '[]')
@@ -92,6 +94,7 @@ function getInitialPlannedBreaks() {
   }
 }
 
+// Display, update and persist a simple daily schedule of indoor and outdoor breaks.
 function Planner() {
   const [plannedBreaks, setPlannedBreaks] = useState(getInitialPlannedBreaks)
   const totalMinutes = plannedBreaks.reduce(
@@ -99,10 +102,12 @@ function Planner() {
     0,
   )
 
+  // Persist every plan update so the schedule survives a page refresh in the same browser.
   useEffect(() => {
     localStorage.setItem(plannerStorageKey, JSON.stringify(plannedBreaks))
   }, [plannedBreaks])
 
+  // Convert a suggested activity into a new afternoon planner item.
   function addSuggestedBreak(activity) {
     const newBreak = {
       id: `${activity.id}-${plannedBreaks.length}`,
@@ -118,6 +123,7 @@ function Planner() {
     setPlannedBreaks([...plannedBreaks, newBreak])
   }
 
+  // Render one time-of-day group from the current plan without duplicating timeline markup.
   function renderPlanSection(period) {
     const periodBreaks = plannedBreaks.filter((plannedBreak) => plannedBreak.period === period)
 
