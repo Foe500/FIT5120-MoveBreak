@@ -68,14 +68,15 @@ class Team(Base):
 
 
 class TeamMember(Base):
-    """A member is identified only by a self-chosen nickname plus an
-    anonymous device id the frontend generates and stores in
-    localStorage — nothing that identifies a real person."""
+    """A member is identified by an anonymous id plus a backend-generated
+    credential. Only the credential hash is stored here; the browser keeps
+    the original secret locally."""
     __tablename__ = "team_members"
 
-    id = Column(String, primary_key=True, index=True)       # uuid4 hex, == the device id
+    id = Column(String, primary_key=True, index=True)       # uuid4 hex
     team_id = Column(String, ForeignKey("teams.id"), nullable=False, index=True)
     nickname = Column(String, nullable=False)
+    member_secret_hash = Column(String, nullable=False)
     joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 

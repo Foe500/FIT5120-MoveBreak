@@ -1,3 +1,4 @@
+import hashlib
 import os
 import random
 import secrets
@@ -10,7 +11,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, inspect, text
 
 from database import engine, get_db, Base
 from models import Activity, Place, Team, TeamMember, SessionLog, Season
@@ -30,6 +31,7 @@ app = FastAPI(title="MoveBreak API")
 DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))
+MEMBER_SECRET_BYTES = 32
 
 # Leaderboard scoring: a flat bonus for completing a break, plus a small
 # amount per second actually moved, so showing up often matters more
@@ -42,6 +44,30 @@ SEASON_LENGTH = timedelta(days=7)
 
 def generate_join_code(length: int = 6) -> str:
     return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
+
+
+def generate_member_secret() -> str:
+    return secrets.token_urlsafe(MEMBER_SECRET_BYTES)
+
+
+def hash_member_secret(member_secret: str) -> str:
+    return hashlib.sha256(member_secret.encode("utf-8")).hexdigest()
+
+
+def ensure_team_member_secret_column() -> None:
+    inspector = inspect(engine)
+    if "team_members" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("team_members")}
+    if "member_secret_hash" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE team_members ADD COLUMN member_secret_hash VARCHAR"))
+
+
+ensure_team_member_secret_column()
 
 
 def compute_points(sessions_completed: int, total_seconds: int) -> int:
@@ -166,10 +192,12 @@ class JoinTeamRequest(BaseModel):
 
 class LeaveTeamRequest(BaseModel):
     memberId: str
+    memberSecret: str
 
 
 class LogSessionRequest(BaseModel):
     memberId: str
+    memberSecret: str
     setting: str
     label: Optional[str] = None
     seconds: int
@@ -402,6 +430,27 @@ def get_team_by_code(join_code: str, db: Session) -> Team:
     return team
 
 
+def get_authenticated_team_member(
+    team: Team,
+    member_id: str,
+    member_secret: str,
+    db: Session,
+) -> TeamMember:
+    member = (
+        db.query(TeamMember)
+        .filter(TeamMember.id == member_id, TeamMember.team_id == team.id)
+        .first()
+    )
+    if not member or not member.member_secret_hash:
+        raise HTTPException(status_code=401, detail="Invalid member credentials")
+
+    supplied_secret_hash = hash_member_secret(member_secret)
+    if not secrets.compare_digest(member.member_secret_hash, supplied_secret_hash):
+        raise HTTPException(status_code=401, detail="Invalid member credentials")
+
+    return member
+
+
 @app.post("/teams")
 def create_team(request: CreateTeamRequest, db: Session = Depends(get_db)):
     team_name = request.teamName.strip()
@@ -482,13 +531,20 @@ def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(ge
 
     team = get_team_by_code(join_code, db)
 
-    member = TeamMember(id=uuid.uuid4().hex, team_id=team.id, nickname=nickname)
+    member_secret = generate_member_secret()
+    member = TeamMember(
+        id=uuid.uuid4().hex,
+        team_id=team.id,
+        nickname=nickname,
+        member_secret_hash=hash_member_secret(member_secret),
+    )
     db.add(member)
     db.commit()
     db.refresh(member)
 
     return {
         "memberId": member.id,
+        "memberSecret": member_secret,
         "nickname": member.nickname,
         "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
     }
@@ -497,14 +553,7 @@ def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(ge
 @app.post("/teams/{join_code}/leave")
 def leave_team(join_code: str, request: LeaveTeamRequest, db: Session = Depends(get_db)):
     team = get_team_by_code(join_code, db)
-
-    member = (
-        db.query(TeamMember)
-        .filter(TeamMember.id == request.memberId, TeamMember.team_id == team.id)
-        .first()
-    )
-    if not member:
-        raise HTTPException(status_code=404, detail="Team member not found")
+    member = get_authenticated_team_member(team, request.memberId, request.memberSecret, db)
 
     db.delete(member)
     db.commit()
@@ -528,14 +577,7 @@ def get_team(join_code: str, db: Session = Depends(get_db)):
 @app.post("/teams/{join_code}/log-session")
 def log_session(join_code: str, request: LogSessionRequest, db: Session = Depends(get_db)):
     team = get_team_by_code(join_code, db)
-
-    member = (
-        db.query(TeamMember)
-        .filter(TeamMember.id == request.memberId, TeamMember.team_id == team.id)
-        .first()
-    )
-    if not member:
-        raise HTTPException(status_code=404, detail="Team member not found")
+    member = get_authenticated_team_member(team, request.memberId, request.memberSecret, db)
 
     if request.seconds <= 0:
         raise HTTPException(status_code=400, detail="seconds must be positive")
