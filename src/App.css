@@ -3825,13 +3825,65 @@ main {
   background: #eef3ea;
 }
 
-.home-hero-visual img {
+.home-hero-visual .hero-stretch {
   position: relative;
   z-index: 2;
   width: min(86%, 31rem);
   height: min(84%, 29rem);
   object-fit: contain;
   mix-blend-mode: multiply;
+}
+
+
+/* Keep the desk and legs fixed while the upper body gently stretches. */
+.hero-stretch-body {
+  transform-box: view-box;
+  transform-origin: 363px 281px;
+  animation: hero-gentle-stretch 8s ease-in-out infinite;
+}
+
+.hero-stretch.is-paused .hero-stretch-body {
+  animation-play-state: paused;
+}
+
+@keyframes hero-gentle-stretch {
+  0%, 100% { transform: skewX(0deg) scaleY(1); }
+  25% { transform: skewX(5deg) scaleY(1.025); }
+  50% { transform: skewX(0deg) scaleY(1); }
+  75% { transform: skewX(-5deg) scaleY(1.025); }
+}
+
+.hero-motion-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 1rem;
+  right: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #c9dbc9;
+  border-radius: 999px;
+  color: #36543e;
+  background: #fffdf9;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.hero-motion-toggle:hover {
+  background: #e3eddf;
+}
+
+.hero-motion-toggle:focus-visible {
+  outline: 2px solid #17365f;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-stretch-body { animation: none; }
+  .hero-motion-toggle { display: none; }
 }
 
 .hero-shape {
