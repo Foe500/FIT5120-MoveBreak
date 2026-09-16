@@ -1,6 +1,6 @@
 // Guides users through break preferences and requests either an indoor session or outdoor recommendation.
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
   Armchair,
@@ -117,6 +117,7 @@ function getRandomOption(options) {
 
 // Collect preferences, call the relevant recommendation API and build a preview before navigation.
 function Mission() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
   const [movementType, setMovementType] = useState('Outdoor')
@@ -227,8 +228,13 @@ function Mission() {
     }
   }
 
-  // Open the preview and fetch a recommendation for the current manually selected choices.
+  // Outdoor options are loaded by the map; indoor sessions still need an activity preview.
   function handleShowOptions() {
+    if (movementType === 'Outdoor') {
+      navigate(getFlowTarget(movementType, duration, sessionActivities))
+      return
+    }
+
     setIsSurpriseRecommendation(false)
     setIsPreviewOpen(true)
     loadMission()
