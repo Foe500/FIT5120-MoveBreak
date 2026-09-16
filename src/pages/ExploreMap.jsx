@@ -1,8 +1,9 @@
 // Maps recommended outdoor places, calculates a time-fit plan and saves the chosen break for guidance.
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import {
+  ArrowLeft,
   Building2,
   CalendarPlus,
   CheckCircle2,
@@ -154,6 +155,7 @@ function CurrentLocationView({ position }) {
 
 // Fetch, filter and present nearby places while supporting location and controlled test origins.
 function ExploreMap() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedDuration = getInitialDuration(searchParams)
   const [places, setPlaces] = useState([])
@@ -480,13 +482,20 @@ function ExploreMap() {
         </div>
 
         <div className="panel-footer-row">
-          <span>
-            {isLoading
-              ? 'Calculating time-safe options'
-              : `Showing ${visiblePlaces.length} of ${filteredPlaces.length} recommendations`}
-          </span>
-          <span>{selectedDuration} min break</span>
-          <Link to="/mission">View mission options</Link>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => {
+              if (window.history.state?.idx > 0) {
+                navigate(-1)
+              } else {
+                navigate(`/mission?duration=${selectedDuration}`, { replace: true })
+              }
+            }}
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Go back
+          </Button>
         </div>
       </Card>
 
