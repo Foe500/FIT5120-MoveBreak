@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, inspect, text
 
 from database import engine, get_db, Base
-from models import Activity, Place, Team, TeamMember, SessionLog, Season
+from models import Activity, Place, Team, TeamMember, SessionLog, BreakSession, Season
 from recommendations import (
     MELBOURNE_TOWN_HALL,
     build_recommendation_response,
@@ -201,6 +201,25 @@ class LogSessionRequest(BaseModel):
     setting: str
     label: Optional[str] = None
     seconds: int
+
+
+class StartBreakSessionRequest(BaseModel):
+    joinCode: str
+    memberId: str
+    memberSecret: str
+    setting: str
+    label: Optional[str] = None
+    plannedSeconds: int
+
+
+class CompleteBreakSessionRequest(BaseModel):
+    memberId: str
+    memberSecret: str
+
+
+class BreakSessionStateRequest(BaseModel):
+    memberId: str
+    memberSecret: str
 
 
 app.add_middleware(
@@ -451,6 +470,174 @@ def get_authenticated_team_member(
     return member
 
 
+def get_owned_break_session(
+    break_session_id: str,
+    member_id: str,
+    member_secret: str,
+    db: Session,
+) -> tuple[BreakSession, TeamMember]:
+    break_session = (
+        db.query(BreakSession)
+        .filter(BreakSession.id == break_session_id)
+        .first()
+    )
+    if not break_session:
+        raise HTTPException(status_code=404, detail="Break session not found")
+
+    team = db.query(Team).filter(Team.id == break_session.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    member = get_authenticated_team_member(team, member_id, member_secret, db)
+    if member.id != break_session.member_id:
+        raise HTTPException(status_code=401, detail="Invalid member credentials")
+
+    return break_session, member
+
+
+@app.post("/break-sessions/start")
+def start_break_session(
+    request: StartBreakSessionRequest,
+    db: Session = Depends(get_db),
+):
+    team = get_team_by_code(request.joinCode, db)
+    member = get_authenticated_team_member(team, request.memberId, request.memberSecret, db)
+
+    if request.plannedSeconds <= 0:
+        raise HTTPException(status_code=400, detail="plannedSeconds must be positive")
+
+    break_session = BreakSession(
+        id=uuid.uuid4().hex,
+        team_id=team.id,
+        member_id=member.id,
+        setting=request.setting,
+        label=request.label,
+        planned_seconds=request.plannedSeconds,
+        started_at=datetime.now(timezone.utc),
+    )
+    db.add(break_session)
+    db.commit()
+    db.refresh(break_session)
+
+    return {
+        "id": break_session.id,
+        "status": "started",
+        "startedAt": as_utc(break_session.started_at).isoformat(),
+        "plannedSeconds": break_session.planned_seconds,
+    }
+
+
+@app.post("/break-sessions/{break_session_id}/pause")
+def pause_break_session(
+    break_session_id: str,
+    request: BreakSessionStateRequest,
+    db: Session = Depends(get_db),
+):
+    break_session, _ = get_owned_break_session(
+        break_session_id,
+        request.memberId,
+        request.memberSecret,
+        db,
+    )
+
+    if break_session.completed_at is not None:
+        return {"id": break_session.id, "status": "already_completed"}
+
+    if break_session.paused_at is None:
+        break_session.paused_at = datetime.now(timezone.utc)
+        db.commit()
+
+    return {"id": break_session.id, "status": "paused"}
+
+
+@app.post("/break-sessions/{break_session_id}/resume")
+def resume_break_session(
+    break_session_id: str,
+    request: BreakSessionStateRequest,
+    db: Session = Depends(get_db),
+):
+    break_session, _ = get_owned_break_session(
+        break_session_id,
+        request.memberId,
+        request.memberSecret,
+        db,
+    )
+
+    if break_session.completed_at is not None:
+        return {"id": break_session.id, "status": "already_completed"}
+
+    if break_session.paused_at is not None:
+        now = datetime.now(timezone.utc)
+        paused_seconds = int((now - as_utc(break_session.paused_at)).total_seconds())
+        break_session.paused_seconds = (break_session.paused_seconds or 0) + max(0, paused_seconds)
+        break_session.paused_at = None
+        db.commit()
+
+    return {"id": break_session.id, "status": "running"}
+
+
+@app.post("/break-sessions/{break_session_id}/complete")
+def complete_break_session(
+    break_session_id: str,
+    request: CompleteBreakSessionRequest,
+    db: Session = Depends(get_db),
+):
+    break_session, _ = get_owned_break_session(
+        break_session_id,
+        request.memberId,
+        request.memberSecret,
+        db,
+    )
+
+    if break_session.completed_at is not None:
+        return {
+            "id": break_session.id,
+            "status": "already_completed",
+            "creditedSeconds": break_session.credited_seconds or 0,
+            "completedAt": as_utc(break_session.completed_at).isoformat(),
+        }
+
+    completed_at = datetime.now(timezone.utc)
+    open_pause_seconds = (
+        max(0, int((completed_at - as_utc(break_session.paused_at)).total_seconds()))
+        if break_session.paused_at is not None
+        else 0
+    )
+    elapsed_seconds = max(
+        0,
+        int((completed_at - as_utc(break_session.started_at)).total_seconds())
+        - (break_session.paused_seconds or 0)
+        - open_pause_seconds,
+    )
+    credited_seconds = min(break_session.planned_seconds, elapsed_seconds)
+
+    break_session.completed_at = completed_at
+    break_session.credited_seconds = credited_seconds
+    break_session.paused_at = None
+
+    if credited_seconds > 0:
+        log = SessionLog(
+            id=uuid.uuid4().hex,
+            team_id=break_session.team_id,
+            member_id=break_session.member_id,
+            setting=break_session.setting,
+            label=break_session.label,
+            seconds=credited_seconds,
+            completed_at=completed_at,
+        )
+        db.add(log)
+
+    db.commit()
+    db.refresh(break_session)
+
+    return {
+        "id": break_session.id,
+        "status": "completed",
+        "creditedSeconds": break_session.credited_seconds or 0,
+        "completedAt": as_utc(break_session.completed_at).isoformat(),
+    }
+
+
 @app.post("/teams")
 def create_team(request: CreateTeamRequest, db: Session = Depends(get_db)):
     team_name = request.teamName.strip()
@@ -576,24 +763,10 @@ def get_team(join_code: str, db: Session = Depends(get_db)):
 
 @app.post("/teams/{join_code}/log-session")
 def log_session(join_code: str, request: LogSessionRequest, db: Session = Depends(get_db)):
-    team = get_team_by_code(join_code, db)
-    member = get_authenticated_team_member(team, request.memberId, request.memberSecret, db)
-
-    if request.seconds <= 0:
-        raise HTTPException(status_code=400, detail="seconds must be positive")
-
-    log = SessionLog(
-        id=uuid.uuid4().hex,
-        team_id=team.id,
-        member_id=member.id,
-        setting=request.setting,
-        label=request.label,
-        seconds=request.seconds,
+    raise HTTPException(
+        status_code=410,
+        detail="Direct session logging is disabled. Use /break-sessions/start and /break-sessions/{id}/complete.",
     )
-    db.add(log)
-    db.commit()
-
-    return {"status": "logged"}
 
 
 @app.get("/teams/{join_code}/leaderboard")

@@ -95,6 +95,25 @@ class SessionLog(Base):
     completed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class BreakSession(Base):
+    """Server-authoritative timer state for a guided break. The client can
+    ask to start and complete a session, but credited seconds are calculated
+    from server timestamps so planned duration cannot be forged by the UI."""
+    __tablename__ = "break_sessions"
+
+    id = Column(String, primary_key=True, index=True)       # uuid4 hex
+    team_id = Column(String, ForeignKey("teams.id"), nullable=False, index=True)
+    member_id = Column(String, ForeignKey("team_members.id"), nullable=False, index=True)
+    setting = Column(String, nullable=False)
+    label = Column(String, nullable=True)
+    planned_seconds = Column(Integer, nullable=False)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    paused_at = Column(DateTime, nullable=True)
+    paused_seconds = Column(Integer, default=0, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    credited_seconds = Column(Integer, nullable=True)
+
+
 class Season(Base):
     """A one-week competition window for a team. The leaderboard only
     counts SessionLog rows that fall inside [start_at, end_at). When a

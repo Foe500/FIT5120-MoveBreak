@@ -94,28 +94,84 @@ export async function leaveTeam(teamId) {
 }
 
 /**
- * Logs a completed break to every team this browser has joined. No-ops
- * quietly if there are none — logging is a bonus on top of the guided
- * break, never something that should block or interrupt it.
+ * Starts a server-authoritative break session for every team this browser
+ * has joined. The server records start time so completion credit can be
+ * based on elapsed time instead of client-reported seconds.
  */
-export async function logTeamSession({ setting, label, seconds }) {
+export async function startTeamBreakSessions({ setting, label, plannedSeconds }) {
   const memberships = getMemberships()
 
-  if (!memberships.length || !seconds) {
-    return
+  if (!memberships.length || !plannedSeconds) {
+    return []
   }
 
-  await Promise.allSettled(
-    memberships.map((membership) =>
-      fetch(`${API_BASE_URL}/teams/${membership.joinCode}/log-session`, {
+  const results = await Promise.allSettled(
+    memberships.map(async (membership) => {
+      const response = await fetch(`${API_BASE_URL}/break-sessions/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          joinCode: membership.joinCode,
           memberId: membership.memberId,
           memberSecret: membership.memberSecret,
           setting,
           label,
-          seconds,
+          plannedSeconds,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to start team break session')
+      }
+
+      const data = await response.json()
+      return {
+        sessionId: data.id,
+        memberId: membership.memberId,
+        memberSecret: membership.memberSecret,
+      }
+    }),
+  )
+
+  return results
+    .filter((result) => result.status === 'fulfilled')
+    .map((result) => result.value)
+}
+
+/**
+ * Completes previously started team break sessions. Completion is idempotent:
+ * retrying the same session may return already_completed, but it will not add
+ * points twice because the backend owns that state.
+ */
+export async function completeTeamBreakSessions(startedSessions) {
+  if (!startedSessions?.length) {
+    return
+  }
+
+  await updateTeamBreakSessions(startedSessions, 'complete')
+}
+
+export async function pauseTeamBreakSessions(startedSessions) {
+  await updateTeamBreakSessions(startedSessions, 'pause')
+}
+
+export async function resumeTeamBreakSessions(startedSessions) {
+  await updateTeamBreakSessions(startedSessions, 'resume')
+}
+
+async function updateTeamBreakSessions(startedSessions, action) {
+  if (!startedSessions?.length) {
+    return
+  }
+
+  await Promise.allSettled(
+    startedSessions.map((session) =>
+      fetch(`${API_BASE_URL}/break-sessions/${session.sessionId}/${action}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: session.memberId,
+          memberSecret: session.memberSecret,
         }),
       }),
     ),

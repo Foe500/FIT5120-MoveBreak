@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -16,7 +16,7 @@ import {
   getStoredOutdoorBreak,
   saveOutdoorBreakSession,
 } from '@/lib/outdoorBreak'
-import { logTeamSession } from '@/lib/team'
+import { completeTeamBreakSessions, startTeamBreakSessions } from '@/lib/team'
 
 function formatClock(totalSeconds) {
   const safeSeconds = Math.max(0, Math.round(totalSeconds))
@@ -50,6 +50,8 @@ function OutdoorGuidedBreak() {
   const [hasArrived, setHasArrived] = useState(false)
   const [hasStartedReturn, setHasStartedReturn] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [teamBreakSessions, setTeamBreakSessions] = useState([])
+  const hasCompletedTeamBreakSessions = useRef(false)
   const hasReachedPlace = elapsedSeconds >= walkThereSeconds || hasArrived
   const shouldReturn = elapsedSeconds >= returnAtSeconds || hasStartedReturn
   const timerSeconds = shouldReturn
@@ -61,6 +63,19 @@ function OutdoorGuidedBreak() {
   const circleStyle = {
     background: `conic-gradient(#13b981 ${progressPercent * 3.6}deg, #e8f3ec 0deg)`,
   }
+
+  useEffect(() => {
+    if (!breakPlan || !totalSeconds) {
+      return
+    }
+
+    hasCompletedTeamBreakSessions.current = false
+    startTeamBreakSessions({
+      setting: 'Outdoor',
+      label: breakPlan.placeName,
+      plannedSeconds: totalSeconds,
+    }).then(setTeamBreakSessions)
+  }, [breakPlan, totalSeconds])
 
   useEffect(() => {
     if (!breakPlan || isComplete) {
@@ -83,12 +98,9 @@ function OutdoorGuidedBreak() {
   }, [breakPlan, isComplete, startedAt, totalSeconds])
 
   useEffect(() => {
-    if (isComplete && breakPlan) {
-      logTeamSession({
-        setting: 'Outdoor',
-        label: breakPlan.placeName,
-        seconds: totalSeconds,
-      })
+    if (isComplete && breakPlan && !hasCompletedTeamBreakSessions.current) {
+      hasCompletedTeamBreakSessions.current = true
+      completeTeamBreakSessions(teamBreakSessions)
     }
     // Log only once when this outdoor break completes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +138,13 @@ function OutdoorGuidedBreak() {
     setHasArrived(false)
     setHasStartedReturn(false)
     setIsComplete(false)
+    setTeamBreakSessions([])
+    hasCompletedTeamBreakSessions.current = false
+    startTeamBreakSessions({
+      setting: 'Outdoor',
+      label: breakPlan.placeName,
+      plannedSeconds: totalSeconds,
+    }).then(setTeamBreakSessions)
     saveOutdoorBreakSession(breakPlan, nextStartedAt)
   }
 
