@@ -2302,6 +2302,22 @@ main {
   font-size: 1rem;
 }
 
+.activity-team-prompt {
+  border-color: #d8e2d5;
+  background: #eef3ea;
+}
+
+.activity-team-prompt .title-with-icon {
+  color: #477050;
+}
+
+.activity-team-prompt p {
+  margin: 0.65rem 0 1rem;
+  color: #536c59;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 .activity-step-list,
 .activity-safety-list {
   display: grid;

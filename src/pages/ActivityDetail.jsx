@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Armchair,
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   Clock3,
   Dumbbell,
@@ -15,6 +16,7 @@ import {
   ShieldCheck,
   Sparkles,
   Tag,
+  Trophy,
   Wind,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -197,6 +199,20 @@ function ActivityDetail() {
                 </li>
               ))}
             </ul>
+          </Card>
+
+          <Card className="activity-detail-panel activity-team-prompt">
+            <div className="title-with-icon">
+              <Trophy size={18} aria-hidden="true" />
+              <h2>Feeling competitive?</h2>
+            </div>
+            <p>Join a team and turn your movement breaks into a friendly challenge.</p>
+            <Button asChild variant="outline">
+              <Link to="/team">
+                Explore teams
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </Button>
           </Card>
         </div>
       </div>
