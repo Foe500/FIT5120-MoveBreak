@@ -1,4 +1,5 @@
 import hashlib
+import math
 import os
 import random
 import secrets
@@ -32,6 +33,8 @@ DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))
 MEMBER_SECRET_BYTES = 32
+SUPPORTED_DURATIONS = {5, 15, 30}
+SUPPORTED_SETTINGS = {"Indoor", "Outdoor"}
 
 # Leaderboard scoring: a flat bonus for completing a break, plus a small
 # amount per second actually moved, so showing up often matters more
@@ -288,6 +291,53 @@ def matches_need(activity_dict: dict, need: Optional[str]) -> bool:
     return need.lower() in search_text
 
 
+def validate_supported_duration(duration: int, field_name: str = "duration") -> None:
+    if duration not in SUPPORTED_DURATIONS:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": field_name,
+                "message": "must be one of 5, 15 or 30",
+                "allowed": sorted(SUPPORTED_DURATIONS),
+            },
+        )
+
+
+def validate_supported_setting(setting: str) -> None:
+    if setting not in SUPPORTED_SETTINGS:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": "setting",
+                "message": "must be Indoor or Outdoor",
+                "allowed": sorted(SUPPORTED_SETTINGS),
+            },
+        )
+
+
+def validate_coordinate(value: Optional[float], field_name: str, minimum: float, maximum: float) -> None:
+    if value is None:
+        return
+
+    if not math.isfinite(value) or value < minimum or value > maximum:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": field_name,
+                "message": f"must be a finite number between {minimum:g} and {maximum:g}",
+                "minimum": minimum,
+                "maximum": maximum,
+            },
+        )
+
+
+def validate_mission_request(request: MissionRequest) -> None:
+    validate_supported_duration(request.duration)
+    validate_supported_setting(request.setting)
+    validate_coordinate(request.latitude, "latitude", -90, 90)
+    validate_coordinate(request.longitude, "longitude", -180, 180)
+
+
 @app.get("/")
 def read_root():
     return {"name": "MoveBreak API", "status": "running"}
@@ -327,6 +377,10 @@ def get_recommendations(
     limit: int = Query(5, ge=1, le=10),
     db: Session = Depends(get_db),
 ):
+    validate_supported_duration(break_time, "break_time")
+    validate_coordinate(lat, "lat", -90, 90)
+    validate_coordinate(lng, "lng", -180, 180)
+
     try:
         return build_recommendation_response(
             lat, lng, break_time, db=db, limit=limit
@@ -337,11 +391,12 @@ def get_recommendations(
 
 @app.post("/missions/recommend")
 def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
+    validate_mission_request(request)
     activities = [activity_to_dict(a) for a in db.query(Activity).all()]
 
-    setting = request.setting.lower()
+    setting = request.setting
 
-    if setting == "outdoor":
+    if setting == "Outdoor":
         origin = (
             request.latitude if request.latitude is not None else MELBOURNE_TOWN_HALL[0],
             request.longitude if request.longitude is not None else MELBOURNE_TOWN_HALL[1],
@@ -380,7 +435,7 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
         activity
         for activity in activities
         if activity["duration"] <= request.duration
-        and activity["setting"].lower() == "indoor"
+        and activity["setting"] == "Indoor"
         and matches_need(activity, request.need)
     ]
     if not matching_activities:
@@ -388,7 +443,7 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
             activity
             for activity in activities
             if activity["duration"] <= request.duration
-            and activity["setting"].lower() == "indoor"
+            and activity["setting"] == "Indoor"
         ]
 
     # Pick from the matching activities instead of always returning the first result.
@@ -413,9 +468,20 @@ def recommend_indoor_session(request: MissionRequest, db: Session = Depends(get_
     """Picks several indoor activities to chain into one guided session,
     filling roughly the requested duration using each activity's real
     step-by-step time (not the duration category)."""
+    validate_mission_request(request)
+    if request.setting != "Indoor":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": "setting",
+                "message": "recommend-session only supports Indoor sessions",
+                "allowed": ["Indoor"],
+            },
+        )
+
     activities = [activity_to_dict(a) for a in db.query(Activity).all()]
 
-    indoor_activities = [a for a in activities if a["setting"].lower() == "indoor"]
+    indoor_activities = [a for a in activities if a["setting"] == "Indoor"]
     matching_activities = [a for a in indoor_activities if matches_need(a, request.need)]
     pool = matching_activities if matching_activities else indoor_activities
 
