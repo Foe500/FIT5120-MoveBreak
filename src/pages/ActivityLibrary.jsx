@@ -5,31 +5,19 @@ import {
   CalendarPlus,
   Clock3,
   Dumbbell,
-  Eye,
-  Footprints,
-  Hand,
   Play,
   Search,
   Sparkles,
   Tag,
-  Wind,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
+import { activityVisuals } from '@/data/activityVisuals'
 import { API_BASE_URL } from '@/lib/api'
 
 const durationFilters = [5, 15, 30, 'Any']
 const postureFilters = ['Any posture', 'Seated', 'Standing']
 
-const activityVisuals = {
-  'eye-reset': { icon: Eye },
-  'desk-shoulder-release': { image: shoulderReleaseImage },
-  'seated-breathing': { icon: Wind },
-  'wrist-hand-reset': { icon: Hand },
-  'standing-posture': { icon: Footprints },
-  'low-impact-energy': { icon: Dumbbell },
-}
 
 function getInitialDuration(searchParams) {
   const duration = Number(searchParams.get('duration'))
@@ -177,7 +165,7 @@ function ActivityLibrary() {
             <Card className="indoor-activity-card" key={activity.id}>
               <div className="activity-illustration">
                 {visual.image ? (
-                  <img src={visual.image} alt="" />
+                  <img src={visual.image} alt={visual.alt} width="600" height="600" loading="lazy" decoding="async" />
                 ) : (
                   <Icon size={46} strokeWidth={1.35} />
                 )}
