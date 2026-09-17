@@ -1816,12 +1816,13 @@ main {
 }
 
 .map-location-search {
+  position: relative;
   display: grid;
   gap: 0.55rem;
   margin-top: 1rem;
 }
 
-.map-location-search > div {
+.map-location-input-row {
   display: flex;
   align-items: center;
   min-height: 2.65rem;
@@ -1831,7 +1832,7 @@ main {
   background: #ffffff;
 }
 
-.map-location-search > div > svg {
+.map-location-input-row > svg {
   flex: 0 0 auto;
   margin-left: 0.7rem;
   color: #64748b;
@@ -1866,6 +1867,58 @@ main {
 .map-location-search button:disabled {
   cursor: wait;
   opacity: 0.7;
+}
+
+.map-location-suggestions {
+  position: absolute;
+  z-index: 1200;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  left: 0;
+  display: grid;
+  overflow: hidden;
+  border: 1px solid #d8e5f6;
+  border-radius: 0.55rem;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgb(30 50 70 / 12%);
+}
+
+.map-location-suggestions > span {
+  padding: 0.55rem 0.7rem 0.35rem;
+  color: #6b7789;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.map-location-suggestions button {
+  justify-content: flex-start;
+  gap: 0.6rem;
+  min-height: 3rem;
+  border-top: 1px solid #edf0f2;
+  padding: 0.5rem 0.7rem;
+  color: #32445e;
+  background: #ffffff;
+  text-align: left;
+}
+
+.map-location-suggestions button:hover {
+  background: #f1f6f1;
+}
+
+.map-location-suggestions button > span {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.map-location-suggestions strong {
+  color: #243c5a;
+  font-size: 0.76rem;
+}
+
+.map-location-suggestions small {
+  color: #718096;
+  font-size: 0.68rem;
 }
 
 .category-tabs {

@@ -29,6 +29,33 @@ const defaultOutdoorBreakDuration = 15
 const maxVisiblePlaces = 40
 const durationOptions = [5, 15, 30]
 const plannerStorageKey = 'movebreak-planned-breaks'
+const locationSuggestions = [
+  {
+    label: 'Flagstaff Gardens',
+    address: 'Flagstaff Gardens, Melbourne VIC',
+    position: [-37.8111222889277, 144.954696055235],
+  },
+  {
+    label: 'Federation Square',
+    address: 'Federation Square, Melbourne VIC',
+    position: [-37.8178516571684, 144.968963600783],
+  },
+  {
+    label: 'Argyle Square',
+    address: 'Argyle Square, Melbourne VIC',
+    position: [-37.8031480577285, 144.965761295089],
+  },
+  {
+    label: 'Fitzroy Gardens',
+    address: 'Fitzroy Gardens, Melbourne VIC',
+    position: [-37.8129616331579, 144.980455714669],
+  },
+  {
+    label: 'Kings Domain',
+    address: 'Kings Domain, Melbourne VIC',
+    position: [-37.8255239795833, 144.974107925144],
+  },
+]
 const placeIcons = {
   'Green space': Leaf,
   'Waterfront green space': Leaf,
@@ -177,6 +204,7 @@ function ExploreMap() {
     initialPosition ? 'Current location' : 'Melbourne CBD',
   )
   const [locationQuery, setLocationQuery] = useState('')
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
   const [locationStatus, setLocationStatus] = useState('')
   const [isLocating, setIsLocating] = useState(false)
   const [isGeocoding, setIsGeocoding] = useState(false)
@@ -326,7 +354,7 @@ function ExploreMap() {
           const shortLabel = getShortLocationLabel(result.label) || 'Current location'
           setOriginLabel(shortLabel)
           setLocationQuery(shortLabel)
-          setLocationStatus(`Using your current address: ${shortLabel}.`)
+          setLocationStatus('')
         } catch {
           setLocationStatus('Using your current location. The street address is unavailable.')
         } finally {
@@ -354,6 +382,7 @@ function ExploreMap() {
 
   async function handleLocationSearch(event) {
     event.preventDefault()
+    setIsSuggestionsOpen(false)
 
     const query = locationQuery.trim()
     if (!query) {
@@ -381,13 +410,28 @@ function ExploreMap() {
       setSearchParams(nextSearchParams)
       setCurrentPosition(nextPosition)
       setOriginLabel(shortLabel || query)
-      setLocationStatus(`Showing recommendations near ${shortLabel || query}.`)
+      setLocationStatus('')
       setSelectedPlace(null)
     } catch {
       setLocationStatus('Location not found. Try adding a suburb, state or postcode.')
     } finally {
       setIsGeocoding(false)
     }
+  }
+
+  function handleSuggestedLocation(suggestion) {
+    const nextSearchParams = new URLSearchParams(searchParams)
+
+    nextSearchParams.set('lat', String(suggestion.position[0]))
+    nextSearchParams.set('lng', String(suggestion.position[1]))
+    nextSearchParams.delete('place')
+    setSearchParams(nextSearchParams)
+    setCurrentPosition(suggestion.position)
+    setOriginLabel(suggestion.label)
+    setLocationQuery(suggestion.address)
+    setLocationStatus('')
+    setSelectedPlace(null)
+    setIsSuggestionsOpen(false)
   }
 
   function handleAddSelectedPlaceToPlanner() {
@@ -497,12 +541,17 @@ function ExploreMap() {
 
         <form className="map-location-search" onSubmit={handleLocationSearch}>
           <label htmlFor="map-location-query">Starting location</label>
-          <div>
+          <div className="map-location-input-row">
             <MapPin size={17} aria-hidden="true" />
             <input
               autoComplete="street-address"
               id="map-location-query"
-              onChange={(event) => setLocationQuery(event.target.value)}
+              onBlur={() => setIsSuggestionsOpen(false)}
+              onChange={(event) => {
+                setLocationQuery(event.target.value)
+                setIsSuggestionsOpen(true)
+              }}
+              onFocus={() => setIsSuggestionsOpen(true)}
               placeholder="Suburb, postcode or address"
               type="search"
               value={locationQuery}
@@ -512,6 +561,25 @@ function ExploreMap() {
               <span>{isGeocoding ? 'Finding' : 'Find'}</span>
             </button>
           </div>
+          {isSuggestionsOpen ? (
+            <div className="map-location-suggestions" aria-label="Popular locations">
+              <span>Popular locations</span>
+              {locationSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion.label}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => handleSuggestedLocation(suggestion)}
+                  type="button"
+                >
+                  <MapPin size={15} aria-hidden="true" />
+                  <span>
+                    <strong>{suggestion.label}</strong>
+                    <small>{suggestion.address}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </form>
 
         <div className="map-duration-control" aria-label="Choose available break time">
