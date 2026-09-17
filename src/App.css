@@ -1412,6 +1412,35 @@ main {
   height: 11.2rem;
 }
 
+.mission-empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  min-height: 9rem;
+  margin-top: 0.85rem;
+  padding: 1.25rem;
+  border: 1px dashed #bdc9d5;
+  border-radius: 0.55rem;
+  background: #f7f9f7;
+  color: #637086;
+  text-align: center;
+}
+
+.mission-empty-state svg {
+  color: #52775e;
+}
+
+.mission-empty-state strong {
+  color: #243c5a;
+  font-size: 0.92rem;
+}
+
+.mission-empty-state span {
+  max-width: 25rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .route-breakdown {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(5.8rem, 1fr));

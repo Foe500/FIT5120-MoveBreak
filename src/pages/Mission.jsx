@@ -18,7 +18,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
@@ -156,16 +155,20 @@ function Mission() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const selectedPlace = mission?.place ?? mapPlaces[0]
+  const selectedPlace = mission?.place ?? null
   const isIndoor = movementType === 'Indoor'
+  const hasOutdoorRecommendation = !isIndoor && Boolean(selectedPlace)
   const previewTitle = isIndoor
     ? sessionActivities.length
       ? `${sessionActivities.length} exercise${sessionActivities.length === 1 ? '' : 's'} for you`
       : 'Your indoor session'
-    : (mission?.title ?? 'Flagstaff Fresh-Air Loop')
+    : mission?.title ?? (isLoading ? 'Finding a nearby option...' : 'No nearby option found')
   const previewDescription = isIndoor
     ? 'A guided session that runs through each exercise one by one.'
-    : (mission?.description ?? 'Choose your options, then generate a break that fits.')
+    : mission?.description ??
+      (isLoading
+        ? 'Checking places that fit your location, preference and available time.'
+        : 'Try a longer break, another outdoor preference, or a different location.')
   const previewDuration = isIndoor
     ? Math.round(sessionTotalSeconds / 60) || duration
     : (mission?.duration ?? duration)
@@ -280,6 +283,9 @@ function Mission() {
     setError('')
 
     const isNextIndoor = nextMovementType === 'Indoor'
+    if (!isNextIndoor) {
+      setMission(null)
+    }
     const endpoint = isNextIndoor ? 'missions/recommend-session' : 'missions/recommend'
     const locationPayload =
       !isNextIndoor && nextLocation
@@ -528,10 +534,10 @@ function Mission() {
                   </li>
                 ))}
               </ol>
-            ) : (
+            ) : hasOutdoorRecommendation ? (
               <div className="preview-map">
                 <MapContainer
-                  center={melbourneCenter}
+                  center={selectedPlace.position}
                   className="mission-preview-leaflet-map"
                   dragging={false}
                   scrollWheelZoom={false}
@@ -554,9 +560,19 @@ function Mission() {
                   </Marker>
                 </MapContainer>
               </div>
+            ) : (
+              <div className="mission-empty-state" role="status">
+                <MapPin size={24} aria-hidden="true" />
+                <strong>{isLoading ? 'Searching near you' : 'Nothing fits this break yet'}</strong>
+                <span>
+                  {isLoading
+                    ? 'This should only take a moment.'
+                    : 'Nearby places may be outside the travel time available for this break.'}
+                </span>
+              </div>
             )}
 
-            {isIndoor ? null : (
+            {hasOutdoorRecommendation ? (
               <div className="route-breakdown">
                 {previewSteps.map((step) => (
                   <span key={step.label}>
@@ -572,30 +588,34 @@ function Mission() {
                   </span>
                 ))}
               </div>
-            )}
+            ) : null}
 
             {error ? <p className="mission-status-message">{error}</p> : null}
 
-            {isIndoor && (isLoading || !sessionActivities.length) ? (
+            {isLoading || (isIndoor && !sessionActivities.length) ? (
               <Button className="mt-[0.72rem] w-full" disabled type="button">
                 <PrimaryActionIcon size={17} />
-                {isLoading ? 'Finding exercises' : primaryActionLabel}
+                {isLoading
+                  ? isIndoor
+                    ? 'Finding exercises'
+                    : 'Finding nearby options'
+                  : primaryActionLabel}
               </Button>
             ) : (
               <Button asChild className="mt-[0.72rem] w-full">
                 <Link to={flowTarget}>
                   <PrimaryActionIcon size={17} />
-                  {primaryActionLabel}
+                  {!isIndoor && !hasOutdoorRecommendation ? 'Open map anyway' : primaryActionLabel}
                 </Link>
               </Button>
             )}
 
-            {isIndoor ? null : (
+            {hasOutdoorRecommendation ? (
               <p className="return-note">
                 <TimerReset size={15} />
                 Includes time to return.
               </p>
-            )}
+            ) : null}
           </div>
         </Card>
           </div>
