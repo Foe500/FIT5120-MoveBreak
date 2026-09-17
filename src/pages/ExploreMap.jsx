@@ -60,8 +60,15 @@ function getInitialDuration(searchParams) {
 }
 
 function getInitialPosition(searchParams) {
-  const latitude = Number(searchParams.get('lat'))
-  const longitude = Number(searchParams.get('lng'))
+  const latitudeParam = searchParams.get('lat')
+  const longitudeParam = searchParams.get('lng')
+
+  if (latitudeParam === null || longitudeParam === null) {
+    return null
+  }
+
+  const latitude = Number(latitudeParam)
+  const longitude = Number(longitudeParam)
 
   if (
     Number.isFinite(latitude) &&
