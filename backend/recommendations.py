@@ -104,6 +104,11 @@ def _maximum_straight_distance(break_time):
     return maximum_walking_distance / STRAIGHT_LINE_DETOUR_FACTOR
 
 
+def _validate_finite_coordinate(value, name, minimum, maximum):
+    if not math.isfinite(value) or value < minimum or value > maximum:
+        raise ValueError(f"{name} must be a finite number between {minimum:g} and {maximum:g}")
+
+
 def load_recommendation_places(db: Session, latitude=None, longitude=None,
                                break_time=None):
     """Read places from SQLite, optionally prefiltered by a SQL bounding box."""
@@ -186,6 +191,8 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
                               places=None, need=None):
     if break_time not in BREAK_CONFIG:
         raise ValueError("break_time must be one of 5, 15 or 30")
+    _validate_finite_coordinate(latitude, "latitude", -90, 90)
+    _validate_finite_coordinate(longitude, "longitude", -180, 180)
 
     origin = (latitude, longitude)
     config = BREAK_CONFIG[break_time]

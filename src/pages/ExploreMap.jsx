@@ -23,6 +23,7 @@ import { melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
 import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
 import { saveOutdoorBreakSession } from '@/lib/outdoorBreak'
+import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
@@ -144,16 +145,6 @@ function getPlaceDirectionsUrl(place, origin) {
   }
 
   return `https://www.google.com/maps/dir/?${params.toString()}`
-}
-
-function getSavedPlannerBreaks() {
-  try {
-    const savedBreaks = JSON.parse(localStorage.getItem(plannerStorageKey) ?? '[]')
-
-    return Array.isArray(savedBreaks) ? savedBreaks : []
-  } catch {
-    return []
-  }
 }
 
 function getOutdoorBreakPlan(place, duration, origin) {
@@ -460,7 +451,7 @@ function ExploreMap() {
         (plannedBreak) => plannedBreak.placeId !== selectedPlace.id,
       )
 
-      localStorage.setItem(plannerStorageKey, JSON.stringify([...planItems, savedBreak]))
+      savePlannerBreaks([...planItems, savedBreak])
       setPlannedPlaceIds((currentIds) => new Set(currentIds).add(selectedPlace.id))
     } catch {
       setError('This break could not be added to your planner.')

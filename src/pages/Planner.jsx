@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
+import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
 
 const initialBreaks = [
   {
@@ -48,7 +49,6 @@ const initialBreaks = [
   },
 ]
 
-const plannerStorageKey = 'movebreak-planned-breaks'
 const plannerIcons = {
   CalendarDays,
   Eye,
@@ -83,13 +83,7 @@ const activitySuggestions = [
 ]
 
 function getInitialPlannedBreaks() {
-  try {
-    const savedBreaks = JSON.parse(localStorage.getItem(plannerStorageKey) ?? '[]')
-
-    return Array.isArray(savedBreaks) && savedBreaks.length ? savedBreaks : initialBreaks
-  } catch {
-    return initialBreaks
-  }
+  return getSavedPlannerBreaks(initialBreaks)
 }
 
 function Planner() {
@@ -100,7 +94,7 @@ function Planner() {
   )
 
   useEffect(() => {
-    localStorage.setItem(plannerStorageKey, JSON.stringify(plannedBreaks))
+    savePlannerBreaks(plannedBreaks)
   }, [plannedBreaks])
 
   function addSuggestedBreak(activity) {

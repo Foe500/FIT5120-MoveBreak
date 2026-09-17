@@ -30,6 +30,7 @@ function ActivityLibrary() {
   const [selectedDuration, setSelectedDuration] = useState(() => getInitialDuration(searchParams))
   const [selectedArea, setSelectedArea] = useState('All areas')
   const [selectedPosture, setSelectedPosture] = useState('Any posture')
+  const [searchQuery, setSearchQuery] = useState('')
   const [activities, setActivities] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -40,18 +41,27 @@ function ActivityLibrary() {
   const filteredActivities = useMemo(
     () =>
       activities.filter((activity) => {
+        const normalizedSearch = searchQuery.trim().toLowerCase()
+        const searchableText = [
+          activity.title,
+          activity.area,
+          activity.category,
+          activity.description,
+        ].join(' ').toLowerCase()
         const matchesArea = selectedArea === 'All areas' || activity.area === selectedArea
         // Duration means Noah should only see activities he can complete within his available time.
         const matchesDuration = selectedDuration === 'Any' || activity.duration <= selectedDuration
         const matchesPosture =
           selectedPosture === 'Any posture' || activity.posture === selectedPosture
+        const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch)
 
-        return matchesArea && matchesDuration && matchesPosture
+        return matchesArea && matchesDuration && matchesPosture && matchesSearch
       }),
-    [activities, selectedArea, selectedDuration, selectedPosture],
+    [activities, searchQuery, selectedArea, selectedDuration, selectedPosture],
   )
 
   function handleClearFilters() {
+    setSearchQuery('')
     setSelectedArea('All areas')
     setSelectedDuration('Any')
     setSelectedPosture('Any posture')
@@ -97,7 +107,13 @@ function ActivityLibrary() {
       <Card className="activity-filter-bar">
         <label className="activity-search-field">
           <Search size={17} />
-          <span>Search activities</span>
+          <input
+            aria-label="Search activities"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search activities"
+            type="search"
+            value={searchQuery}
+          />
         </label>
 
         <select

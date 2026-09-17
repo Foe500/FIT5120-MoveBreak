@@ -1,3 +1,5 @@
+import hashlib
+import math
 import os
 import random
 import secrets
@@ -11,10 +13,10 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, inspect, text
 
 from database import engine, get_db, Base
-from models import Activity, Place, Team, TeamMember, SessionLog, Season
+from models import Activity, Place, Team, TeamMember, SessionLog, BreakSession, Season
 from recommendations import (
     MELBOURNE_TOWN_HALL,
     build_recommendation_response,
@@ -31,6 +33,9 @@ app = FastAPI(title="MoveBreak API")
 DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))
+MEMBER_SECRET_BYTES = 32
+SUPPORTED_DURATIONS = {5, 15, 30}
+SUPPORTED_SETTINGS = {"Indoor", "Outdoor"}
 
 # Leaderboard scoring: a flat bonus for completing a break, plus a small
 # amount per second actually moved, so showing up often matters more
@@ -43,6 +48,30 @@ SEASON_LENGTH = timedelta(days=7)
 
 def generate_join_code(length: int = 6) -> str:
     return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
+
+
+def generate_member_secret() -> str:
+    return secrets.token_urlsafe(MEMBER_SECRET_BYTES)
+
+
+def hash_member_secret(member_secret: str) -> str:
+    return hashlib.sha256(member_secret.encode("utf-8")).hexdigest()
+
+
+def ensure_team_member_secret_column() -> None:
+    inspector = inspect(engine)
+    if "team_members" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("team_members")}
+    if "member_secret_hash" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE team_members ADD COLUMN member_secret_hash VARCHAR"))
+
+
+ensure_team_member_secret_column()
 
 
 def compute_points(sessions_completed: int, total_seconds: int) -> int:
@@ -167,13 +196,34 @@ class JoinTeamRequest(BaseModel):
 
 class LeaveTeamRequest(BaseModel):
     memberId: str
+    memberSecret: str
 
 
 class LogSessionRequest(BaseModel):
     memberId: str
+    memberSecret: str
     setting: str
     label: Optional[str] = None
     seconds: int
+
+
+class StartBreakSessionRequest(BaseModel):
+    joinCode: str
+    memberId: str
+    memberSecret: str
+    setting: str
+    label: Optional[str] = None
+    plannedSeconds: int
+
+
+class CompleteBreakSessionRequest(BaseModel):
+    memberId: str
+    memberSecret: str
+
+
+class BreakSessionStateRequest(BaseModel):
+    memberId: str
+    memberSecret: str
 
 
 app.add_middleware(
@@ -242,6 +292,53 @@ def matches_need(activity_dict: dict, need: Optional[str]) -> bool:
     return need.lower() in search_text
 
 
+def validate_supported_duration(duration: int, field_name: str = "duration") -> None:
+    if duration not in SUPPORTED_DURATIONS:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": field_name,
+                "message": "must be one of 5, 15 or 30",
+                "allowed": sorted(SUPPORTED_DURATIONS),
+            },
+        )
+
+
+def validate_supported_setting(setting: str) -> None:
+    if setting not in SUPPORTED_SETTINGS:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": "setting",
+                "message": "must be Indoor or Outdoor",
+                "allowed": sorted(SUPPORTED_SETTINGS),
+            },
+        )
+
+
+def validate_coordinate(value: Optional[float], field_name: str, minimum: float, maximum: float) -> None:
+    if value is None:
+        return
+
+    if not math.isfinite(value) or value < minimum or value > maximum:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": field_name,
+                "message": f"must be a finite number between {minimum:g} and {maximum:g}",
+                "minimum": minimum,
+                "maximum": maximum,
+            },
+        )
+
+
+def validate_mission_request(request: MissionRequest) -> None:
+    validate_supported_duration(request.duration)
+    validate_supported_setting(request.setting)
+    validate_coordinate(request.latitude, "latitude", -90, 90)
+    validate_coordinate(request.longitude, "longitude", -180, 180)
+
+
 @app.get("/")
 def read_root():
     return {"name": "MoveBreak API", "status": "running"}
@@ -282,6 +379,10 @@ def get_recommendations(
     limit: int = Query(5, ge=1, le=10),
     db: Session = Depends(get_db),
 ):
+    validate_supported_duration(break_time, "break_time")
+    validate_coordinate(lat, "lat", -90, 90)
+    validate_coordinate(lng, "lng", -180, 180)
+
     try:
         return build_recommendation_response(
             lat, lng, break_time, db=db, limit=limit, need=need
@@ -350,11 +451,12 @@ def reverse_geocode_location(
 
 @app.post("/missions/recommend")
 def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
+    validate_mission_request(request)
     activities = [activity_to_dict(a) for a in db.query(Activity).all()]
 
-    setting = request.setting.lower()
+    setting = request.setting
 
-    if setting == "outdoor":
+    if setting == "Outdoor":
         origin = (
             request.latitude if request.latitude is not None else MELBOURNE_TOWN_HALL[0],
             request.longitude if request.longitude is not None else MELBOURNE_TOWN_HALL[1],
@@ -394,7 +496,7 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
         activity
         for activity in activities
         if activity["duration"] <= request.duration
-        and activity["setting"].lower() == "indoor"
+        and activity["setting"] == "Indoor"
         and matches_need(activity, request.need)
     ]
     if not matching_activities:
@@ -402,7 +504,7 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
             activity
             for activity in activities
             if activity["duration"] <= request.duration
-            and activity["setting"].lower() == "indoor"
+            and activity["setting"] == "Indoor"
         ]
 
     # Pick from the matching activities instead of always returning the first result.
@@ -427,9 +529,20 @@ def recommend_indoor_session(request: MissionRequest, db: Session = Depends(get_
     """Picks several indoor activities to chain into one guided session,
     filling roughly the requested duration using each activity's real
     step-by-step time (not the duration category)."""
+    validate_mission_request(request)
+    if request.setting != "Indoor":
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "field": "setting",
+                "message": "recommend-session only supports Indoor sessions",
+                "allowed": ["Indoor"],
+            },
+        )
+
     activities = [activity_to_dict(a) for a in db.query(Activity).all()]
 
-    indoor_activities = [a for a in activities if a["setting"].lower() == "indoor"]
+    indoor_activities = [a for a in activities if a["setting"] == "Indoor"]
     matching_activities = [a for a in indoor_activities if matches_need(a, request.need)]
     pool = matching_activities if matching_activities else indoor_activities
 
@@ -461,6 +574,195 @@ def get_team_by_code(join_code: str, db: Session) -> Team:
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
     return team
+
+
+def get_authenticated_team_member(
+    team: Team,
+    member_id: str,
+    member_secret: str,
+    db: Session,
+) -> TeamMember:
+    member = (
+        db.query(TeamMember)
+        .filter(TeamMember.id == member_id, TeamMember.team_id == team.id)
+        .first()
+    )
+    if not member or not member.member_secret_hash:
+        raise HTTPException(status_code=401, detail="Invalid member credentials")
+
+    supplied_secret_hash = hash_member_secret(member_secret)
+    if not secrets.compare_digest(member.member_secret_hash, supplied_secret_hash):
+        raise HTTPException(status_code=401, detail="Invalid member credentials")
+
+    return member
+
+
+def get_owned_break_session(
+    break_session_id: str,
+    member_id: str,
+    member_secret: str,
+    db: Session,
+) -> tuple[BreakSession, TeamMember]:
+    break_session = (
+        db.query(BreakSession)
+        .filter(BreakSession.id == break_session_id)
+        .first()
+    )
+    if not break_session:
+        raise HTTPException(status_code=404, detail="Break session not found")
+
+    team = db.query(Team).filter(Team.id == break_session.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    member = get_authenticated_team_member(team, member_id, member_secret, db)
+    if member.id != break_session.member_id:
+        raise HTTPException(status_code=401, detail="Invalid member credentials")
+
+    return break_session, member
+
+
+@app.post("/break-sessions/start")
+def start_break_session(
+    request: StartBreakSessionRequest,
+    db: Session = Depends(get_db),
+):
+    team = get_team_by_code(request.joinCode, db)
+    member = get_authenticated_team_member(team, request.memberId, request.memberSecret, db)
+
+    if request.plannedSeconds <= 0:
+        raise HTTPException(status_code=400, detail="plannedSeconds must be positive")
+
+    break_session = BreakSession(
+        id=uuid.uuid4().hex,
+        team_id=team.id,
+        member_id=member.id,
+        setting=request.setting,
+        label=request.label,
+        planned_seconds=request.plannedSeconds,
+        started_at=datetime.now(timezone.utc),
+    )
+    db.add(break_session)
+    db.commit()
+    db.refresh(break_session)
+
+    return {
+        "id": break_session.id,
+        "status": "started",
+        "startedAt": as_utc(break_session.started_at).isoformat(),
+        "plannedSeconds": break_session.planned_seconds,
+    }
+
+
+@app.post("/break-sessions/{break_session_id}/pause")
+def pause_break_session(
+    break_session_id: str,
+    request: BreakSessionStateRequest,
+    db: Session = Depends(get_db),
+):
+    break_session, _ = get_owned_break_session(
+        break_session_id,
+        request.memberId,
+        request.memberSecret,
+        db,
+    )
+
+    if break_session.completed_at is not None:
+        return {"id": break_session.id, "status": "already_completed"}
+
+    if break_session.paused_at is None:
+        break_session.paused_at = datetime.now(timezone.utc)
+        db.commit()
+
+    return {"id": break_session.id, "status": "paused"}
+
+
+@app.post("/break-sessions/{break_session_id}/resume")
+def resume_break_session(
+    break_session_id: str,
+    request: BreakSessionStateRequest,
+    db: Session = Depends(get_db),
+):
+    break_session, _ = get_owned_break_session(
+        break_session_id,
+        request.memberId,
+        request.memberSecret,
+        db,
+    )
+
+    if break_session.completed_at is not None:
+        return {"id": break_session.id, "status": "already_completed"}
+
+    if break_session.paused_at is not None:
+        now = datetime.now(timezone.utc)
+        paused_seconds = int((now - as_utc(break_session.paused_at)).total_seconds())
+        break_session.paused_seconds = (break_session.paused_seconds or 0) + max(0, paused_seconds)
+        break_session.paused_at = None
+        db.commit()
+
+    return {"id": break_session.id, "status": "running"}
+
+
+@app.post("/break-sessions/{break_session_id}/complete")
+def complete_break_session(
+    break_session_id: str,
+    request: CompleteBreakSessionRequest,
+    db: Session = Depends(get_db),
+):
+    break_session, _ = get_owned_break_session(
+        break_session_id,
+        request.memberId,
+        request.memberSecret,
+        db,
+    )
+
+    if break_session.completed_at is not None:
+        return {
+            "id": break_session.id,
+            "status": "already_completed",
+            "creditedSeconds": break_session.credited_seconds or 0,
+            "completedAt": as_utc(break_session.completed_at).isoformat(),
+        }
+
+    completed_at = datetime.now(timezone.utc)
+    open_pause_seconds = (
+        max(0, int((completed_at - as_utc(break_session.paused_at)).total_seconds()))
+        if break_session.paused_at is not None
+        else 0
+    )
+    elapsed_seconds = max(
+        0,
+        int((completed_at - as_utc(break_session.started_at)).total_seconds())
+        - (break_session.paused_seconds or 0)
+        - open_pause_seconds,
+    )
+    credited_seconds = min(break_session.planned_seconds, elapsed_seconds)
+
+    break_session.completed_at = completed_at
+    break_session.credited_seconds = credited_seconds
+    break_session.paused_at = None
+
+    if credited_seconds > 0:
+        log = SessionLog(
+            id=uuid.uuid4().hex,
+            team_id=break_session.team_id,
+            member_id=break_session.member_id,
+            setting=break_session.setting,
+            label=break_session.label,
+            seconds=credited_seconds,
+            completed_at=completed_at,
+        )
+        db.add(log)
+
+    db.commit()
+    db.refresh(break_session)
+
+    return {
+        "id": break_session.id,
+        "status": "completed",
+        "creditedSeconds": break_session.credited_seconds or 0,
+        "completedAt": as_utc(break_session.completed_at).isoformat(),
+    }
 
 
 @app.post("/teams")
@@ -543,13 +845,20 @@ def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(ge
 
     team = get_team_by_code(join_code, db)
 
-    member = TeamMember(id=uuid.uuid4().hex, team_id=team.id, nickname=nickname)
+    member_secret = generate_member_secret()
+    member = TeamMember(
+        id=uuid.uuid4().hex,
+        team_id=team.id,
+        nickname=nickname,
+        member_secret_hash=hash_member_secret(member_secret),
+    )
     db.add(member)
     db.commit()
     db.refresh(member)
 
     return {
         "memberId": member.id,
+        "memberSecret": member_secret,
         "nickname": member.nickname,
         "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
     }
@@ -558,14 +867,7 @@ def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(ge
 @app.post("/teams/{join_code}/leave")
 def leave_team(join_code: str, request: LeaveTeamRequest, db: Session = Depends(get_db)):
     team = get_team_by_code(join_code, db)
-
-    member = (
-        db.query(TeamMember)
-        .filter(TeamMember.id == request.memberId, TeamMember.team_id == team.id)
-        .first()
-    )
-    if not member:
-        raise HTTPException(status_code=404, detail="Team member not found")
+    member = get_authenticated_team_member(team, request.memberId, request.memberSecret, db)
 
     db.delete(member)
     db.commit()
@@ -588,31 +890,10 @@ def get_team(join_code: str, db: Session = Depends(get_db)):
 
 @app.post("/teams/{join_code}/log-session")
 def log_session(join_code: str, request: LogSessionRequest, db: Session = Depends(get_db)):
-    team = get_team_by_code(join_code, db)
-
-    member = (
-        db.query(TeamMember)
-        .filter(TeamMember.id == request.memberId, TeamMember.team_id == team.id)
-        .first()
+    raise HTTPException(
+        status_code=410,
+        detail="Direct session logging is disabled. Use /break-sessions/start and /break-sessions/{id}/complete.",
     )
-    if not member:
-        raise HTTPException(status_code=404, detail="Team member not found")
-
-    if request.seconds <= 0:
-        raise HTTPException(status_code=400, detail="seconds must be positive")
-
-    log = SessionLog(
-        id=uuid.uuid4().hex,
-        team_id=team.id,
-        member_id=member.id,
-        setting=request.setting,
-        label=request.label,
-        seconds=request.seconds,
-    )
-    db.add(log)
-    db.commit()
-
-    return {"status": "logged"}
 
 
 @app.get("/teams/{join_code}/leaderboard")
