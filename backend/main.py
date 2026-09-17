@@ -277,12 +277,13 @@ def get_recommendations(
     lat: float = Query(MELBOURNE_TOWN_HALL[0]),
     lng: float = Query(MELBOURNE_TOWN_HALL[1]),
     break_time: int = Query(15),
+    need: Optional[str] = Query(None),
     limit: int = Query(5, ge=1, le=10),
     db: Session = Depends(get_db),
 ):
     try:
         return build_recommendation_response(
-            lat, lng, break_time, db=db, limit=limit
+            lat, lng, break_time, db=db, limit=limit, need=need
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
@@ -307,6 +308,7 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
                 request.duration,
                 db=db,
                 limit=1,
+                need=request.need,
             )
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error

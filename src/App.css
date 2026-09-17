@@ -1281,6 +1281,53 @@ main {
   line-height: 1.25;
 }
 
+.mission-location-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  margin: 0.72rem 0 0;
+  color: #52627a;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.mission-location-status.ready {
+  color: #1f7a4d;
+}
+
+.mission-location-status.denied,
+.mission-location-status.timeout,
+.mission-location-status.unavailable,
+.mission-location-status.unsupported {
+  color: #8a4b0f;
+}
+
+.mission-location-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  margin-top: 0.65rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #78917d;
+  border-radius: 6px;
+  background: #f7faf6;
+  color: #244f36;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.mission-location-retry:hover {
+  background: #edf4ec;
+}
+
+.mission-location-retry:focus-visible {
+  outline: 3px solid rgb(67 116 83 / 22%);
+  outline-offset: 2px;
+}
+
 .need-chip-row {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

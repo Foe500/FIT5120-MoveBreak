@@ -59,6 +59,24 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : defaultOutdoorBreakDuration
 }
 
+function getInitialPosition(searchParams) {
+  const latitude = Number(searchParams.get('lat'))
+  const longitude = Number(searchParams.get('lng'))
+
+  if (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  ) {
+    return [latitude, longitude]
+  }
+
+  return null
+}
+
 function getPlaceFitLabel(place) {
   return place.is_time_safe ? 'Recommended for this break' : 'Outside current time range'
 }
@@ -144,11 +162,16 @@ function CurrentLocationView({ position }) {
 function ExploreMap() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedDuration = getInitialDuration(searchParams)
+  const selectedNeed = searchParams.get('need') ?? ''
+  const requestedPlaceId = searchParams.get('place')
+  const [initialPosition] = useState(() => getInitialPosition(searchParams))
   const [places, setPlaces] = useState([])
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [currentPosition, setCurrentPosition] = useState(null)
-  const [originLabel, setOriginLabel] = useState('Melbourne CBD')
+  const [currentPosition, setCurrentPosition] = useState(initialPosition)
+  const [originLabel, setOriginLabel] = useState(
+    initialPosition ? 'Current location' : 'Melbourne CBD',
+  )
   const [locationStatus, setLocationStatus] = useState('')
   const [isLocating, setIsLocating] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -192,6 +215,9 @@ function ExploreMap() {
           break_time: String(selectedDuration),
           limit: '5',
         })
+        if (selectedNeed) {
+          query.set('need', selectedNeed)
+        }
         const response = await fetch(`${API_BASE_URL}/recommendations?${query.toString()}`)
 
         if (!response.ok) {
@@ -199,8 +225,11 @@ function ExploreMap() {
         }
 
         const data = await response.json()
-        setPlaces(data.recommendations ?? [])
-        setSelectedPlace(null)
+        const recommendations = data.recommendations ?? []
+        setPlaces(recommendations)
+        setSelectedPlace(
+          recommendations.find((place) => String(place.id) === requestedPlaceId) ?? null,
+        )
         setSelectedCategory('All')
         // No place is selected by default — the detail card only opens
         // once the user actively picks one from the map or the list.
@@ -212,7 +241,7 @@ function ExploreMap() {
     }
 
     loadRecommendations()
-  }, [currentPosition, selectedDuration])
+  }, [currentPosition, requestedPlaceId, selectedDuration, selectedNeed])
 
   function handleUseCurrentLocation() {
     if (!navigator.geolocation) {
@@ -305,7 +334,7 @@ function ExploreMap() {
   return (
     <section className="explore-workspace">
       <MapContainer
-        center={melbourneCenter}
+        center={currentPosition ?? melbourneCenter}
         className="leaflet-workspace-map"
         scrollWheelZoom
         zoom={defaultMapZoom}
