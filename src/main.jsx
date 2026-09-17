@@ -4,11 +4,14 @@ import { BrowserRouter } from 'react-router-dom'
 import 'leaflet/dist/leaflet.css'
 import './index.css'
 import App from './App.jsx'
+import SiteAccessGate from './components/SiteAccessGate.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <SiteAccessGate>
+        <App />
+      </SiteAccessGate>
     </BrowserRouter>
   </StrictMode>,
 )
