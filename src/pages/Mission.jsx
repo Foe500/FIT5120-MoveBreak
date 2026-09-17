@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet'
 import {
@@ -18,7 +18,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { mapPlaces, melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
@@ -70,6 +69,28 @@ const apiNeedByLabel = {
   'Low effort': 'Low effort',
 }
 
+const locationStatusMessages = {
+  idle: '',
+  loading: 'Finding your current location for nearby outdoor options...',
+  ready: 'Current location ready. Outdoor options will use your location.',
+  unsupported: 'Location prompts need a supported browser on localhost, 127.0.0.1 or HTTPS.',
+  denied: 'Location access is blocked. Allow location in the browser site settings, then try again.',
+  timeout: 'Location took too long to respond. Try again from the button below.',
+  unavailable: 'Could not get your location. Check browser permissions and try again.',
+}
+
+function getLocationErrorStatus(locationError) {
+  if (locationError.code === 1 || locationError.code === locationError.PERMISSION_DENIED) {
+    return 'denied'
+  }
+
+  if (locationError.code === 3 || locationError.code === locationError.TIMEOUT) {
+    return 'timeout'
+  }
+
+  return 'unavailable'
+}
+
 function getInitialDuration(searchParams) {
   // URL search params are strings, so convert duration before comparing with numeric options.
   const duration = Number(searchParams.get('duration'))
@@ -78,14 +99,24 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : 15
 }
 
-function getFlowTarget(movementType, duration, sessionActivities) {
+function getFlowTarget(movementType, duration, sessionActivities, userLocation, need, placeId) {
   if (movementType === 'Indoor') {
     const ids = sessionActivities.map((activity) => activity.id).join(',')
     return ids ? `/guided/indoor-session?ids=${ids}` : `/activities?duration=${duration}`
   }
 
-  // Keep the selected duration in the URL so the next page can apply the same break condition.
-  return `/explore?duration=${duration}`
+  const params = new URLSearchParams({ duration: String(duration), need })
+
+  if (userLocation) {
+    params.set('lat', String(userLocation.latitude))
+    params.set('lng', String(userLocation.longitude))
+  }
+
+  if (placeId) {
+    params.set('place', String(placeId))
+  }
+
+  return `/explore?${params.toString()}`
 }
 
 function formatSessionTime(totalSeconds) {
@@ -112,8 +143,11 @@ function getRandomOption(options) {
 function Mission() {
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
-  const [movementType, setMovementType] = useState('Outdoor')
+  const [movementType, setMovementType] = useState('Indoor')
   const [need, setNeed] = useState('Low energy')
+  const [userLocation, setUserLocation] = useState(null)
+  const [locationStatus, setLocationStatus] = useState('idle')
+  const locationRequestRef = useRef(null)
   const [mission, setMission] = useState(null)
   const [sessionActivities, setSessionActivities] = useState([])
   const [sessionTotalSeconds, setSessionTotalSeconds] = useState(0)
@@ -121,16 +155,20 @@ function Mission() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const selectedPlace = mission?.place ?? mapPlaces[0]
+  const selectedPlace = mission?.place ?? null
   const isIndoor = movementType === 'Indoor'
+  const hasOutdoorRecommendation = !isIndoor && Boolean(selectedPlace)
   const previewTitle = isIndoor
     ? sessionActivities.length
       ? `${sessionActivities.length} exercise${sessionActivities.length === 1 ? '' : 's'} for you`
       : 'Your indoor session'
-    : (mission?.title ?? 'Flagstaff Fresh-Air Loop')
+    : mission?.title ?? (isLoading ? 'Finding a nearby option...' : 'No nearby option found')
   const previewDescription = isIndoor
     ? 'A guided session that runs through each exercise one by one.'
-    : (mission?.description ?? 'Choose your options, then generate a break that fits.')
+    : mission?.description ??
+      (isLoading
+        ? 'Checking places that fit your location, preference and available time.'
+        : 'Try a longer break, another outdoor preference, or a different location.')
   const previewDuration = isIndoor
     ? Math.round(sessionTotalSeconds / 60) || duration
     : (mission?.duration ?? duration)
@@ -141,7 +179,14 @@ function Mission() {
       { label: 'Walk back', duration: 4 },
       { label: 'Buffer', duration: 1 },
     ]
-  const flowTarget = getFlowTarget(movementType, duration, sessionActivities)
+  const flowTarget = getFlowTarget(
+    movementType,
+    duration,
+    sessionActivities,
+    userLocation,
+    need,
+    mission?.place?.id,
+  )
   const primaryActionLabel = isIndoor
     ? 'Start session'
     : isSurpriseRecommendation
@@ -153,6 +198,9 @@ function Mission() {
     movementType === 'Indoor'
       ? 'What do you need?'
       : 'What kind of outdoor reset do you want?'
+  const isFindingOutdoorLocation = !isIndoor && locationStatus === 'loading'
+  const canRequestOutdoorLocation =
+    !isIndoor && !isFindingOutdoorLocation && locationStatus !== 'ready'
 
   useEffect(() => {
     function closePreviewOnEscape(event) {
@@ -165,8 +213,56 @@ function Mission() {
     return () => window.removeEventListener('keydown', closePreviewOnEscape)
   }, [])
 
+  const requestOutdoorLocation = useCallback(() => {
+    if (locationRequestRef.current) {
+      return locationRequestRef.current
+    }
+
+    if (!navigator.geolocation) {
+      setLocationStatus('unsupported')
+      return Promise.resolve({ location: null, status: 'unsupported' })
+    }
+
+    setLocationStatus('loading')
+
+    locationRequestRef.current = new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const nextLocation = {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          }
+
+          setUserLocation(nextLocation)
+          setLocationStatus('ready')
+          locationRequestRef.current = null
+          resolve({ location: nextLocation, status: 'ready' })
+        },
+        (locationError) => {
+          const nextStatus = getLocationErrorStatus(locationError)
+
+          setUserLocation(null)
+          setLocationStatus(nextStatus)
+          locationRequestRef.current = null
+          resolve({ location: null, status: nextStatus })
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 60_000,
+          timeout: 10_000,
+        },
+      )
+    })
+
+    return locationRequestRef.current
+  }, [])
+
   function handleMovementTypeChange(nextMovementType) {
     setMovementType(nextMovementType)
+    setMission(null)
+    setSessionActivities([])
+    setSessionTotalSeconds(0)
+    setError('')
 
     // Keep Step 3 meaningful by switching to a default need that matches the selected setting.
     if (nextMovementType === 'Indoor' && !needOptions.some((option) => option.label === need)) {
@@ -176,14 +272,28 @@ function Mission() {
     if (nextMovementType === 'Outdoor' && !outdoorNeedOptions.some((option) => option.label === need)) {
       setNeed('Fresh air')
     }
+
+    if (nextMovementType === 'Outdoor' && !userLocation) {
+      requestOutdoorLocation()
+    }
   }
 
-  async function loadMission(nextMovementType = movementType, nextNeed = need) {
+  async function loadMission(nextMovementType = movementType, nextNeed = need, nextLocation = userLocation) {
     setIsLoading(true)
     setError('')
 
     const isNextIndoor = nextMovementType === 'Indoor'
+    if (!isNextIndoor) {
+      setMission(null)
+    }
     const endpoint = isNextIndoor ? 'missions/recommend-session' : 'missions/recommend'
+    const locationPayload =
+      !isNextIndoor && nextLocation
+        ? {
+            latitude: nextLocation.latitude,
+            longitude: nextLocation.longitude,
+          }
+        : {}
 
     try {
       const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
@@ -195,6 +305,7 @@ function Mission() {
           duration,
           setting: nextMovementType,
           need: apiNeedByLabel[nextNeed] ?? nextNeed,
+          ...locationPayload,
         }),
       })
 
@@ -219,8 +330,7 @@ function Mission() {
 
   function handleShowOptions() {
     setIsSurpriseRecommendation(false)
-    setIsPreviewOpen(true)
-    loadMission()
+    loadSelectedMission(movementType, need, false)
   }
 
   function handleSurpriseMe() {
@@ -231,8 +341,28 @@ function Mission() {
     setIsSurpriseRecommendation(true)
     handleMovementTypeChange(nextMovementType)
     setNeed(nextNeed)
+    loadSelectedMission(nextMovementType, nextNeed, true)
+  }
+
+  async function loadSelectedMission(nextMovementType, nextNeed, isSurprise) {
+    setIsSurpriseRecommendation(isSurprise)
+    setError('')
+
+    let nextLocation = userLocation
+    let nextLocationStatus = locationStatus
+    if (nextMovementType === 'Outdoor' && !nextLocation) {
+      const locationResult = await requestOutdoorLocation()
+      nextLocation = locationResult.location
+      nextLocationStatus = locationResult.status
+    }
+
+    if (nextMovementType === 'Outdoor' && !nextLocation) {
+      setError(locationStatusMessages[nextLocationStatus] || locationStatusMessages.unavailable)
+      return
+    }
+
     setIsPreviewOpen(true)
-    loadMission(nextMovementType, nextNeed)
+    loadMission(nextMovementType, nextNeed, nextLocation)
   }
 
   return (
@@ -285,6 +415,23 @@ function Mission() {
                 ))}
               </div>
 
+              {!isIndoor && locationStatusMessages[locationStatus] ? (
+                <p className={`mission-location-status ${locationStatus}`}>
+                  <MapPin size={15} />
+                  {locationStatusMessages[locationStatus]}
+                </p>
+              ) : null}
+              {canRequestOutdoorLocation ? (
+                <button
+                  className="mission-location-retry"
+                  onClick={requestOutdoorLocation}
+                  type="button"
+                >
+                  <MapPin size={15} />
+                  {locationStatus === 'idle' ? 'Use my location' : 'Try location again'}
+                </button>
+              ) : null}
+
             </div>
 
             <div className="builder-section">
@@ -313,7 +460,7 @@ function Mission() {
 
               <div className="mission-action-row">
                 <Button
-                  disabled={isLoading}
+                  disabled={isLoading || isFindingOutdoorLocation}
                   onClick={handleSurpriseMe}
                   type="button"
                   variant="outline"
@@ -321,9 +468,13 @@ function Mission() {
                   <Shuffle size={17} />
                   {isLoading && isSurpriseRecommendation ? 'Picking for you' : 'Pick for me'}
                 </Button>
-                <Button disabled={isLoading} onClick={handleShowOptions} type="button">
+                <Button disabled={isLoading || isFindingOutdoorLocation} onClick={handleShowOptions} type="button">
                   <Footprints size={17} />
-                  {isLoading && !isSurpriseRecommendation ? 'Finding options' : 'Show my options'}
+                  {isFindingOutdoorLocation
+                    ? 'Finding location'
+                    : isLoading && !isSurpriseRecommendation
+                      ? 'Finding options'
+                      : 'Show my options'}
                 </Button>
               </div>
             </div>
@@ -383,10 +534,10 @@ function Mission() {
                   </li>
                 ))}
               </ol>
-            ) : (
+            ) : hasOutdoorRecommendation ? (
               <div className="preview-map">
                 <MapContainer
-                  center={melbourneCenter}
+                  center={selectedPlace.position}
                   className="mission-preview-leaflet-map"
                   dragging={false}
                   scrollWheelZoom={false}
@@ -409,9 +560,19 @@ function Mission() {
                   </Marker>
                 </MapContainer>
               </div>
+            ) : (
+              <div className="mission-empty-state" role="status">
+                <MapPin size={24} aria-hidden="true" />
+                <strong>{isLoading ? 'Searching near you' : 'Nothing fits this break yet'}</strong>
+                <span>
+                  {isLoading
+                    ? 'This should only take a moment.'
+                    : 'Nearby places may be outside the travel time available for this break.'}
+                </span>
+              </div>
             )}
 
-            {isIndoor ? null : (
+            {hasOutdoorRecommendation ? (
               <div className="route-breakdown">
                 {previewSteps.map((step) => (
                   <span key={step.label}>
@@ -427,30 +588,34 @@ function Mission() {
                   </span>
                 ))}
               </div>
-            )}
+            ) : null}
 
             {error ? <p className="mission-status-message">{error}</p> : null}
 
-            {isIndoor && (isLoading || !sessionActivities.length) ? (
+            {isLoading || (isIndoor && !sessionActivities.length) ? (
               <Button className="mt-[0.72rem] w-full" disabled type="button">
                 <PrimaryActionIcon size={17} />
-                {isLoading ? 'Finding exercises' : primaryActionLabel}
+                {isLoading
+                  ? isIndoor
+                    ? 'Finding exercises'
+                    : 'Finding nearby options'
+                  : primaryActionLabel}
               </Button>
             ) : (
               <Button asChild className="mt-[0.72rem] w-full">
                 <Link to={flowTarget}>
                   <PrimaryActionIcon size={17} />
-                  {primaryActionLabel}
+                  {!isIndoor && !hasOutdoorRecommendation ? 'Open map anyway' : primaryActionLabel}
                 </Link>
               </Button>
             )}
 
-            {isIndoor ? null : (
+            {hasOutdoorRecommendation ? (
               <p className="return-note">
                 <TimerReset size={15} />
                 Includes time to return.
               </p>
-            )}
+            ) : null}
           </div>
         </Card>
           </div>
