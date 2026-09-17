@@ -13,6 +13,7 @@ import {
   MapPin,
   Navigation,
   Play,
+  Search,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -28,14 +29,6 @@ const defaultOutdoorBreakDuration = 15
 const maxVisiblePlaces = 40
 const durationOptions = [5, 15, 30]
 const plannerStorageKey = 'movebreak-planned-breaks'
-const testOriginOptions = [
-  { label: 'Docklands', position: [-37.8183, 144.9467] },
-  { label: 'Southbank', position: [-37.8215, 144.9646] },
-  { label: 'Carlton', position: [-37.8001, 144.9671] },
-  { label: 'Fitzroy', position: [-37.7984, 144.9783] },
-  { label: 'South Yarra', position: [-37.8384, 144.9910] },
-]
-
 const placeIcons = {
   'Green space': Leaf,
   'Waterfront green space': Leaf,
@@ -98,6 +91,10 @@ function getWalkTimeLabel(place) {
 
 function getPlaceTotalTimeLabel(place) {
   return place.estimated_total_time ? `${place.estimated_total_time} min total` : 'Total time unavailable'
+}
+
+function getShortLocationLabel(label) {
+  return label.split(',').slice(0, 2).join(',').trim()
 }
 
 function getPlaceDirectionsUrl(place, origin) {
@@ -179,8 +176,10 @@ function ExploreMap() {
   const [originLabel, setOriginLabel] = useState(
     initialPosition ? 'Current location' : 'Melbourne CBD',
   )
+  const [locationQuery, setLocationQuery] = useState('')
   const [locationStatus, setLocationStatus] = useState('')
   const [isLocating, setIsLocating] = useState(false)
+  const [isGeocoding, setIsGeocoding] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [plannedPlaceIds, setPlannedPlaceIds] = useState(
@@ -208,6 +207,45 @@ function ExploreMap() {
       })),
     [filteredPlaces],
   )
+
+  useEffect(() => {
+    if (!initialPosition) {
+      return
+    }
+
+    let isActive = true
+
+    async function loadInitialAddress() {
+      try {
+        const query = new URLSearchParams({
+          lat: String(initialPosition[0]),
+          lng: String(initialPosition[1]),
+        })
+        const response = await fetch(`${API_BASE_URL}/reverse-geocode?${query.toString()}`)
+        if (!response.ok) {
+          throw new Error('Address lookup failed')
+        }
+
+        const result = await response.json()
+        const shortLabel = getShortLocationLabel(result.label) || 'Current location'
+
+        if (isActive) {
+          setOriginLabel(shortLabel)
+          setLocationQuery(shortLabel)
+        }
+      } catch {
+        if (isActive) {
+          setLocationQuery('Current location')
+        }
+      }
+    }
+
+    loadInitialAddress()
+
+    return () => {
+      isActive = false
+    }
+  }, [initialPosition])
 
   useEffect(() => {
     async function loadRecommendations() {
@@ -260,13 +298,40 @@ function ExploreMap() {
     setLocationStatus('Finding your current location...')
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const nextPosition = [position.coords.latitude, position.coords.longitude]
+        const nextSearchParams = new URLSearchParams(searchParams)
 
         setCurrentPosition(nextPosition)
         setOriginLabel('Current location')
-        setLocationStatus('')
-        setIsLocating(false)
+        setLocationQuery('Current location')
+        setLocationStatus('Finding your address...')
+        setSelectedPlace(null)
+        nextSearchParams.set('lat', String(nextPosition[0]))
+        nextSearchParams.set('lng', String(nextPosition[1]))
+        nextSearchParams.delete('place')
+        setSearchParams(nextSearchParams)
+
+        try {
+          const query = new URLSearchParams({
+            lat: String(nextPosition[0]),
+            lng: String(nextPosition[1]),
+          })
+          const response = await fetch(`${API_BASE_URL}/reverse-geocode?${query.toString()}`)
+          if (!response.ok) {
+            throw new Error('Address lookup failed')
+          }
+
+          const result = await response.json()
+          const shortLabel = getShortLocationLabel(result.label) || 'Current location'
+          setOriginLabel(shortLabel)
+          setLocationQuery(shortLabel)
+          setLocationStatus(`Using your current address: ${shortLabel}.`)
+        } catch {
+          setLocationStatus('Using your current location. The street address is unavailable.')
+        } finally {
+          setIsLocating(false)
+        }
       },
       () => {
         setLocationStatus('Location access was denied or unavailable. Melbourne CBD remains selected.')
@@ -287,16 +352,42 @@ function ExploreMap() {
     setSelectedPlace(null)
   }
 
-  function handleTestOriginChange(testOrigin) {
-    setCurrentPosition(testOrigin.position)
-    setOriginLabel(testOrigin.label)
-    setLocationStatus(`Recommendations from ${testOrigin.label}.`)
-    setSelectedPlace(null)
-  }
+  async function handleLocationSearch(event) {
+    event.preventDefault()
 
-  function handleRandomTestOrigin() {
-    const nextOrigin = testOriginOptions[Math.floor(Math.random() * testOriginOptions.length)]
-    handleTestOriginChange(nextOrigin)
+    const query = locationQuery.trim()
+    if (!query) {
+      setLocationStatus('Enter a suburb, postcode or street address.')
+      return
+    }
+
+    setIsGeocoding(true)
+    setLocationStatus('Finding that location...')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/geocode?q=${encodeURIComponent(query)}`)
+      if (!response.ok) {
+        throw new Error('Location not found')
+      }
+
+      const result = await response.json()
+      const nextPosition = [result.latitude, result.longitude]
+      const shortLabel = getShortLocationLabel(result.label)
+      const nextSearchParams = new URLSearchParams(searchParams)
+
+      nextSearchParams.set('lat', String(result.latitude))
+      nextSearchParams.set('lng', String(result.longitude))
+      nextSearchParams.delete('place')
+      setSearchParams(nextSearchParams)
+      setCurrentPosition(nextPosition)
+      setOriginLabel(shortLabel || query)
+      setLocationStatus(`Showing recommendations near ${shortLabel || query}.`)
+      setSelectedPlace(null)
+    } catch {
+      setLocationStatus('Location not found. Try adding a suburb, state or postcode.')
+    } finally {
+      setIsGeocoding(false)
+    }
   }
 
   function handleAddSelectedPlaceToPlanner() {
@@ -404,24 +495,24 @@ function ExploreMap() {
 
         {locationStatus ? <p className="map-status-message">{locationStatus}</p> : null}
 
-        <div className="map-test-origin-control" aria-label="Choose where recommendations start from">
-          <span>Recommend from</span>
+        <form className="map-location-search" onSubmit={handleLocationSearch}>
+          <label htmlFor="map-location-query">Starting location</label>
           <div>
-            {testOriginOptions.map((testOrigin) => (
-              <button
-                className={originLabel === testOrigin.label ? 'selected' : ''}
-                key={testOrigin.label}
-                onClick={() => handleTestOriginChange(testOrigin)}
-                type="button"
-              >
-                {testOrigin.label}
-              </button>
-            ))}
-            <button onClick={handleRandomTestOrigin} type="button">
-              Random
+            <MapPin size={17} aria-hidden="true" />
+            <input
+              autoComplete="street-address"
+              id="map-location-query"
+              onChange={(event) => setLocationQuery(event.target.value)}
+              placeholder="Suburb, postcode or address"
+              type="search"
+              value={locationQuery}
+            />
+            <button disabled={isGeocoding} type="submit">
+              <Search size={17} aria-hidden="true" />
+              <span>{isGeocoding ? 'Finding' : 'Find'}</span>
             </button>
           </div>
-        </div>
+        </form>
 
         <div className="map-duration-control" aria-label="Choose available break time">
           <span>Available time</span>

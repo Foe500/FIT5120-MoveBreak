@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import requests
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -287,6 +288,64 @@ def get_recommendations(
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.get("/geocode")
+def geocode_location(q: str = Query(..., min_length=2, max_length=160)):
+    try:
+        response = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={
+                "q": q,
+                "format": "jsonv2",
+                "limit": 1,
+                "countrycodes": "au",
+            },
+            headers={"User-Agent": "MoveBreak/1.0 (location search)"},
+            timeout=8,
+        )
+        response.raise_for_status()
+        matches = response.json()
+    except (requests.RequestException, ValueError) as error:
+        raise HTTPException(status_code=502, detail="Location search is unavailable.") from error
+
+    if not matches:
+        raise HTTPException(status_code=404, detail="Location not found.")
+
+    match = matches[0]
+    return {
+        "label": match["display_name"],
+        "latitude": float(match["lat"]),
+        "longitude": float(match["lon"]),
+    }
+
+
+@app.get("/reverse-geocode")
+def reverse_geocode_location(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+):
+    try:
+        response = requests.get(
+            "https://nominatim.openstreetmap.org/reverse",
+            params={
+                "lat": lat,
+                "lon": lng,
+                "format": "jsonv2",
+                "zoom": 18,
+            },
+            headers={"User-Agent": "MoveBreak/1.0 (location search)"},
+            timeout=8,
+        )
+        response.raise_for_status()
+        match = response.json()
+    except (requests.RequestException, ValueError) as error:
+        raise HTTPException(status_code=502, detail="Address lookup is unavailable.") from error
+
+    if not match.get("display_name"):
+        raise HTTPException(status_code=404, detail="Address not found.")
+
+    return {"label": match["display_name"]}
 
 
 @app.post("/missions/recommend")

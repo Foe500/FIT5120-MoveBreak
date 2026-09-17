@@ -1781,7 +1781,7 @@ main {
 }
 
 .map-duration-control > span,
-.map-test-origin-control > span {
+.map-location-search label {
   color: #66758d;
   font-size: 0.78rem;
   font-weight: 850;
@@ -1815,33 +1815,57 @@ main {
   background: #08713f;
 }
 
-.map-test-origin-control {
+.map-location-search {
   display: grid;
   gap: 0.55rem;
   margin-top: 1rem;
 }
 
-.map-test-origin-control > div {
+.map-location-search > div {
   display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
-
-.map-test-origin-control button {
-  min-height: 2.15rem;
+  align-items: center;
+  min-height: 2.65rem;
+  overflow: hidden;
   border: 1px solid #d8e5f6;
-  border-radius: 999px;
-  padding: 0 0.7rem;
-  color: #344662;
+  border-radius: 0.55rem;
   background: #ffffff;
-  font-size: 0.74rem;
-  font-weight: 850;
 }
 
-.map-test-origin-control .selected {
-  border-color: #55735b;
+.map-location-search > div > svg {
+  flex: 0 0 auto;
+  margin-left: 0.7rem;
+  color: #64748b;
+}
+
+.map-location-search input {
+  min-width: 0;
+  flex: 1;
+  align-self: stretch;
+  border: 0;
+  padding: 0 0.65rem;
+  color: #253a61;
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  outline: 0;
+}
+
+.map-location-search button {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  padding: 0 0.8rem;
   color: #ffffff;
-  background: #55735b;
+  background: #08713f;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.map-location-search button:disabled {
+  cursor: wait;
+  opacity: 0.7;
 }
 
 .category-tabs {
@@ -4714,7 +4738,6 @@ main {
 .near-heading-row button,
 .close-card-button,
 .category-tabs button,
-.map-test-origin-control button,
 .map-duration-control > div,
 .selected-break-summary span {
   border-color: #ded9d0;
@@ -4728,12 +4751,6 @@ main {
 }
 
 .category-tabs .selected {
-  border-color: #55735b;
-  color: #ffffff;
-  background: #55735b;
-}
-
-.map-test-origin-control .selected {
   border-color: #55735b;
   color: #ffffff;
   background: #55735b;
