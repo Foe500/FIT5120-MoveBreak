@@ -40,6 +40,14 @@ MARKER_TONES = {
     "supermarket": "gold",
 }
 
+OUTDOOR_NEED_CATEGORY_WEIGHTS = {
+    "fresh air": {"park": 16, "public_seat": 6},
+    "green space": {"park": 22},
+    "quiet space": {"park": 12, "public_seat": 10, "cafe_restaurant": -8, "supermarket": -8},
+    "short walk": {"public_seat": 10, "drinking_fountain": 8, "park": 4},
+    "low effort": {"public_seat": 16, "drinking_fountain": 8, "park": 5},
+}
+
 
 def place_to_recommendation_dict(place):
     return {
@@ -96,6 +104,11 @@ def _maximum_straight_distance(break_time):
     return maximum_walking_distance / STRAIGHT_LINE_DETOUR_FACTOR
 
 
+def _validate_finite_coordinate(value, name, minimum, maximum):
+    if not math.isfinite(value) or value < minimum or value > maximum:
+        raise ValueError(f"{name} must be a finite number between {minimum:g} and {maximum:g}")
+
+
 def load_recommendation_places(db: Session, latitude=None, longitude=None,
                                break_time=None):
     """Read places from SQLite, optionally prefiltered by a SQL bounding box."""
@@ -130,6 +143,35 @@ def _duration_fit_score(remaining_time):
     return 14
 
 
+def _need_score(place, need, straight_distance):
+    if not need:
+        return 0
+
+    normalized_need = need.lower()
+    dataset_type = place["dataset_type"]
+    score = OUTDOOR_NEED_CATEGORY_WEIGHTS.get(normalized_need, {}).get(dataset_type, 0)
+
+    if normalized_need in {"short walk", "low effort"}:
+        if straight_distance <= 180:
+            score += 14
+        elif straight_distance <= 350:
+            score += 8
+        elif straight_distance > 700:
+            score -= 8
+
+    if normalized_need == "quiet space":
+        search_text = " ".join([
+            place.get("name", ""),
+            place.get("category", ""),
+            place.get("type", ""),
+            place.get("description", ""),
+        ]).lower()
+        if any(term in search_text for term in ["garden", "reserve", "library", "park"]):
+            score += 6
+
+    return score
+
+
 def _display_minutes(value, minimum=0):
     display_value = round(value)
     if value > 0:
@@ -146,9 +188,11 @@ def _display_minute_label(value):
 
 
 def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
-                              places=None):
+                              places=None, need=None):
     if break_time not in BREAK_CONFIG:
         raise ValueError("break_time must be one of 5, 15 or 30")
+    _validate_finite_coordinate(latitude, "latitude", -90, 90)
+    _validate_finite_coordinate(longitude, "longitude", -180, 180)
 
     origin = (latitude, longitude)
     config = BREAK_CONFIG[break_time]
@@ -178,7 +222,8 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
         score = round(
             _distance_score(straight_distance)
             + CATEGORY_WEIGHTS[break_time].get(place["dataset_type"], 6)
-            + _duration_fit_score(remaining_exact),
+            + _duration_fit_score(remaining_exact)
+            + _need_score(place, need, straight_distance),
             2,
         )
 
@@ -211,9 +256,10 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
     return recommendations[:limit]
 
 
-def build_recommendation_response(latitude, longitude, break_time, db, limit=5):
+def build_recommendation_response(latitude, longitude, break_time, db, limit=5,
+                                  need=None):
     recommendations = calculate_recommendations(
-        latitude, longitude, break_time, db=db, limit=limit
+        latitude, longitude, break_time, db=db, limit=limit, need=need
     )
     return {
         "origin": {"latitude": latitude, "longitude": longitude},

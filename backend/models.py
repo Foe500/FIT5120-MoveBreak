@@ -68,14 +68,15 @@ class Team(Base):
 
 
 class TeamMember(Base):
-    """A member is identified only by a self-chosen nickname plus an
-    anonymous device id the frontend generates and stores in
-    localStorage — nothing that identifies a real person."""
+    """A member is identified by an anonymous id plus a backend-generated
+    credential. Only the credential hash is stored here; the browser keeps
+    the original secret locally."""
     __tablename__ = "team_members"
 
-    id = Column(String, primary_key=True, index=True)       # uuid4 hex, == the device id
+    id = Column(String, primary_key=True, index=True)       # uuid4 hex
     team_id = Column(String, ForeignKey("teams.id"), nullable=False, index=True)
     nickname = Column(String, nullable=False)
+    member_secret_hash = Column(String, nullable=False)
     joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
@@ -92,6 +93,25 @@ class SessionLog(Base):
     label = Column(String, nullable=True)                     # activity/session title, for display only
     seconds = Column(Integer, nullable=False)
     completed_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class BreakSession(Base):
+    """Server-authoritative timer state for a guided break. The client can
+    ask to start and complete a session, but credited seconds are calculated
+    from server timestamps so planned duration cannot be forged by the UI."""
+    __tablename__ = "break_sessions"
+
+    id = Column(String, primary_key=True, index=True)       # uuid4 hex
+    team_id = Column(String, ForeignKey("teams.id"), nullable=False, index=True)
+    member_id = Column(String, ForeignKey("team_members.id"), nullable=False, index=True)
+    setting = Column(String, nullable=False)
+    label = Column(String, nullable=True)
+    planned_seconds = Column(Integer, nullable=False)
+    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
+    paused_at = Column(DateTime, nullable=True)
+    paused_seconds = Column(Integer, default=0, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    credited_seconds = Column(Integer, nullable=True)
 
 
 class Season(Base):

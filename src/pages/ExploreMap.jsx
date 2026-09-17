@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
 import {
+  ArrowLeft,
   Building2,
   CalendarPlus,
   CheckCircle2,
@@ -13,6 +14,7 @@ import {
   MapPin,
   Navigation,
   Play,
+  Search,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -21,6 +23,7 @@ import { melbourneCenter } from '@/data/mapPlaces'
 import { API_BASE_URL } from '@/lib/api'
 import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
 import { saveOutdoorBreakSession } from '@/lib/outdoorBreak'
+import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
@@ -28,14 +31,33 @@ const defaultOutdoorBreakDuration = 15
 const maxVisiblePlaces = 40
 const durationOptions = [5, 15, 30]
 const plannerStorageKey = 'movebreak-planned-breaks'
-const testOriginOptions = [
-  { label: 'Docklands', position: [-37.8183, 144.9467] },
-  { label: 'Southbank', position: [-37.8215, 144.9646] },
-  { label: 'Carlton', position: [-37.8001, 144.9671] },
-  { label: 'Fitzroy', position: [-37.7984, 144.9783] },
-  { label: 'South Yarra', position: [-37.8384, 144.9910] },
+const locationSuggestions = [
+  {
+    label: 'Flagstaff Gardens',
+    address: 'Flagstaff Gardens, Melbourne VIC',
+    position: [-37.8111222889277, 144.954696055235],
+  },
+  {
+    label: 'Federation Square',
+    address: 'Federation Square, Melbourne VIC',
+    position: [-37.8178516571684, 144.968963600783],
+  },
+  {
+    label: 'Argyle Square',
+    address: 'Argyle Square, Melbourne VIC',
+    position: [-37.8031480577285, 144.965761295089],
+  },
+  {
+    label: 'Fitzroy Gardens',
+    address: 'Fitzroy Gardens, Melbourne VIC',
+    position: [-37.8129616331579, 144.980455714669],
+  },
+  {
+    label: 'Kings Domain',
+    address: 'Kings Domain, Melbourne VIC',
+    position: [-37.8255239795833, 144.974107925144],
+  },
 ]
-
 const placeIcons = {
   'Green space': Leaf,
   'Waterfront green space': Leaf,
@@ -59,6 +81,31 @@ function getInitialDuration(searchParams) {
   return durationOptions.includes(duration) ? duration : defaultOutdoorBreakDuration
 }
 
+function getInitialPosition(searchParams) {
+  const latitudeParam = searchParams.get('lat')
+  const longitudeParam = searchParams.get('lng')
+
+  if (latitudeParam === null || longitudeParam === null) {
+    return null
+  }
+
+  const latitude = Number(latitudeParam)
+  const longitude = Number(longitudeParam)
+
+  if (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  ) {
+    return [latitude, longitude]
+  }
+
+  return null
+}
+
 function getPlaceFitLabel(place) {
   return place.is_time_safe ? 'Recommended for this break' : 'Outside current time range'
 }
@@ -73,6 +120,10 @@ function getWalkTimeLabel(place) {
 
 function getPlaceTotalTimeLabel(place) {
   return place.estimated_total_time ? `${place.estimated_total_time} min total` : 'Total time unavailable'
+}
+
+function getShortLocationLabel(label) {
+  return label.split(',').slice(0, 2).join(',').trim()
 }
 
 function getPlaceDirectionsUrl(place, origin) {
@@ -94,16 +145,6 @@ function getPlaceDirectionsUrl(place, origin) {
   }
 
   return `https://www.google.com/maps/dir/?${params.toString()}`
-}
-
-function getSavedPlannerBreaks() {
-  try {
-    const savedBreaks = JSON.parse(localStorage.getItem(plannerStorageKey) ?? '[]')
-
-    return Array.isArray(savedBreaks) ? savedBreaks : []
-  } catch {
-    return []
-  }
 }
 
 function getOutdoorBreakPlan(place, duration, origin) {
@@ -142,15 +183,24 @@ function CurrentLocationView({ position }) {
 }
 
 function ExploreMap() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedDuration = getInitialDuration(searchParams)
+  const selectedNeed = searchParams.get('need') ?? ''
+  const requestedPlaceId = searchParams.get('place')
+  const [initialPosition] = useState(() => getInitialPosition(searchParams))
   const [places, setPlaces] = useState([])
   const [selectedPlace, setSelectedPlace] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [currentPosition, setCurrentPosition] = useState(null)
-  const [originLabel, setOriginLabel] = useState('Melbourne CBD')
+  const [currentPosition, setCurrentPosition] = useState(initialPosition)
+  const [originLabel, setOriginLabel] = useState(
+    initialPosition ? 'Current location' : 'Melbourne CBD',
+  )
+  const [locationQuery, setLocationQuery] = useState('')
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
   const [locationStatus, setLocationStatus] = useState('')
   const [isLocating, setIsLocating] = useState(false)
+  const [isGeocoding, setIsGeocoding] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [plannedPlaceIds, setPlannedPlaceIds] = useState(
@@ -180,6 +230,45 @@ function ExploreMap() {
   )
 
   useEffect(() => {
+    if (!initialPosition) {
+      return
+    }
+
+    let isActive = true
+
+    async function loadInitialAddress() {
+      try {
+        const query = new URLSearchParams({
+          lat: String(initialPosition[0]),
+          lng: String(initialPosition[1]),
+        })
+        const response = await fetch(`${API_BASE_URL}/reverse-geocode?${query.toString()}`)
+        if (!response.ok) {
+          throw new Error('Address lookup failed')
+        }
+
+        const result = await response.json()
+        const shortLabel = getShortLocationLabel(result.label) || 'Current location'
+
+        if (isActive) {
+          setOriginLabel(shortLabel)
+          setLocationQuery(shortLabel)
+        }
+      } catch {
+        if (isActive) {
+          setLocationQuery('Current location')
+        }
+      }
+    }
+
+    loadInitialAddress()
+
+    return () => {
+      isActive = false
+    }
+  }, [initialPosition])
+
+  useEffect(() => {
     async function loadRecommendations() {
       setIsLoading(true)
       setError('')
@@ -192,6 +281,9 @@ function ExploreMap() {
           break_time: String(selectedDuration),
           limit: '5',
         })
+        if (selectedNeed) {
+          query.set('need', selectedNeed)
+        }
         const response = await fetch(`${API_BASE_URL}/recommendations?${query.toString()}`)
 
         if (!response.ok) {
@@ -199,8 +291,11 @@ function ExploreMap() {
         }
 
         const data = await response.json()
-        setPlaces(data.recommendations ?? [])
-        setSelectedPlace(null)
+        const recommendations = data.recommendations ?? []
+        setPlaces(recommendations)
+        setSelectedPlace(
+          recommendations.find((place) => String(place.id) === requestedPlaceId) ?? null,
+        )
         setSelectedCategory('All')
         // No place is selected by default — the detail card only opens
         // once the user actively picks one from the map or the list.
@@ -212,7 +307,7 @@ function ExploreMap() {
     }
 
     loadRecommendations()
-  }, [currentPosition, selectedDuration])
+  }, [currentPosition, requestedPlaceId, selectedDuration, selectedNeed])
 
   function handleUseCurrentLocation() {
     if (!navigator.geolocation) {
@@ -224,13 +319,40 @@ function ExploreMap() {
     setLocationStatus('Finding your current location...')
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const nextPosition = [position.coords.latitude, position.coords.longitude]
+        const nextSearchParams = new URLSearchParams(searchParams)
 
         setCurrentPosition(nextPosition)
         setOriginLabel('Current location')
-        setLocationStatus('')
-        setIsLocating(false)
+        setLocationQuery('Current location')
+        setLocationStatus('Finding your address...')
+        setSelectedPlace(null)
+        nextSearchParams.set('lat', String(nextPosition[0]))
+        nextSearchParams.set('lng', String(nextPosition[1]))
+        nextSearchParams.delete('place')
+        setSearchParams(nextSearchParams)
+
+        try {
+          const query = new URLSearchParams({
+            lat: String(nextPosition[0]),
+            lng: String(nextPosition[1]),
+          })
+          const response = await fetch(`${API_BASE_URL}/reverse-geocode?${query.toString()}`)
+          if (!response.ok) {
+            throw new Error('Address lookup failed')
+          }
+
+          const result = await response.json()
+          const shortLabel = getShortLocationLabel(result.label) || 'Current location'
+          setOriginLabel(shortLabel)
+          setLocationQuery(shortLabel)
+          setLocationStatus('')
+        } catch {
+          setLocationStatus('Using your current location. The street address is unavailable.')
+        } finally {
+          setIsLocating(false)
+        }
       },
       () => {
         setLocationStatus('Location access was denied or unavailable. Melbourne CBD remains selected.')
@@ -251,16 +373,58 @@ function ExploreMap() {
     setSelectedPlace(null)
   }
 
-  function handleTestOriginChange(testOrigin) {
-    setCurrentPosition(testOrigin.position)
-    setOriginLabel(testOrigin.label)
-    setLocationStatus(`Recommendations from ${testOrigin.label}.`)
-    setSelectedPlace(null)
+  async function handleLocationSearch(event) {
+    event.preventDefault()
+    setIsSuggestionsOpen(false)
+
+    const query = locationQuery.trim()
+    if (!query) {
+      setLocationStatus('Enter a suburb, postcode or street address.')
+      return
+    }
+
+    setIsGeocoding(true)
+    setLocationStatus('Finding that location...')
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/geocode?q=${encodeURIComponent(query)}`)
+      if (!response.ok) {
+        throw new Error('Location not found')
+      }
+
+      const result = await response.json()
+      const nextPosition = [result.latitude, result.longitude]
+      const shortLabel = getShortLocationLabel(result.label)
+      const nextSearchParams = new URLSearchParams(searchParams)
+
+      nextSearchParams.set('lat', String(result.latitude))
+      nextSearchParams.set('lng', String(result.longitude))
+      nextSearchParams.delete('place')
+      setSearchParams(nextSearchParams)
+      setCurrentPosition(nextPosition)
+      setOriginLabel(shortLabel || query)
+      setLocationStatus('')
+      setSelectedPlace(null)
+    } catch {
+      setLocationStatus('Location not found. Try adding a suburb, state or postcode.')
+    } finally {
+      setIsGeocoding(false)
+    }
   }
 
-  function handleRandomTestOrigin() {
-    const nextOrigin = testOriginOptions[Math.floor(Math.random() * testOriginOptions.length)]
-    handleTestOriginChange(nextOrigin)
+  function handleSuggestedLocation(suggestion) {
+    const nextSearchParams = new URLSearchParams(searchParams)
+
+    nextSearchParams.set('lat', String(suggestion.position[0]))
+    nextSearchParams.set('lng', String(suggestion.position[1]))
+    nextSearchParams.delete('place')
+    setSearchParams(nextSearchParams)
+    setCurrentPosition(suggestion.position)
+    setOriginLabel(suggestion.label)
+    setLocationQuery(suggestion.address)
+    setLocationStatus('')
+    setSelectedPlace(null)
+    setIsSuggestionsOpen(false)
   }
 
   function handleAddSelectedPlaceToPlanner() {
@@ -287,7 +451,7 @@ function ExploreMap() {
         (plannedBreak) => plannedBreak.placeId !== selectedPlace.id,
       )
 
-      localStorage.setItem(plannerStorageKey, JSON.stringify([...planItems, savedBreak]))
+      savePlannerBreaks([...planItems, savedBreak])
       setPlannedPlaceIds((currentIds) => new Set(currentIds).add(selectedPlace.id))
     } catch {
       setError('This break could not be added to your planner.')
@@ -305,7 +469,7 @@ function ExploreMap() {
   return (
     <section className="explore-workspace">
       <MapContainer
-        center={melbourneCenter}
+        center={currentPosition ?? melbourneCenter}
         className="leaflet-workspace-map"
         scrollWheelZoom
         zoom={defaultMapZoom}
@@ -368,24 +532,48 @@ function ExploreMap() {
 
         {locationStatus ? <p className="map-status-message">{locationStatus}</p> : null}
 
-        <div className="map-test-origin-control" aria-label="Choose where recommendations start from">
-          <span>Recommend from</span>
-          <div>
-            {testOriginOptions.map((testOrigin) => (
-              <button
-                className={originLabel === testOrigin.label ? 'selected' : ''}
-                key={testOrigin.label}
-                onClick={() => handleTestOriginChange(testOrigin)}
-                type="button"
-              >
-                {testOrigin.label}
-              </button>
-            ))}
-            <button onClick={handleRandomTestOrigin} type="button">
-              Random
+        <form className="map-location-search" onSubmit={handleLocationSearch}>
+          <label htmlFor="map-location-query">Starting location</label>
+          <div className="map-location-input-row">
+            <MapPin size={17} aria-hidden="true" />
+            <input
+              autoComplete="street-address"
+              id="map-location-query"
+              onBlur={() => setIsSuggestionsOpen(false)}
+              onChange={(event) => {
+                setLocationQuery(event.target.value)
+                setIsSuggestionsOpen(true)
+              }}
+              onFocus={() => setIsSuggestionsOpen(true)}
+              placeholder="Suburb, postcode or address"
+              type="search"
+              value={locationQuery}
+            />
+            <button disabled={isGeocoding} type="submit">
+              <Search size={17} aria-hidden="true" />
+              <span>{isGeocoding ? 'Finding' : 'Find'}</span>
             </button>
           </div>
-        </div>
+          {isSuggestionsOpen ? (
+            <div className="map-location-suggestions" aria-label="Popular locations">
+              <span>Popular locations</span>
+              {locationSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion.label}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => handleSuggestedLocation(suggestion)}
+                  type="button"
+                >
+                  <MapPin size={15} aria-hidden="true" />
+                  <span>
+                    <strong>{suggestion.label}</strong>
+                    <small>{suggestion.address}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </form>
 
         <div className="map-duration-control" aria-label="Choose available break time">
           <span>Available time</span>
@@ -459,13 +647,20 @@ function ExploreMap() {
         </div>
 
         <div className="panel-footer-row">
-          <span>
-            {isLoading
-              ? 'Calculating time-safe options'
-              : `Showing ${visiblePlaces.length} of ${filteredPlaces.length} recommendations`}
-          </span>
-          <span>{selectedDuration} min break</span>
-          <Link to="/mission">View mission options</Link>
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => {
+              if (window.history.state?.idx > 0) {
+                navigate(-1)
+              } else {
+                navigate(`/mission?duration=${selectedDuration}`, { replace: true })
+              }
+            }}
+          >
+            <ArrowLeft size={16} aria-hidden="true" />
+            Go back
+          </Button>
         </div>
       </Card>
 

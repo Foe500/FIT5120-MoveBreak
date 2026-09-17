@@ -5,31 +5,19 @@ import {
   CalendarPlus,
   Clock3,
   Dumbbell,
-  Eye,
-  Footprints,
-  Hand,
   Play,
   Search,
   Sparkles,
   Tag,
-  Wind,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
+import { activityVisuals } from '@/data/activityVisuals'
 import { API_BASE_URL } from '@/lib/api'
 
 const durationFilters = [5, 15, 30, 'Any']
 const postureFilters = ['Any posture', 'Seated', 'Standing']
 
-const activityVisuals = {
-  'eye-reset': { icon: Eye },
-  'desk-shoulder-release': { image: shoulderReleaseImage },
-  'seated-breathing': { icon: Wind },
-  'wrist-hand-reset': { icon: Hand },
-  'standing-posture': { icon: Footprints },
-  'low-impact-energy': { icon: Dumbbell },
-}
 
 function getInitialDuration(searchParams) {
   const duration = Number(searchParams.get('duration'))
@@ -42,6 +30,7 @@ function ActivityLibrary() {
   const [selectedDuration, setSelectedDuration] = useState(() => getInitialDuration(searchParams))
   const [selectedArea, setSelectedArea] = useState('All areas')
   const [selectedPosture, setSelectedPosture] = useState('Any posture')
+  const [searchQuery, setSearchQuery] = useState('')
   const [activities, setActivities] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -52,18 +41,27 @@ function ActivityLibrary() {
   const filteredActivities = useMemo(
     () =>
       activities.filter((activity) => {
+        const normalizedSearch = searchQuery.trim().toLowerCase()
+        const searchableText = [
+          activity.title,
+          activity.area,
+          activity.category,
+          activity.description,
+        ].join(' ').toLowerCase()
         const matchesArea = selectedArea === 'All areas' || activity.area === selectedArea
         // Duration means Noah should only see activities he can complete within his available time.
         const matchesDuration = selectedDuration === 'Any' || activity.duration <= selectedDuration
         const matchesPosture =
           selectedPosture === 'Any posture' || activity.posture === selectedPosture
+        const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch)
 
-        return matchesArea && matchesDuration && matchesPosture
+        return matchesArea && matchesDuration && matchesPosture && matchesSearch
       }),
-    [activities, selectedArea, selectedDuration, selectedPosture],
+    [activities, searchQuery, selectedArea, selectedDuration, selectedPosture],
   )
 
   function handleClearFilters() {
+    setSearchQuery('')
     setSelectedArea('All areas')
     setSelectedDuration('Any')
     setSelectedPosture('Any posture')
@@ -109,7 +107,13 @@ function ActivityLibrary() {
       <Card className="activity-filter-bar">
         <label className="activity-search-field">
           <Search size={17} />
-          <span>Search activities</span>
+          <input
+            aria-label="Search activities"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search activities"
+            type="search"
+            value={searchQuery}
+          />
         </label>
 
         <select
@@ -177,7 +181,7 @@ function ActivityLibrary() {
             <Card className="indoor-activity-card" key={activity.id}>
               <div className="activity-illustration">
                 {visual.image ? (
-                  <img src={visual.image} alt="" />
+                  <img src={visual.image} alt={visual.alt} width="600" height="600" loading="lazy" decoding="async" />
                 ) : (
                   <Icon size={46} strokeWidth={1.35} />
                 )}

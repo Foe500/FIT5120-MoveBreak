@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   Armchair,
@@ -17,7 +17,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
 import { clearIndoorBreakSession, saveIndoorBreakSession } from '@/lib/indoorBreak'
-import { logTeamSession } from '@/lib/team'
+import {
+  completeTeamBreakSessions,
+  pauseTeamBreakSessions,
+  resumeTeamBreakSessions,
+  startTeamBreakSessions,
+} from '@/lib/team'
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -52,6 +57,8 @@ function IndoorGuidedSession() {
   const [stepSecondsLeft, setStepSecondsLeft] = useState(0)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
+  const [teamBreakSessions, setTeamBreakSessions] = useState([])
+  const hasCompletedTeamBreakSessions = useRef(false)
 
   useEffect(() => {
     async function loadSessionActivities() {
@@ -78,6 +85,8 @@ function IndoorGuidedSession() {
         setStepSecondsLeft(nextFlatSteps[0]?.seconds ?? 0)
         setIsTimerRunning(false)
         setIsComplete(false)
+        setTeamBreakSessions([])
+        hasCompletedTeamBreakSessions.current = false
         saveIndoorBreakSession({
           label: `${data.length}-exercise session`,
           path: `${location.pathname}${location.search}`,
@@ -111,12 +120,9 @@ function IndoorGuidedSession() {
   const currentStepText = flatSteps[currentIndex]?.text ?? 'Ready to begin.'
 
   useEffect(() => {
-    if (isComplete && activities.length) {
-      logTeamSession({
-        setting: 'Indoor',
-        label: `${activities.length}-exercise session`,
-        seconds: totalSeconds,
-      })
+    if (isComplete && activities.length && !hasCompletedTeamBreakSessions.current) {
+      hasCompletedTeamBreakSessions.current = true
+      completeTeamBreakSessions(teamBreakSessions)
       clearIndoorBreakSession()
     }
     // Only log once per completion, not on every render while complete.
@@ -150,7 +156,21 @@ function IndoorGuidedSession() {
     return () => window.clearInterval(timer)
   }, [currentIndex, isComplete, isTimerRunning, currentStepDurationSeconds, flatSteps])
 
-  function handleStartPause() {
+  async function ensureTeamBreakSessions() {
+    if (teamBreakSessions.length || !activities.length || !totalSeconds) {
+      return teamBreakSessions
+    }
+
+    const sessions = await startTeamBreakSessions({
+      setting: 'Indoor',
+      label: `${activities.length}-exercise session`,
+      plannedSeconds: totalSeconds,
+    })
+    setTeamBreakSessions(sessions)
+    return sessions
+  }
+
+  async function handleStartPause() {
     if (isComplete) {
       saveIndoorBreakSession({
         label: `${activities.length || 1}-exercise session`,
@@ -160,11 +180,26 @@ function IndoorGuidedSession() {
       setCurrentIndex(0)
       setStepSecondsLeft(flatSteps[0]?.seconds ?? 0)
       setIsComplete(false)
+      setTeamBreakSessions([])
+      hasCompletedTeamBreakSessions.current = false
+      await startTeamBreakSessions({
+        setting: 'Indoor',
+        label: `${activities.length || 1}-exercise session`,
+        plannedSeconds: totalSeconds,
+      }).then(setTeamBreakSessions)
       setIsTimerRunning(true)
       return
     }
 
-    setIsTimerRunning((running) => !running)
+    if (isTimerRunning) {
+      await pauseTeamBreakSessions(teamBreakSessions)
+      setIsTimerRunning(false)
+      return
+    }
+
+    const sessions = await ensureTeamBreakSessions()
+    await resumeTeamBreakSessions(sessions)
+    setIsTimerRunning(true)
   }
 
   function handleSkipStep() {

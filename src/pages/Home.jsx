@@ -10,7 +10,7 @@ import BreakHero from '../components/BreakHero.jsx'
 import QuickIndoorBreakCard from '../components/home/QuickIndoorBreakCard.jsx'
 import SessionBadgesCard from '../components/home/SessionBadgesCard.jsx'
 import TodayPlanCard from '../components/home/TodayPlanCard.jsx'
-import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
+import AnimatedStretch from '../components/home/AnimatedStretch.jsx'
 
 function Home() {
   // Keep duration unselected until Emily actively chooses 5, 10 or 15 minutes.
@@ -46,7 +46,7 @@ function Home() {
         <div className="home-hero-visual" aria-label="A person taking a movement break beside a work desk">
           <span className="hero-shape hero-shape-blue" aria-hidden="true"></span>
           <span className="hero-shape hero-shape-green" aria-hidden="true"></span>
-          <img src={shoulderReleaseImage} alt="Person stretching beside a work desk" />
+          <AnimatedStretch />
           <div className="hero-benefit-card">
             <CheckCircle2 size={20} />
             <div>

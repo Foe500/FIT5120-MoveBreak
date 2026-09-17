@@ -109,6 +109,7 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
         joinCode: joinData.team.joinCode,
         teamName: joinData.team.name,
         memberId: joinData.memberId,
+        memberSecret: joinData.memberSecret,
         nickname: joinData.nickname,
       }
       addMembership(membership)
