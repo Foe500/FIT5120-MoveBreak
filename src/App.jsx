@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import {
   Armchair,
+  BookOpen,
   CalendarDays,
   Footprints,
   HomeIcon,
@@ -18,6 +19,8 @@ import Home from './pages/Home.jsx'
 import Mission from './pages/Mission.jsx'
 import ExploreMap from './pages/ExploreMap.jsx'
 import ActivityLibrary from './pages/ActivityLibrary.jsx'
+import Guides from './pages/Guides.jsx'
+import GuideDetail from './pages/GuideDetail.jsx'
 import ActivityDetail from './pages/ActivityDetail.jsx'
 import IndoorGuidedBreak from './pages/IndoorGuidedBreak.jsx'
 import IndoorGuidedSession from './pages/IndoorGuidedSession.jsx'
@@ -33,7 +36,7 @@ const navItems = [
   { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
   { to: '/team', label: 'Team', icon: Trophy },
-  { to: '/planner', label: 'Planner', icon: CalendarDays },
+  { label: 'Planner', icon: CalendarDays, disabled: true },
 ]
 
 function getOutdoorBreakStatus(session) {
@@ -122,6 +125,15 @@ function App() {
           {navItems.map((item) => {
             const Icon = item.icon
 
+            if (item.disabled) {
+              return (
+                <span className="nav-link-disabled" key={item.label} aria-disabled="true">
+                  <Icon size={17} aria-hidden="true" />
+                  {item.label}
+                </span>
+              )
+            }
+
             return (
               <NavLink key={item.to} to={item.to}>
                 <Icon size={17} aria-hidden="true" />
@@ -140,6 +152,8 @@ function App() {
           <Route path="/mission" element={<Mission />} />
           <Route path="/explore" element={<ExploreMap />} />
           <Route path="/activities" element={<ActivityLibrary />} />
+          <Route path="/guides" element={<Guides />} />
+          <Route path="/guides/:guideId" element={<GuideDetail />} />
           <Route path="/activities/:activityId" element={<ActivityDetail />} />
           <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
           <Route path="/guided/indoor-session" element={<IndoorGuidedSession />} />
@@ -159,6 +173,10 @@ function App() {
             <span>© 2026 MoveBreak</span>
           </Link>
           <nav className="footer-links" aria-label="Footer navigation">
+            <NavLink to="/guides">
+              <BookOpen size={15} aria-hidden="true" />
+              Guides
+            </NavLink>
             <NavLink to="/privacy">
               <ShieldCheck size={15} aria-hidden="true" />
               Privacy
