@@ -1,3 +1,25 @@
+const commonStopConditions = [
+  'Pain or discomfort that starts or becomes worse while you move.',
+  'Feeling lightheaded, dizzy, faint or generally unwell.',
+  'Chest pain or tightness, unusual shortness of breath, or a very rapid or irregular heartbeat.',
+]
+
+const emergencyAdvice =
+  'Call triple zero (000) if chest pain is severe, gets worse or lasts longer than 10 minutes.'
+
+const activitySafetySources = [
+  {
+    publisher: 'Better Health Channel',
+    title: 'Exercise safety',
+    url: 'https://www.betterhealth.vic.gov.au/health/healthyliving/exercise-safety',
+  },
+  {
+    publisher: 'Healthdirect Australia',
+    title: 'Chest pain',
+    url: 'https://www.healthdirect.gov.au/chest-pain',
+  },
+]
+
 export const guides = [
   {
     id: 'eyes',
@@ -58,12 +80,19 @@ export const guides = [
         body: 'Bring frequently used equipment within easy reach. Adjust the chair, screen and input devices so you do not need to lean, twist or reach repeatedly.',
       },
     ],
+    activitySafety: {
+      comfortableRange:
+        'Move gently through positions that feel easy and controlled. Change position before discomfort builds, and never force a stretch or hold a posture that hurts.',
+      stopConditions: commonStopConditions,
+      emergencyAdvice,
+    },
     sources: [
       {
         publisher: 'Safe Work Australia',
         title: 'Sitting and standing',
         url: 'https://www.safeworkaustralia.gov.au/safety-topic/hazards/sitting-and-standing',
       },
+      ...activitySafetySources,
       {
         publisher: 'Safe Work Australia',
         title: 'Setting up your workstation infographic',
@@ -130,6 +159,12 @@ export const guides = [
         body: 'Aim to be active on most days and include a mix of light activity, moderate-to-vigorous activity, strength, mobility and balance across the week.',
       },
     ],
+    activitySafety: {
+      comfortableRange:
+        'Start with light, controlled movement that lets you breathe comfortably and speak in full sentences. Use a smaller range, slower pace or shorter break whenever you need it.',
+      stopConditions: commonStopConditions,
+      emergencyAdvice,
+    },
     sources: [
       {
         publisher: 'Australian Government Department of Health, Disability and Ageing',
@@ -141,6 +176,7 @@ export const guides = [
         title: 'Sitting and standing',
         url: 'https://www.safeworkaustralia.gov.au/safety-topic/hazards/sitting-and-standing',
       },
+      ...activitySafetySources,
     ],
   },
   {
@@ -166,6 +202,12 @@ export const guides = [
         body: 'Check the weather, choose a safe route and use shade or sun protection when needed. If going outside is not suitable, walk indoors or stand near natural light instead.',
       },
     ],
+    activitySafety: {
+      comfortableRange:
+        'Walk at a steady pace that feels comfortable and still lets you speak in full sentences. Slow down, shorten the route or take a seated rest when needed.',
+      stopConditions: commonStopConditions,
+      emergencyAdvice,
+    },
     sources: [
       {
         publisher: 'Victorian Department of Health',
@@ -177,6 +219,7 @@ export const guides = [
         title: 'About physical activity',
         url: 'https://www.health.gov.au/topics/physical-activity/about-physical-activity',
       },
+      ...activitySafetySources,
     ],
   },
 ]

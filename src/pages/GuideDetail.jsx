@@ -1,4 +1,12 @@
-import { ArrowLeft, CalendarCheck, ExternalLink, Lightbulb } from 'lucide-react'
+import {
+  ArrowLeft,
+  CalendarCheck,
+  CheckCircle2,
+  ExternalLink,
+  Lightbulb,
+  OctagonAlert,
+  ShieldCheck,
+} from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
@@ -68,6 +76,44 @@ function GuideDetail() {
               ))}
             </div>
           </section>
+
+          {guide.activitySafety ? (
+            <section className="guide-safety-section" aria-labelledby="guide-safety-title">
+              <header>
+                <span className="guide-safety-icon">
+                  <ShieldCheck size={23} aria-hidden="true" />
+                </span>
+                <div>
+                  <span className="guide-section-label">Activity safety</span>
+                  <h2 id="guide-safety-title">Move comfortably and know when to stop</h2>
+                </div>
+              </header>
+
+              <div className="guide-safety-grid">
+                <section className="guide-comfort-card">
+                  <CheckCircle2 size={20} aria-hidden="true" />
+                  <div>
+                    <h3>Comfortable activity range</h3>
+                    <p>{guide.activitySafety.comfortableRange}</p>
+                  </div>
+                </section>
+
+                <section className="guide-stop-card">
+                  <OctagonAlert size={20} aria-hidden="true" />
+                  <div>
+                    <h3>Stop the activity if you notice</h3>
+                    <ul>
+                      {guide.activitySafety.stopConditions.map((condition) => (
+                        <li key={condition}>{condition}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+              </div>
+
+              <p className="guide-emergency-note">{guide.activitySafety.emergencyAdvice}</p>
+            </section>
+          ) : null}
         </div>
 
         <aside className="guide-detail-sidebar" aria-label="Guide information">
