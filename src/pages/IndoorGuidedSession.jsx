@@ -11,6 +11,7 @@ import {
   SkipForward,
   Square,
   TimerReset,
+  Trophy,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -249,12 +250,14 @@ function IndoorGuidedSession() {
 
   return (
     <section className="page guided-break-page">
-      <Button asChild className="activity-back-button" variant="outline">
-        <Link to="/mission">
-          <ArrowLeft size={16} />
-          Back to Find a break
-        </Link>
-      </Button>
+      {!isComplete ? (
+        <Button asChild className="activity-back-button" variant="outline">
+          <Link to="/mission">
+            <ArrowLeft size={16} />
+            Back to Find a break
+          </Link>
+        </Button>
+      ) : null}
 
       <div className="guided-break-layout">
         <Card className="guided-break-main">
@@ -273,9 +276,18 @@ function IndoorGuidedSession() {
           <p>{isComplete ? 'Nice work — you moved through the whole session.' : currentActivity?.description}</p>
 
           <div className="guided-timer-preview">
-            <TimerReset size={42} strokeWidth={1.5} />
-            <strong>{formatTime(remainingSeconds)}</strong>
-            <span>{isComplete ? 'Session complete. Nice reset.' : currentStepText}</span>
+            {isComplete ? (
+              <div className="guided-timer-completion-message">
+                <strong>Session complete. Nice reset.</strong>
+                <span>You moved through all {activities.length} exercises in this break.</span>
+              </div>
+            ) : (
+              <>
+                <TimerReset size={42} strokeWidth={1.5} />
+                <strong>{formatTime(remainingSeconds)}</strong>
+                <span>{currentStepText}</span>
+              </>
+            )}
             <div className="guided-progress-track" aria-label="Guided session progress">
               <div style={{ width: `${progressPercent}%` }} />
             </div>
@@ -286,33 +298,48 @@ function IndoorGuidedSession() {
             </small>
           </div>
 
-          <div className="guided-break-actions">
-            <Button onClick={handleStartPause} type="button">
-              {isTimerRunning ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
-              {isComplete ? 'Restart' : isTimerRunning ? 'Pause' : 'Start'}
-            </Button>
-            <Button disabled={isComplete} onClick={handleSkipStep} type="button" variant="outline">
-              <SkipForward size={16} />
-              Skip
-            </Button>
-            <Button disabled={isComplete} onClick={handleFinish} type="button" variant="outline">
-              <Square size={15} />
-              Finish
-            </Button>
-          </div>
+          {!isComplete ? (
+            <div className="guided-break-actions">
+              <Button onClick={handleStartPause} type="button">
+                {isTimerRunning ? <Pause size={16} /> : <Play size={16} fill="currentColor" />}
+                {isTimerRunning ? 'Pause' : 'Start'}
+              </Button>
+              <Button onClick={handleSkipStep} type="button" variant="outline">
+                <SkipForward size={16} />
+                Skip
+              </Button>
+              <Button onClick={handleFinish} type="button" variant="outline">
+                <Square size={15} />
+                Finish
+              </Button>
+            </div>
+          ) : null}
 
           {isComplete ? (
-            <div className="guided-completion-panel">
-              <strong>Session complete. Nice reset.</strong>
-              <p>You moved through all {activities.length} exercises in this break.</p>
-              <div>
-                <Button asChild variant="outline">
-                  <Link to="/">Back to Home</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/mission">Find another break</Link>
-                </Button>
+            <div className="guided-completion-panel guided-session-completion-panel">
+              <div className="guided-completion-summary">
+                <div className="guided-completion-actions">
+                  <Button asChild variant="outline">
+                    <Link to="/">Back to Home</Link>
+                  </Button>
+                  <Button asChild>
+                    <Link to="/mission">Find another break</Link>
+                  </Button>
+                </div>
               </div>
+
+              <aside className="guided-competitive-callout">
+                <span className="guided-competitive-icon">
+                  <Trophy size={21} aria-hidden="true" />
+                </span>
+                <p className="guided-competitive-copy">
+                  <strong>Feeling competitive?</strong>
+                  <span>Join a team and turn completed breaks into leaderboard points.</span>
+                </p>
+                <Button asChild size="sm" variant="outline">
+                  <Link to="/team">View teams</Link>
+                </Button>
+              </aside>
             </div>
           ) : null}
         </Card>

@@ -194,48 +194,50 @@ function OutdoorGuidedBreak() {
           </div>
         </div>
 
-        <p className="outdoor-session-instruction">
-          {isComplete
-            ? 'You can find another place or restart this timer.'
-            : shouldReturn
-              ? 'Head back now. Your return walk and buffer are already included.'
-              : hasReachedPlace
-                ? `Take your break now. MoveBreak will tell you when to return. Estimated rest: ${breakPlan.restMinutes} min.`
-                : `Head to the place first. If you arrive early, tap I arrived to start your rest time.`}
-        </p>
+        {!isComplete ? (
+          <>
+            <p className="outdoor-session-instruction">
+              {shouldReturn
+                ? 'Head back now. Your return walk and buffer are already included.'
+                : hasReachedPlace
+                  ? `Take your break now. MoveBreak will tell you when to return. Estimated rest: ${breakPlan.restMinutes} min.`
+                  : `Head to the place first. If you arrive early, tap I arrived to start your rest time.`}
+            </p>
 
-        <div className="outdoor-session-dots" aria-label="Break progress">
-          <span className="active">Walk</span>
-          <span className={hasReachedPlace ? 'active' : ''}>Rest</span>
-          <span className={shouldReturn ? 'active' : ''}>Return</span>
-          <span className={isComplete ? 'active' : ''}>Done</span>
-        </div>
+            <div className="outdoor-session-dots" aria-label="Break progress">
+              <span className="active">Walk</span>
+              <span className={hasReachedPlace ? 'active' : ''}>Rest</span>
+              <span className={shouldReturn ? 'active' : ''}>Return</span>
+              <span>Done</span>
+            </div>
 
-        <div className="outdoor-session-actions">
-          <Button asChild variant="outline">
-            <a href={breakPlan.directionsUrl} rel="noreferrer" target="_blank">
-              <Navigation size={17} />
-              Directions
-            </a>
-          </Button>
-          <Button
-            disabled={isComplete || shouldReturn || hasReachedPlace}
-            onClick={handleArrived}
-            type="button"
-            variant="outline"
-          >
-            <Leaf size={17} />
-            I arrived
-          </Button>
-          <Button disabled={isComplete || shouldReturn} onClick={handleReturnNow} type="button" variant="outline">
-            <TimerReset size={17} />
-            Return now
-          </Button>
-          <Button disabled={isComplete} onClick={handleFinishBreak} type="button">
-            <Square size={16} />
-            Finish break
-          </Button>
-        </div>
+            <div className="outdoor-session-actions">
+              <Button asChild variant="outline">
+                <a href={breakPlan.directionsUrl} rel="noreferrer" target="_blank">
+                  <Navigation size={17} />
+                  Directions
+                </a>
+              </Button>
+              <Button
+                disabled={shouldReturn || hasReachedPlace}
+                onClick={handleArrived}
+                type="button"
+                variant="outline"
+              >
+                <Leaf size={17} />
+                I arrived
+              </Button>
+              <Button disabled={shouldReturn} onClick={handleReturnNow} type="button" variant="outline">
+                <TimerReset size={17} />
+                Return now
+              </Button>
+              <Button onClick={handleFinishBreak} type="button">
+                <Square size={16} />
+                Finish break
+              </Button>
+            </div>
+          </>
+        ) : null}
 
         {isComplete ? (
           <div className="outdoor-session-complete-actions">
@@ -245,6 +247,9 @@ function OutdoorGuidedBreak() {
             </Button>
             <Button asChild>
               <Link to="/explore">Find another place</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/team">Explore teams</Link>
             </Button>
           </div>
         ) : null}

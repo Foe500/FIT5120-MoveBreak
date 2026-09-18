@@ -201,6 +201,7 @@ Returns a recommended break based on the selected duration, movement setting, an
 - Mission: user selects duration, indoor/outdoor preference, and need, then requests a recommendation
 - Explore Map: interactive Leaflet map with nearby Melbourne CBD break spots
 - Activities: indoor activity library loaded from the backend
+- Guides: wellbeing categories for Eyes, Posture, Desk Setup, Movement and Outdoor Break at `/guides`
 - Planner: static Iteration 1 break planning interface
 
 ## Frontend And Backend Connection
