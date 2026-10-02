@@ -30,6 +30,9 @@ from recommendations import (
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="MoveBreak API")
+
+from ai_routes import router as ai_router
+app.include_router(ai_router)
 DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
 JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))

@@ -30,7 +30,6 @@ const currentLocationZoom = 16
 const defaultOutdoorBreakDuration = 15
 const maxVisiblePlaces = 40
 const durationOptions = [5, 15, 30]
-const plannerStorageKey = 'movebreak-planned-breaks'
 const locationSuggestions = [
   {
     label: 'Flagstaff Gardens',
