@@ -10,21 +10,49 @@ from pydantic import ValidationError
 
 from ai_schemas import Intent, Window
 
+DEFAULT_AI_BASE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+DEFAULT_AI_MODEL = "moonshotai/kimi-k3"
+
 
 def mode():
     return os.getenv("AI_MODE", "disabled").lower()
 
 
+def is_remote_mode():
+    """provider is the generic remote mode; nvidia remains supported for old .env files."""
+    return mode() in {"provider", "nvidia"}
+
+
+def provider_name():
+    return (os.getenv("AI_PROVIDER", "nvidia") or "nvidia").strip().lower()
+
+
+def api_key():
+    """Prefer generic config while keeping the existing NVIDIA variable compatible."""
+    return os.getenv("AI_API_KEY", "") or os.getenv("NVIDIA_API_KEY", "")
+
+
+def base_url():
+    return (os.getenv("AI_BASE_URL", DEFAULT_AI_BASE_URL) or DEFAULT_AI_BASE_URL).strip()
+
+
+def model_name():
+    return (
+        os.getenv("AI_MODEL", "")
+        or os.getenv("NVIDIA_MODEL", "")
+        or DEFAULT_AI_MODEL
+    ).strip()
+
+
 def completion(messages):
-    key = os.getenv("NVIDIA_API_KEY", "")
+    key = api_key()
     if not key:
         raise HTTPException(503, detail={"code": "AI_NOT_CONFIGURED", "message": "The assistant is not configured yet."})
     try:
         response = requests.post(
-            "https://integrate.api.nvidia.com/v1/chat/completions",
+            base_url(),
             headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
-            json={"model": os.getenv("NVIDIA_MODEL", "moonshotai/kimi-k3"),
-                  "messages": messages, "stream": False, "max_tokens": 4096},
+            json={"model": model_name(), "messages": messages, "stream": False, "max_tokens": 4096},
             timeout=(5, 45),
         )
         if response.status_code == 429:
@@ -45,7 +73,7 @@ def completion(messages):
 def extract(request, now):
     if mode() == "mock":
         return mock_extract(request, now)
-    if mode() != "nvidia":
+    if not is_remote_mode():
         raise HTTPException(503, detail={"code": "AI_DISABLED", "message": "The assistant is not enabled. You can still browse activities."})
     instruction = (
         "Extract break preferences as JSON only using this schema: " + json.dumps(Intent.model_json_schema()) +
@@ -156,7 +184,7 @@ def mock_extract(request, now):
 
 def localize(result, language):
     """Translate display text only. Provider never controls identities, durations or actions."""
-    if mode() != "nvidia" or language.lower().startswith(("en", "zh")):
+    if not is_remote_mode() or language.lower().startswith(("en", "zh")):
         return result
     texts = {"reply": result["reply"]}
     for i, item in enumerate(result["recommendations"] + result["planItems"]):
