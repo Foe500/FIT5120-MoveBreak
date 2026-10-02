@@ -37,6 +37,21 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  async function getResponseErrorMessage(response, fallback) {
+    try {
+      const body = await response.json()
+      if (response.status === 429) {
+        // Our rate-limit/lockout responses carry a specific, user-facing
+        // reason ("Too many invalid join codes..." or "Rate limit
+        // exceeded...") — show that instead of a generic failure message.
+        return body.detail || body.error || fallback
+      }
+      return fallback
+    } catch {
+      return fallback
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
@@ -65,7 +80,9 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
         })
 
         if (!createResponse.ok) {
-          throw new Error('Failed to create team')
+          throw new Error(
+            await getResponseErrorMessage(createResponse, 'Could not create the team right now.'),
+          )
         }
 
         const createData = await createResponse.json()
@@ -82,7 +99,7 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
         // membership under a different anonymous member id.
         const lookupResponse = await fetch(`${API_BASE_URL}/teams/${code}`)
         if (!lookupResponse.ok) {
-          throw new Error('Team not found')
+          throw new Error(await getResponseErrorMessage(lookupResponse, 'Could not find that team.'))
         }
         const lookupData = await lookupResponse.json()
         if (isJoined(lookupData.id)) {
@@ -99,7 +116,12 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
       })
 
       if (!joinResponse.ok) {
-        throw new Error(mode === 'create' ? 'Failed to join the new team' : 'Team not found')
+        throw new Error(
+          await getResponseErrorMessage(
+            joinResponse,
+            mode === 'create' ? 'Failed to join the new team' : 'Could not find that team.',
+          ),
+        )
       }
 
       const joinData = await joinResponse.json()
@@ -117,8 +139,8 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
       setJoinCode('')
       setNickname('')
       onJoined(membership)
-    } catch {
-      setError(mode === 'create' ? 'Could not create the team right now.' : 'Could not find that team.')
+    } catch (submitError) {
+      setError(submitError.message || 'Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }
