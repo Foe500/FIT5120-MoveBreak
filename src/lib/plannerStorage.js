@@ -40,14 +40,16 @@ export function isValidPlannerBreak(entry) {
 
 export function getSavedPlannerBreaks(fallback = []) {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(plannerStorageKey) ?? '[]')
+    const raw = window.localStorage.getItem(plannerStorageKey)
+    if (raw === null) return fallback
+    const parsed = JSON.parse(raw)
 
     if (!Array.isArray(parsed)) {
       return fallback
     }
 
     const validBreaks = parsed.filter(isValidPlannerBreak)
-    return validBreaks.length ? validBreaks : fallback
+    return validBreaks
   } catch {
     return fallback
   }
@@ -57,7 +59,26 @@ export function savePlannerBreaks(plannedBreaks) {
   try {
     const validBreaks = plannedBreaks.filter(isValidPlannerBreak)
     window.localStorage.setItem(plannerStorageKey, JSON.stringify(validBreaks))
+    window.dispatchEvent(new Event('movebreak:planner-change'))
+    return true
   } catch {
-    // Planner storage is a convenience cache; never let it break the page.
+    // Callers can report a failed save instead of claiming success.
+    return false
   }
+}
+
+// Re-read immediately before saving; Web Locks serialize cooperating tabs.
+export async function addConfirmedPlannerItems(items, checkConflicts) {
+  const save = () => {
+    const existing = getSavedPlannerBreaks()
+    checkConflicts(items, existing)
+    const fresh = items.filter((item) => !existing.some((old) => old.id === item.id))
+    if (!savePlannerBreaks([...existing, ...fresh])) {
+      const error = new Error('Browser storage is unavailable. Your plan was not saved.')
+      error.code = 'STORAGE_FAILED'
+      throw error
+    }
+    return fresh.length
+  }
+  return navigator.locks ? navigator.locks.request('movebreak-planner', async () => save()) : save()
 }

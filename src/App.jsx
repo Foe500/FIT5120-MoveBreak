@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import './App.css'
 import Home from './pages/Home.jsx'
+import BreakAssistant from './components/assistant/BreakAssistant.jsx'
 import Mission from './pages/Mission.jsx'
 import ExploreMap from './pages/ExploreMap.jsx'
 import ActivityLibrary from './pages/ActivityLibrary.jsx'
@@ -36,7 +37,7 @@ const navItems = [
   { to: '/explore', label: 'Find a place', icon: MapPinned },
   { to: '/activities', label: 'Activities', icon: StretchHorizontal },
   { to: '/team', label: 'Team', icon: Trophy },
-  { label: 'Planner', icon: CalendarDays, disabled: true },
+  { to: '/planner', label: 'Planner', icon: CalendarDays },
 ]
 
 function getOutdoorBreakStatus(session) {
@@ -163,6 +164,8 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </main>
+
+      <BreakAssistant />
 
       <footer className="footer" aria-label="Site information">
         <div className="footer-content">
