@@ -2,6 +2,38 @@ import { API_BASE_URL } from '@/lib/api'
 
 const MEMBERSHIPS_KEY = 'movebreak_team_memberships'
 const HISTORY_KEY = 'movebreak_team_history'
+const DEVICE_ID_KEY = 'movebreak_device_id'
+const PENDING_REQUESTS_KEY = 'movebreak_pending_join_requests'
+
+function randomId() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID()
+  }
+  // Fallback for browsers without crypto.randomUUID — still unguessable
+  // enough for an anonymous local identifier, just not cryptographically ideal.
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+}
+
+/**
+ * A single anonymous id for this browser, created once and reused for
+ * every team it ever creates or requests to join — separate from the
+ * per-team memberId the server hands out, since this one has to exist
+ * *before* any membership does (it's what proves "this request is mine"
+ * while a join request is still pending, and what proves team ownership
+ * for approving/rejecting others).
+ */
+export function getDeviceId() {
+  try {
+    let deviceId = window.localStorage.getItem(DEVICE_ID_KEY)
+    if (!deviceId) {
+      deviceId = randomId()
+      window.localStorage.setItem(DEVICE_ID_KEY, deviceId)
+    }
+    return deviceId
+  } catch {
+    return randomId()
+  }
+}
 
 /**
  * This browser can belong to several teams at once. Each membership is
@@ -37,6 +69,85 @@ export function addMembership(membership) {
   }
   saveMemberships([...memberships, membership])
   addToTeamHistory(membership.teamId)
+}
+
+/**
+ * A join code no longer grants membership by itself — it creates a
+ * pending request the team's creator has to approve. Each entry here is
+ * {requestId, teamId, joinCode, teamName} for a request this browser is
+ * still waiting on; once approved/rejected, syncPendingRequests() clears
+ * it (promoting it into a real membership first, if approved).
+ */
+export function getPendingRequests() {
+  try {
+    const raw = window.localStorage.getItem(PENDING_REQUESTS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function savePendingRequests(pendingRequests) {
+  try {
+    window.localStorage.setItem(PENDING_REQUESTS_KEY, JSON.stringify(pendingRequests))
+  } catch {
+    // localStorage may be unavailable — fail silently.
+  }
+}
+
+export function addPendingRequest(pendingRequest) {
+  const pendingRequests = getPendingRequests()
+  if (pendingRequests.some((existing) => existing.teamId === pendingRequest.teamId)) {
+    return
+  }
+  savePendingRequests([...pendingRequests, pendingRequest])
+}
+
+export function removePendingRequest(requestId) {
+  savePendingRequests(getPendingRequests().filter((request) => request.requestId !== requestId))
+}
+
+/**
+ * Polls every pending request this browser is waiting on. An approved
+ * one gets promoted straight into a real membership and dropped from the
+ * pending list; a rejected one is just dropped (the caller can show a
+ * "declined" message from the poll result before this runs again).
+ */
+export async function syncPendingRequests() {
+  const deviceId = getDeviceId()
+  const pendingRequests = getPendingRequests()
+  let didChange = false
+
+  for (const pendingRequest of pendingRequests) {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/teams/${pendingRequest.joinCode}/join-requests/${pendingRequest.requestId}?deviceId=${deviceId}`,
+      )
+      if (!response.ok) {
+        continue
+      }
+      const data = await response.json()
+
+      if (data.status === 'approved' && data.membership) {
+        addMembership({
+          teamId: data.membership.team.id,
+          joinCode: data.membership.team.joinCode,
+          teamName: data.membership.team.name,
+          memberId: data.membership.memberId,
+          nickname: data.membership.nickname,
+        })
+        removePendingRequest(pendingRequest.requestId)
+        didChange = true
+      } else if (data.status === 'rejected') {
+        removePendingRequest(pendingRequest.requestId)
+        didChange = true
+      }
+    } catch {
+      // Leave it pending and try again on the next poll.
+    }
+  }
+
+  return didChange
 }
 
 /**

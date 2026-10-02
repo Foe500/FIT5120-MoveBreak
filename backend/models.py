@@ -65,6 +65,10 @@ class Team(Base):
     name = Column(String, nullable=False)
     join_code = Column(String, unique=True, nullable=False, index=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    # The anonymous device id (frontend-generated, localStorage) that
+    # created this team. A join code alone no longer grants membership —
+    # only this device can approve/reject pending join requests.
+    owner_device_id = Column(String, nullable=False, index=True)
 
 
 class TeamMember(Base):
@@ -77,6 +81,25 @@ class TeamMember(Base):
     team_id = Column(String, ForeignKey("teams.id"), nullable=False, index=True)
     nickname = Column(String, nullable=False)
     joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class JoinRequest(Base):
+    """A code alone no longer creates membership — joining creates a
+    pending request instead, which the team's owner device must approve
+    before a TeamMember row is created. Blocks the "guessed code = instant
+    access" risk even if the code itself is ever exposed. device_id is
+    the requester's anonymous localStorage id, generated before they have
+    any membership at all, so their own browser can poll the outcome."""
+    __tablename__ = "join_requests"
+
+    id = Column(String, primary_key=True, index=True)       # uuid4 hex
+    team_id = Column(String, ForeignKey("teams.id"), nullable=False, index=True)
+    requester_nickname = Column(String, nullable=False)
+    device_id = Column(String, nullable=False, index=True)
+    status = Column(String, nullable=False, default="pending")  # pending / approved / rejected
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    decided_at = Column(DateTime, nullable=True)
+    member_id = Column(String, nullable=True)  # set once approved, so the requester's poll can pick up their membership
 
 
 class SessionLog(Base):
