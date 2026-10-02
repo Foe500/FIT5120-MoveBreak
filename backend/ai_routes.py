@@ -1,4 +1,3 @@
-import os
 import threading
 import time
 from collections import defaultdict, deque
@@ -10,8 +9,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from ai_schemas import ChatRequest, ConfirmRequest
-from ai_service import localize, mode
-from ai_tools import select_tool
+from ai_service import api_key, extract, is_remote_mode, localize, mode, provider_name
 from break_planning import make_result, confirm_plan
 
 router = APIRouter(prefix="/ai", tags=["AI Break Assistant"])
@@ -41,13 +39,11 @@ def check_rate_limit(request):
 
 @router.get("/status")
 def status():
-    configured = mode() == "mock" or (mode() == "nvidia" and bool(os.getenv("NVIDIA_API_KEY")))
+    configured = mode() == "mock" or (is_remote_mode() and bool(api_key()))
     return {
         "mode": mode(),
         "available": configured,
-        "provider": "NVIDIA" if mode() == "nvidia" else None,
-        "toolCalling": mode() == "nvidia",
-        "capabilities": ["recommend_break", "create_plan_preview", "confirm_plan"],
+        "provider": provider_name() if is_remote_mode() else None,
     }
 
 
