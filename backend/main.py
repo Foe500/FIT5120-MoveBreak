@@ -3,12 +3,16 @@ import random
 import secrets
 import string
 import uuid
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -29,7 +33,15 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="MoveBreak API")
 DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
+# Rate limiting for the join-code-guessable endpoints (team lookup and
+# join). In-memory, per-process — fine for this single-process deployment,
+# would need a shared store (e.g. Redis) behind multiple workers/instances.
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))
+JOIN_CODE_LENGTH = 8
 
 # Leaderboard scoring: a flat bonus for completing a break, plus a small
 # amount per second actually moved, so showing up often matters more
@@ -39,8 +51,51 @@ POINTS_SECONDS_DIVISOR = 10
 
 SEASON_LENGTH = timedelta(days=7)
 
+# Join codes stay permanent (teams need to be joinable indefinitely), so
+# brute-forcing one is defended against three ways instead: a large code
+# space (8 chars, confusables stripped — ~29^8 possibilities), a per-IP
+# rate limit on the guessable endpoints, and a lockout after repeated bad
+# guesses from the same IP even if they stay under the rate limit by
+# going slowly. In-memory only, like the limiter above.
+JOIN_CODE_MAX_FAILURES = 5
+JOIN_CODE_FAILURE_WINDOW = timedelta(minutes=5)
+JOIN_CODE_LOCKOUT_DURATION = timedelta(minutes=15)
 
-def generate_join_code(length: int = 6) -> str:
+_join_code_failures: dict[str, list[datetime]] = defaultdict(list)
+_join_code_locked_until: dict[str, datetime] = {}
+
+
+def check_join_code_lockout(request: Request) -> None:
+    ip = get_remote_address(request)
+    locked_until = _join_code_locked_until.get(ip)
+    if locked_until and datetime.now(timezone.utc) < locked_until:
+        remaining_minutes = max(1, int((locked_until - datetime.now(timezone.utc)).total_seconds() // 60) + 1)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many invalid join codes from this address. Try again in {remaining_minutes} minute(s).",
+        )
+
+
+def record_join_code_failure(request: Request) -> None:
+    ip = get_remote_address(request)
+    now = datetime.now(timezone.utc)
+    recent = [t for t in _join_code_failures[ip] if now - t < JOIN_CODE_FAILURE_WINDOW]
+    recent.append(now)
+
+    if len(recent) >= JOIN_CODE_MAX_FAILURES:
+        _join_code_locked_until[ip] = now + JOIN_CODE_LOCKOUT_DURATION
+        _join_code_failures[ip] = []
+    else:
+        _join_code_failures[ip] = recent
+
+
+def record_join_code_success(request: Request) -> None:
+    ip = get_remote_address(request)
+    _join_code_failures.pop(ip, None)
+    _join_code_locked_until.pop(ip, None)
+
+
+def generate_join_code(length: int = JOIN_CODE_LENGTH) -> str:
     return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
 
 
@@ -475,12 +530,24 @@ def list_teams(db: Session = Depends(get_db)):
 
 
 @app.post("/teams/{join_code}/join")
-def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(get_db)):
-    nickname = request.nickname.strip()
+@limiter.limit("5/minute")
+def join_team(
+    join_code: str,
+    payload: JoinTeamRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    check_join_code_lockout(request)
+
+    nickname = payload.nickname.strip()
     if not nickname:
         raise HTTPException(status_code=400, detail="Nickname is required")
 
-    team = get_team_by_code(join_code, db)
+    team = db.query(Team).filter(Team.join_code == join_code.upper()).first()
+    if not team:
+        record_join_code_failure(request)
+        raise HTTPException(status_code=404, detail="Team not found")
+    record_join_code_success(request)
 
     member = TeamMember(id=uuid.uuid4().hex, team_id=team.id, nickname=nickname)
     db.add(member)
@@ -513,8 +580,16 @@ def leave_team(join_code: str, request: LeaveTeamRequest, db: Session = Depends(
 
 
 @app.get("/teams/{join_code}")
-def get_team(join_code: str, db: Session = Depends(get_db)):
-    team = get_team_by_code(join_code, db)
+@limiter.limit("5/minute")
+def get_team(join_code: str, request: Request, db: Session = Depends(get_db)):
+    check_join_code_lockout(request)
+
+    team = db.query(Team).filter(Team.join_code == join_code.upper()).first()
+    if not team:
+        record_join_code_failure(request)
+        raise HTTPException(status_code=404, detail="Team not found")
+    record_join_code_success(request)
+
     member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
 
     return {
