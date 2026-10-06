@@ -6,6 +6,8 @@ import { guides } from '@/data/guides'
 import './Guides.css'
 import AnimatedContent from '@/components/react-bits/AnimatedContent'
 import BlurText from '@/components/react-bits/BlurText'
+import GradientText from '@/components/react-bits/GradientText'
+import SpotlightCard from '@/components/react-bits/SpotlightCard'
 
 const guideIcons = {
   eyes: Eye,
@@ -25,7 +27,9 @@ function Guides() {
       <header className="guides-heading">
         <span className="guides-kicker">
           <BookOpen size={17} aria-hidden="true" />
-          Everyday wellbeing
+          <GradientText animationSpeed={6} className="guides-kicker-text" colors={['#2f7d5b', '#6aa6c9', '#d98a5f', '#2f7d5b']}>
+            Everyday wellbeing
+          </GradientText>
         </span>
         <BlurText animateBy="words" as="h1" delay={50} direction="bottom" id="guides-title" stepDuration={0.28} text="Wellbeing guides" />
         <p>Explore five areas of wellbeing, at your desk and beyond.</p>
@@ -39,6 +43,7 @@ function Guides() {
             <li key={category.id}>
               <AnimatedContent className="motion-card-shell" delay={(index % 3) * 0.08} distance={20} duration={0.5} threshold={0.1}>
               <Link className="guide-category-link" to={`/guides/${category.id}`}>
+                <SpotlightCard className="guide-spotlight" spotlightColor="rgba(85, 150, 110, 0.22)">
                 <Card className="guide-category-card" aria-labelledby={`guide-${category.id}`}>
                   <span className={`guide-category-icon guide-category-icon-${category.tone}`}>
                     <Icon size={27} strokeWidth={1.7} aria-hidden="true" />
@@ -50,6 +55,7 @@ function Guides() {
                     <ChevronRight size={16} aria-hidden="true" />
                   </span>
                 </Card>
+                </SpotlightCard>
               </Link>
               </AnimatedContent>
             </li>
