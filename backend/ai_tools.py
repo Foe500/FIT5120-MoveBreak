@@ -5,14 +5,12 @@ selects database IDs, computes durations, schedules exact slots, or saves data.
 Those decisions remain in break_planning.py.
 """
 import json
-import os
-
 import requests
 from fastapi import HTTPException
 from pydantic import ValidationError
 
 from ai_schemas import Intent
-from ai_service import extract, mode, try_local_extract
+from ai_service import api_key, base_url, extract, mode, model_name, try_local_extract
 
 
 def _nullable(schema):
@@ -105,15 +103,15 @@ TOOLS = [
 
 
 def _provider_message(messages):
-    key = os.getenv("NVIDIA_API_KEY", "")
+    key = api_key()
     if not key:
         raise HTTPException(503, detail={"code": "AI_NOT_CONFIGURED", "message": "The assistant is not configured yet."})
     try:
         response = requests.post(
-            "https://integrate.api.nvidia.com/v1/chat/completions",
+            base_url(),
             headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
             json={
-                "model": os.getenv("NVIDIA_MODEL", "moonshotai/kimi-k3"),
+                "model": model_name(),
                 "messages": messages,
                 "tools": TOOLS,
                 "tool_choice": "required",
@@ -164,23 +162,7 @@ def _local_tool_name(intent):
     }[intent.intent]
 
 
-def select_tool(request, now):
-    """Return (tool_name, validated Intent).
-
-    Mock mode always uses the deterministic parser. Hybrid mode uses it only
-    for high-confidence requests and otherwise calls the configured provider.
-    In NVIDIA mode the provider must issue exactly one function/tool call.
-    """
-    current_mode = mode()
-    if current_mode == "hybrid":
-        local_intent = try_local_extract(request, now)
-        if local_intent is not None:
-            return _local_tool_name(local_intent), local_intent
-        return "provider_extract", extract(request, now)
-    if current_mode != "nvidia":
-        tool_name = "mock_extract" if current_mode == "mock" else "provider_extract"
-        return tool_name, extract(request, now)
-
+def _provider_tool_call(request, now):
     instruction = (
         "You are the MoveBreak assistant action router. You MUST call exactly one provided tool and never answer in plain text. "
         f"Current local date/time: {now.isoformat()}. Time zone: {request.timezone}. "
@@ -206,3 +188,23 @@ def select_tool(request, now):
         return name, _intent_from_call(name, function.get("arguments", {}))
     except (ValidationError, ValueError, KeyError, TypeError, json.JSONDecodeError) as error:
         raise HTTPException(502, detail={"code": "AI_INVALID_TOOL_CALL", "message": "The assistant returned an invalid action. Please rephrase and retry."}) from error
+
+
+def select_tool(request, now):
+    """Return (tool_name, validated Intent).
+
+    Mock mode always uses the deterministic parser. Hybrid mode uses it only
+    for high-confidence requests and otherwise calls the configured provider.
+    In NVIDIA mode the provider must issue exactly one function/tool call.
+    """
+    current_mode = mode()
+    if current_mode == "hybrid":
+        local_intent = try_local_extract(request, now)
+        if local_intent is not None:
+            return _local_tool_name(local_intent), local_intent
+        return _provider_tool_call(request, now)
+    if current_mode != "nvidia":
+        tool_name = "mock_extract" if current_mode == "mock" else "provider_extract"
+        return tool_name, extract(request, now)
+
+    return _provider_tool_call(request, now)

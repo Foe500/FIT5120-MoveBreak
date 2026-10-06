@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 import ai_tools
-from ai_schemas import ChatRequest, Intent
+from ai_schemas import ChatRequest
 
 NOW = datetime(2026, 10, 2, 12, 0, tzinfo=ZoneInfo("Australia/Melbourne"))
 
@@ -126,7 +126,7 @@ def test_rejects_unknown_or_multiple_tool_calls(monkeypatch):
 def test_hybrid_handles_simple_recommendation_locally(monkeypatch):
     monkeypatch.setenv("AI_MODE", "hybrid")
     remote = Mock(side_effect=AssertionError("remote provider should not be called"))
-    monkeypatch.setattr(ai_tools, "extract", remote)
+    monkeypatch.setattr(ai_tools.requests, "post", remote)
 
     name, intent = ai_tools.select_tool(ChatRequest(message="I have 15 minutes and feel tired indoors"), NOW)
 
@@ -140,7 +140,7 @@ def test_hybrid_handles_simple_recommendation_locally(monkeypatch):
 def test_hybrid_handles_explicit_plan_locally(monkeypatch):
     monkeypatch.setenv("AI_MODE", "hybrid")
     remote = Mock(side_effect=AssertionError("remote provider should not be called"))
-    monkeypatch.setattr(ai_tools, "extract", remote)
+    monkeypatch.setattr(ai_tools.requests, "post", remote)
 
     name, intent = ai_tools.select_tool(ChatRequest(message="Plan breaks tomorrow from 1-2 pm and 5-6 pm"), NOW)
 
@@ -151,38 +151,58 @@ def test_hybrid_handles_explicit_plan_locally(monkeypatch):
 
 def test_hybrid_sends_complex_language_to_provider(monkeypatch):
     monkeypatch.setenv("AI_MODE", "hybrid")
-    remote_intent = Intent(intent="recommend", language="en", availableMinutes=10, energy="low")
-    remote = Mock(return_value=remote_intent)
-    monkeypatch.setattr(ai_tools, "extract", remote)
+    monkeypatch.setenv("AI_API_KEY", "test-key")
+    remote = Mock(return_value=provider_reply("recommend_break", common_preferences(availableMinutes=10)))
+    monkeypatch.setattr(ai_tools.requests, "post", remote)
     request = ChatRequest(message="I've been staring at code all morning. What would help me reset?")
 
     name, intent = ai_tools.select_tool(request, NOW)
 
-    assert name == "provider_extract"
-    assert intent is remote_intent
-    remote.assert_called_once_with(request, NOW)
+    assert name == "recommend_break"
+    assert intent.intent == "recommend"
+    assert remote.call_args.kwargs["json"]["tool_choice"] == "required"
 
 
 def test_hybrid_does_not_resolve_follow_up_references_locally(monkeypatch):
     monkeypatch.setenv("AI_MODE", "hybrid")
-    remote = Mock(return_value=Intent(intent="plan", language="en", windows=[]))
-    monkeypatch.setattr(ai_tools, "extract", remote)
+    monkeypatch.setenv("AI_API_KEY", "test-key")
+    remote = Mock(return_value=provider_reply("ask_clarification", {"language": "en", "question": "Which break should I move?"}))
+    monkeypatch.setattr(ai_tools.requests, "post", remote)
     request = ChatRequest(message="Move the second one earlier and keep the first one")
 
-    name, _ = ai_tools.select_tool(request, NOW)
+    name, intent = ai_tools.select_tool(request, NOW)
 
-    assert name == "provider_extract"
-    remote.assert_called_once_with(request, NOW)
+    assert name == "ask_clarification"
+    assert intent.clarification == "Which break should I move?"
+    remote.assert_called_once()
 
 
 def test_hybrid_does_not_drop_unknown_activity_requirements(monkeypatch):
     monkeypatch.setenv("AI_MODE", "hybrid")
-    remote = Mock(return_value=Intent(intent="clarify", language="en", clarification="Would you like a catalog activity instead?"))
-    monkeypatch.setattr(ai_tools, "extract", remote)
+    monkeypatch.setenv("AI_API_KEY", "test-key")
+    remote = Mock(return_value=provider_reply("ask_clarification", {"language": "en", "question": "Would you like a catalog activity instead?"}))
+    monkeypatch.setattr(ai_tools.requests, "post", remote)
     request = ChatRequest(message="I need a 15 minute yoga break")
 
     name, intent = ai_tools.select_tool(request, NOW)
 
-    assert name == "provider_extract"
+    assert name == "ask_clarification"
     assert intent.intent == "clarify"
-    remote.assert_called_once_with(request, NOW)
+    remote.assert_called_once()
+
+
+def test_hybrid_tool_call_uses_generic_provider_config(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "hybrid")
+    monkeypatch.setenv("AI_API_KEY", "generic-key")
+    monkeypatch.setenv("AI_BASE_URL", "https://provider.example/v1/chat/completions")
+    monkeypatch.setenv("AI_MODEL", "provider-model")
+    post = Mock(return_value=provider_reply("unsupported_request", {"language": "en"}))
+    monkeypatch.setattr(ai_tools.requests, "post", post)
+
+    name, intent = ai_tools.select_tool(ChatRequest(message="Write my database assignment"), NOW)
+
+    assert name == "unsupported_request"
+    assert intent.intent == "unsupported"
+    assert post.call_args.args[0] == "https://provider.example/v1/chat/completions"
+    assert post.call_args.kwargs["headers"]["Authorization"] == "Bearer generic-key"
+    assert post.call_args.kwargs["json"]["model"] == "provider-model"

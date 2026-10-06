@@ -60,8 +60,10 @@ def chat(body: ChatRequest, request: Request, db: Session = Depends(get_db)):
     current_mode = mode()
     result["mode"] = current_mode
     result["processing"] = "local" if current_mode == "mock" or tool_name.startswith("local_") else "ai"
-    # Exposed for debugging/testing only. The client does not need to execute it.
-    result["toolCall"] = tool_name if current_mode == "nvidia" else None
+    # Display-only trace. Tool arguments and execution remain server-side.
+    result["toolCall"] = tool_name if result["processing"] == "ai" and tool_name in {
+        "recommend_break", "create_plan_preview", "ask_clarification", "unsupported_request"
+    } else None
     return localize(result, intent.language)
 
 

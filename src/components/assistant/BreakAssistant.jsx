@@ -18,6 +18,13 @@ const errorText = {
   DURATION_CHANGED: 'The activity duration changed. Generate a new preview.', AI_DISABLED: 'The assistant is not enabled. You can still browse the activity library.',
 }
 
+const toolLabels = {
+  recommend_break: 'Recommend break',
+  create_plan_preview: 'Create plan preview',
+  ask_clarification: 'Ask clarification',
+  unsupported_request: 'Unsupported request',
+}
+
 function CandidateCard({ item, onSchedule, onNavigate }) {
   return <article className="assistant-candidate">
     <div className="assistant-candidate-meta"><span>{item.setting === 'Indoor' ? 'Indoor' : 'Outdoor · estimated'}</span><strong>{item.durationMinutes} min</strong></div>
@@ -170,7 +177,10 @@ export default function BreakAssistant() {
         </div>}
         {turns.map((turn) => <div className={`assistant-turn ${turn.role}`} key={turn.id}>
           <p>{turn.text}</p>
-          {turn.result?.processing && <small className={`assistant-processing ${turn.result.processing}`}>{turn.result.processing === 'local' ? 'Handled locally' : 'AI-assisted'}</small>}
+          {turn.result?.processing && <div className="assistant-trace">
+            <small className={`assistant-processing ${turn.result.processing}`}>{turn.result.processing === 'local' ? 'Handled locally' : 'AI-assisted'}</small>
+            {turn.result.toolCall && toolLabels[turn.result.toolCall] && <small className="assistant-tool">Tool: {toolLabels[turn.result.toolCall]}</small>}
+          </div>}
           {turn.result?.recommendations.map((item) => <CandidateCard key={item.token} item={item} onSchedule={setSchedule} onNavigate={start} />)}
           {turn.result?.planItems.length > 0 && <PlanPreview items={turn.result.planItems} onSaved={openSavedPlan} />}
         </div>)}

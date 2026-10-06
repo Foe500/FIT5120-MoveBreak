@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import ai_service
+import ai_routes
 from ai_routes import router, _requests
 from ai_schemas import ChatRequest, ConfirmRequest, ExistingItem, Intent
 from break_planning import make_result, confirm_plan, parse_local, unsign
@@ -165,9 +166,24 @@ def test_hybrid_http_uses_local_then_requires_configured_fallback(db, monkeypatc
     local = client.post('/ai/chat', json={'message': 'I have 15 minutes and feel tired indoors'})
     assert local.status_code == 200
     assert local.json()['processing'] == 'local'
+    assert local.json()['toolCall'] is None
     fallback = client.post('/ai/chat', json={'message': "I've been staring at code all morning. What would help me reset?"})
     assert fallback.status_code == 503
     assert fallback.json()['detail']['code'] == 'AI_NOT_CONFIGURED'
+
+
+def test_hybrid_http_exposes_safe_tool_trace(db, monkeypatch):
+    monkeypatch.setenv('AI_MODE', 'hybrid')
+    selected = Intent(intent='clarify', language='en', clarification='How many minutes do you have?')
+    monkeypatch.setattr(ai_routes, 'select_tool', Mock(return_value=('ask_clarification', selected)))
+    app = FastAPI(); app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db
+
+    response = TestClient(app).post('/ai/chat', json={'message': 'Help me reset before my meeting'})
+
+    assert response.status_code == 200
+    assert response.json()['processing'] == 'ai'
+    assert response.json()['toolCall'] == 'ask_clarification'
 
 
 def test_nvidia_adapter_failure_and_structured_output(monkeypatch):

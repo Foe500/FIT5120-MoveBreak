@@ -48,7 +48,7 @@ AI_SIGNING_SECRET=YOUR_LONG_RANDOM_SECRET
 
 Generate the signing secret locally with `python -c "import secrets; print(secrets.token_hex(32))"`. Restart the backend after changing the environment. The signing secret must be shared by all workers; without one the prototype creates an in-memory secret and previews expire on restart. No credentials are needed in mock mode. Legacy `AI_MODE=nvidia`, `NVIDIA_API_KEY` and `NVIDIA_MODEL` configuration remains supported.
 
-Hybrid mode keeps explicit, deterministic requests local, including simple duration-based recommendations and fully specified planning windows. Follow-up references, complex free-form language and requests the local parser cannot classify reliably go to the provider. Provider failures are surfaced; the system never silently treats a failed AI call as a successful local parse.
+Hybrid mode keeps explicit, deterministic requests local, including simple duration-based recommendations and fully specified planning windows. Follow-up references, complex free-form language and requests the local parser cannot classify reliably go to the provider. The provider must select exactly one function from `recommend_break`, `create_plan_preview`, `ask_clarification` and `unsupported_request`; its arguments are schema-validated before the existing planning service runs. Provider failures are surfaced, and the system never silently treats a failed AI call as a successful local parse.
 
 Verified provider references:
 
@@ -74,7 +74,7 @@ Model access, free usage and provider quotas depend on the current NVIDIA accoun
 - Plans are stored in **localStorage**, matching the existing code, and survive reload. This intentionally differs from the older sessionStorage requirements draft. No account or server-side Planner persistence was added.
 - Conversation stays in page memory and is cleared by reload or Clear chat. In hybrid mode, locally handled requests are not sent to the provider; fallback requests send the user message and bounded recent history. Existing plan times and selected origin are handled by our backend, not included in the model extraction request. Model-generated text is rendered as text, not HTML.
 - NVIDIA replies follow the detected user language; catalog activity names remain canonical. Mock mode supports English/Chinese sample phrasing only and is not a general conversational model.
-- Assistant replies expose `processing: "local" | "ai"`; the panel labels each answer as `Handled locally` or `AI-assisted` for demo and privacy transparency.
+- Assistant replies expose `processing: "local" | "ai"`; the panel labels each answer as `Handled locally` or `AI-assisted` for demo and privacy transparency. AI-assisted replies also expose a display-only allowlisted `toolCall` name, while raw model arguments and tool execution stay on the backend.
 
 ## Code ownership and locations
 
@@ -83,7 +83,7 @@ Backend:
 - `ai_routes.py`: status/chat/confirmation routes, local rate limiting.
 - `ai_schemas.py`: validated request and intent schemas.
 - `ai_service.py`: deterministic parser, high-confidence routing gate and generic provider adapter.
-- `ai_tools.py`: hybrid routing and the legacy NVIDIA tool-calling adapter.
+- `ai_tools.py`: hybrid routing and the OpenAI-compatible provider tool-calling adapter.
 - `break_planning.py`: actual catalog selection, exact budget checks, interval scheduling and signed previews.
 - `main.py`: registers the router.
 
@@ -105,7 +105,7 @@ Frontend:
 {"mode":"hybrid","available":true,"provider":"nvidia","providerAvailable":true}
 ```
 
-Modes: `disabled` (default), `mock` (local demo), `hybrid` (local first, provider fallback), `provider` (provider for every request) and `nvidia` (legacy tool-calling mode). Hybrid mode remains available for local matches when the key is missing, while complex requests return `AI_NOT_CONFIGURED` instead of being guessed locally.
+Modes: `disabled` (default), `mock` (local demo), `hybrid` (local first, provider tool-calling fallback), `provider` (provider JSON extraction for every request) and `nvidia` (legacy alias using tool calling). Hybrid mode remains available for local matches when the key is missing, while complex requests return `AI_NOT_CONFIGURED` instead of being guessed locally.
 
 ### POST /ai/chat
 
