@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { activityVisuals } from '@/data/activityVisuals'
 import { API_BASE_URL } from '@/lib/api'
+import { formatActivityDuration, getActivitySeconds } from '@/lib/activityDuration'
 
 const durationFilters = [5, 15, 30, 'Any']
 const postureFilters = ['Any posture', 'Seated', 'Standing']
@@ -50,7 +51,7 @@ function ActivityLibrary() {
         ].join(' ').toLowerCase()
         const matchesArea = selectedArea === 'All areas' || activity.area === selectedArea
         // Duration means Noah should only see activities he can complete within his available time.
-        const matchesDuration = selectedDuration === 'Any' || activity.duration <= selectedDuration
+        const matchesDuration = selectedDuration === 'Any' || getActivitySeconds(activity) <= selectedDuration * 60
         const matchesPosture =
           selectedPosture === 'Any posture' || activity.posture === selectedPosture
         const matchesSearch = !normalizedSearch || searchableText.includes(normalizedSearch)
@@ -195,7 +196,7 @@ function ActivityLibrary() {
                 <div className="activity-meta-row">
                   <span>
                     <Clock3 size={14} />
-                    {activity.duration} min
+                    {formatActivityDuration(activity)}
                   </span>
                   <span>
                     <Armchair size={14} />

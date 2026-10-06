@@ -23,6 +23,7 @@ import {
   resumeTeamBreakSessions,
   startTeamBreakSessions,
 } from '@/lib/team'
+import { formatActivityDuration } from '@/lib/activityDuration'
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -236,7 +237,7 @@ function IndoorGuidedBreak() {
             </Badge>
             <Badge variant="secondary">
               <Clock3 size={13} />
-              {activity.duration} min
+              {formatActivityDuration(activity)}
             </Badge>
           </div>
 

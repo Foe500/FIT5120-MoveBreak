@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
+import { formatActivityDuration } from '@/lib/activityDuration'
 
 const areaVisuals = {
   Eyes: Eye,
@@ -132,7 +133,7 @@ function ActivityDetail() {
             <div className="activity-detail-badges">
               <Badge variant="secondary">
                 <Clock3 size={13} />
-                {activity.duration} min
+                {formatActivityDuration(activity)}
               </Badge>
               <Badge variant="secondary">
                 <Armchair size={13} />
