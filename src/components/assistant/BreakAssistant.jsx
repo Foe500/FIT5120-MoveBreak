@@ -105,6 +105,7 @@ export default function BreakAssistant() {
   const launcherRef = useRef(null)
   const controllerRef = useRef(null)
   const navigate = useNavigate()
+  const showOrigin = Boolean(origin) || turns.some((turn) => turn.result?.constraints?.setting === 'Outdoor')
 
   useEffect(() => () => controllerRef.current?.abort(), [])
   useEffect(() => {
@@ -189,12 +190,12 @@ export default function BreakAssistant() {
       </div>
       <div className="assistant-compose">
         {error && <p className="assistant-error" role="alert">{error}</p>}
-        <label className="assistant-origin">Outdoor starting point
+        {showOrigin && <label className="assistant-origin">Outdoor starting point
           <select value={origin} onChange={(event) => setOrigin(event.target.value)} disabled={busy}>
             <option value="">Not selected · indoor suggestions first</option>
             <option value="townhall">Melbourne Town Hall</option><option value="docklands">Docklands</option><option value="southbank">Southbank</option>
           </select>
-        </label>
+        </label>}
         <form onSubmit={send} className="assistant-input-row">
           <textarea ref={inputRef} value={message} onChange={(event) => setMessage(event.target.value)} maxLength={2000} rows={2}
             placeholder="How much time do you have?" aria-label="Message the break assistant"
@@ -202,7 +203,7 @@ export default function BreakAssistant() {
           <button type="submit" disabled={busy || !message.trim()} aria-label="Send message"><ArrowUp size={20} /></button>
         </form>
         <p className="assistant-privacy">{privacyText(status)} <Link to="/privacy" onClick={close}>Privacy</Link></p>
-        <div className="assistant-bottom"><Link to="/planner" onClick={close}>Open Planner</Link><button disabled={busy} onClick={() => { setTurns([]); setSchedule(null); setError(''); setMessage('') }}>Clear chat</button></div>
+        <div className="assistant-bottom"><Link to="/planner" onClick={close}>Open Planner</Link><button disabled={busy} onClick={() => { setTurns([]); setSchedule(null); setError(''); setMessage(''); setOrigin('') }}>Clear chat</button></div>
       </div>
     </section>}
     <button ref={launcherRef} className="assistant-launcher" onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-label={open ? 'Close break assistant' : 'Open break assistant'}>
