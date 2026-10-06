@@ -206,3 +206,17 @@ def test_hybrid_tool_call_uses_generic_provider_config(monkeypatch):
     assert post.call_args.args[0] == "https://provider.example/v1/chat/completions"
     assert post.call_args.kwargs["headers"]["Authorization"] == "Bearer generic-key"
     assert post.call_args.kwargs["json"]["model"] == "provider-model"
+
+
+def test_deepseek_tool_call_disables_thinking(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "hybrid")
+    monkeypatch.setenv("AI_PROVIDER", "deepseek")
+    monkeypatch.setenv("AI_API_KEY", "test-key")
+    post = Mock(return_value=provider_reply("unsupported_request", {"language": "en"}))
+    monkeypatch.setattr(ai_tools.requests, "post", post)
+
+    ai_tools.select_tool(ChatRequest(message="Write my database assignment"), NOW)
+
+    payload = post.call_args.kwargs["json"]
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["tool_choice"] == "required"

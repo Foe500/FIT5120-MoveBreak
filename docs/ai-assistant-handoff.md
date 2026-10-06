@@ -48,6 +48,8 @@ AI_SIGNING_SECRET=YOUR_LONG_RANDOM_SECRET
 
 Generate the signing secret locally with `python -c "import secrets; print(secrets.token_hex(32))"`. Restart the backend after changing the environment. The signing secret must be shared by all workers; without one the prototype creates an in-memory secret and previews expire on restart. No credentials are needed in mock mode. Legacy `AI_MODE=nvidia`, `NVIDIA_API_KEY` and `NVIDIA_MODEL` configuration remains supported.
 
+For the official DeepSeek endpoint, set `AI_PROVIDER=deepseek`, `AI_BASE_URL=https://api.deepseek.com/chat/completions` and a current DeepSeek model. The adapter disables DeepSeek thinking for these structured requests because Hybrid requires exactly one tool call and validates it in a single backend turn.
+
 Hybrid mode keeps explicit, deterministic requests local, including simple duration-based recommendations and fully specified planning windows. Follow-up references, complex free-form language and requests the local parser cannot classify reliably go to the provider. The provider must select exactly one function from `recommend_break`, `create_plan_preview`, `ask_clarification` and `unsupported_request`; its arguments are schema-validated before the existing planning service runs. Provider failures are surfaced, and the system never silently treats a failed AI call as a successful local parse.
 
 Verified provider references:

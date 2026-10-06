@@ -203,6 +203,22 @@ def test_nvidia_adapter_failure_and_structured_output(monkeypatch):
     assert exc.value.status_code == 504
 
 
+def test_deepseek_structured_completion_disables_thinking(monkeypatch):
+    monkeypatch.setenv('AI_PROVIDER', 'deepseek')
+    monkeypatch.setenv('AI_API_KEY', 'test-key')
+    response = Mock()
+    response.status_code = 200
+    response.raise_for_status = Mock()
+    response.json.return_value = {
+        'choices': [{'finish_reason': 'stop', 'message': {'content': '{"intent":"unsupported"}'}}]
+    }
+    post = Mock(return_value=response)
+    monkeypatch.setattr(ai_service.requests, 'post', post)
+
+    assert ai_service.completion([{'role': 'user', 'content': 'test'}]) == {'intent': 'unsupported'}
+    assert post.call_args.kwargs['json']['thinking'] == {'type': 'disabled'}
+
+
 def test_mock_date_correction_and_bare_duration(db):
     response = result(db, '今天下午1-2点帮我安排休息', history=[{'role':'user','content':'明天下午1-2点帮我安排休息'}])
     assert response['planItems'][0]['startAt'].startswith('2026-09-29')

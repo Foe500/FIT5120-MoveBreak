@@ -58,10 +58,13 @@ def completion(messages):
     if not key:
         raise HTTPException(503, detail={"code": "AI_NOT_CONFIGURED", "message": "The assistant is not configured yet."})
     try:
+        payload = {"model": model_name(), "messages": messages, "stream": False, "max_tokens": 4096}
+        if provider_name() == "deepseek":
+            payload["thinking"] = {"type": "disabled"}
         response = requests.post(
             base_url(),
             headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
-            json={"model": model_name(), "messages": messages, "stream": False, "max_tokens": 4096},
+            json=payload,
             timeout=(5, 45),
         )
         if response.status_code == 429:
