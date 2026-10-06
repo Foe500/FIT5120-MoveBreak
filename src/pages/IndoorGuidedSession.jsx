@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   Armchair,
@@ -12,6 +12,8 @@ import {
   Square,
   TimerReset,
   Trophy,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,6 +26,10 @@ import {
   resumeTeamBreakSessions,
   startTeamBreakSessions,
 } from '@/lib/team'
+import { useActivityMusic } from '@/lib/useActivityMusic'
+import BlurText from '@/components/react-bits/BlurText'
+import ClickSpark from '@/components/react-bits/ClickSpark'
+import CountUp from '@/components/react-bits/CountUp'
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -60,9 +66,21 @@ function IndoorGuidedSession() {
   const [isComplete, setIsComplete] = useState(false)
   const [teamBreakSessions, setTeamBreakSessions] = useState([])
   const hasCompletedTeamBreakSessions = useRef(false)
+  const exerciseElementsRef = useRef(new Map())
+  const exercisePositionsRef = useRef(new Map())
+  const {
+    isMusicEnabled,
+    musicError,
+    pauseMusic,
+    playMusic,
+    resetMusic,
+    toggleMusic,
+  } = useActivityMusic()
 
   useEffect(() => {
     async function loadSessionActivities() {
+      resetMusic()
+
       if (!activityIds.length) {
         setError('No exercises were selected for this session.')
         setIsLoading(false)
@@ -103,7 +121,7 @@ function IndoorGuidedSession() {
     loadSessionActivities()
     // Only re-run when the requested activity ids actually change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityIds.join(','), location.pathname, location.search])
+  }, [activityIds.join(','), location.pathname, location.search, resetMusic])
 
   const flatSteps = useMemo(() => flattenSteps(activities), [activities])
   const currentStepDurationSeconds = flatSteps[currentIndex]?.seconds ?? 0
@@ -119,9 +137,62 @@ function IndoorGuidedSession() {
   const currentActivityIndex = flatSteps[currentIndex]?.activityIndex ?? 0
   const currentActivity = activities[currentActivityIndex]
   const currentStepText = flatSteps[currentIndex]?.text ?? 'Ready to begin.'
+  const orderedActivities = useMemo(() => {
+    const indexedActivities = activities.map((activity, activityIndex) => ({
+      activity,
+      activityIndex,
+    }))
+
+    return [
+      ...indexedActivities.slice(currentActivityIndex),
+      ...indexedActivities.slice(0, currentActivityIndex),
+    ]
+  }, [activities, currentActivityIndex])
+
+  useLayoutEffect(() => {
+    const nextPositions = new Map()
+
+    exerciseElementsRef.current.forEach((element, activityId) => {
+      nextPositions.set(activityId, element.getBoundingClientRect().top)
+    })
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (!prefersReducedMotion && exercisePositionsRef.current.size) {
+      exerciseElementsRef.current.forEach((element, activityId) => {
+        const previousTop = exercisePositionsRef.current.get(activityId)
+        const nextTop = nextPositions.get(activityId)
+
+        if (previousTop === undefined || nextTop === undefined) {
+          return
+        }
+
+        const verticalOffset = previousTop - nextTop
+
+        if (Math.abs(verticalOffset) < 1) {
+          return
+        }
+
+        element.getAnimations().forEach((animation) => animation.cancel())
+        element.animate(
+          [
+            { transform: `translateY(${verticalOffset}px)` },
+            { transform: 'translateY(0)' },
+          ],
+          {
+            duration: 560,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          },
+        )
+      })
+    }
+
+    exercisePositionsRef.current = nextPositions
+  }, [orderedActivities])
 
   useEffect(() => {
     if (isComplete && activities.length && !hasCompletedTeamBreakSessions.current) {
+      resetMusic()
       hasCompletedTeamBreakSessions.current = true
       completeTeamBreakSessions(teamBreakSessions)
       clearIndoorBreakSession()
@@ -173,6 +244,7 @@ function IndoorGuidedSession() {
 
   async function handleStartPause() {
     if (isComplete) {
+      playMusic({ restart: true })
       saveIndoorBreakSession({
         label: `${activities.length || 1}-exercise session`,
         path: `${location.pathname}${location.search}`,
@@ -193,11 +265,13 @@ function IndoorGuidedSession() {
     }
 
     if (isTimerRunning) {
+      pauseMusic()
       await pauseTeamBreakSessions(teamBreakSessions)
       setIsTimerRunning(false)
       return
     }
 
+    playMusic()
     const sessions = await ensureTeamBreakSessions()
     await resumeTeamBreakSessions(sessions)
     setIsTimerRunning(true)
@@ -209,6 +283,7 @@ function IndoorGuidedSession() {
     }
 
     if (currentIndex >= flatSteps.length - 1) {
+      resetMusic()
       setIsTimerRunning(false)
       setIsComplete(true)
       setStepSecondsLeft(0)
@@ -221,6 +296,7 @@ function IndoorGuidedSession() {
   }
 
   function handleFinish() {
+    resetMusic()
     setIsTimerRunning(false)
     setIsComplete(true)
     setStepSecondsLeft(0)
@@ -261,18 +337,43 @@ function IndoorGuidedSession() {
 
       <div className="guided-break-layout">
         <Card className="guided-break-main">
-          <div className="guided-break-status">
-            <Badge variant="success">
-              <Armchair size={13} />
-              Indoor guided session
-            </Badge>
-            <Badge variant="secondary">
-              <Clock3 size={13} />
-              {activities.length} exercise{activities.length === 1 ? '' : 's'}
-            </Badge>
+          <div className="guided-break-header">
+            <div className="guided-break-status">
+              <Badge variant="success">
+                <Armchair size={13} />
+                Indoor guided session
+              </Badge>
+              <Badge variant="secondary">
+                <Clock3 size={13} />
+                {activities.length} exercise{activities.length === 1 ? '' : 's'}
+              </Badge>
+            </div>
+            <Button
+              aria-label={isMusicEnabled ? 'Turn music off' : 'Turn music on'}
+              aria-pressed={isMusicEnabled}
+              className="guided-music-toggle"
+              onClick={() => toggleMusic(isTimerRunning && !isComplete)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {isMusicEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+              {isMusicEnabled ? 'Music on' : 'Music off'}
+            </Button>
           </div>
 
-          <h1>{isComplete ? 'Session complete' : currentActivity?.title}</h1>
+          {isComplete ? (
+            <BlurText
+              animateBy="words"
+              as="h1"
+              delay={70}
+              direction="bottom"
+              stepDuration={0.26}
+              text="Session complete"
+            />
+          ) : (
+            <h1>{currentActivity?.title}</h1>
+          )}
           <p>{isComplete ? 'Nice work — you moved through the whole session.' : currentActivity?.description}</p>
 
           <div className="guided-timer-preview">
@@ -292,9 +393,14 @@ function IndoorGuidedSession() {
               <div style={{ width: `${progressPercent}%` }} />
             </div>
             <small>
-              {isComplete
-                ? '100% complete'
-                : `${progressPercent}% complete · Exercise ${currentActivityIndex + 1} of ${activities.length}`}
+              {isComplete ? (
+                '100% complete'
+              ) : (
+                <>
+                  <CountUp duration={0.35} to={progressPercent} />% complete · Exercise{' '}
+                  {currentActivityIndex + 1} of {activities.length}
+                </>
+              )}
             </small>
           </div>
 
@@ -315,32 +421,46 @@ function IndoorGuidedSession() {
             </div>
           ) : null}
 
-          {isComplete ? (
-            <div className="guided-completion-panel guided-session-completion-panel">
-              <div className="guided-completion-summary">
-                <div className="guided-completion-actions">
-                  <Button asChild variant="outline">
-                    <Link to="/">Back to Home</Link>
-                  </Button>
-                  <Button asChild>
-                    <Link to="/mission">Find another break</Link>
-                  </Button>
-                </div>
-              </div>
+          {musicError ? (
+            <p className="guided-music-status" role="status">{musicError}</p>
+          ) : null}
 
-              <aside className="guided-competitive-callout">
-                <span className="guided-competitive-icon">
-                  <Trophy size={21} aria-hidden="true" />
-                </span>
-                <p className="guided-competitive-copy">
-                  <strong>Feeling competitive?</strong>
-                  <span>Join a team and turn completed breaks into leaderboard points.</span>
-                </p>
-                <Button asChild size="sm" variant="outline">
-                  <Link to="/team">View teams</Link>
-                </Button>
-              </aside>
-            </div>
+          {isComplete ? (
+            <ClickSpark
+              duration={560}
+              extraScale={1.2}
+              sparkColor="#f06d52"
+              sparkCount={12}
+              sparkRadius={38}
+              sparkSize={10}
+              triggerKey={isComplete}
+            >
+              <div className="guided-completion-panel guided-session-completion-panel">
+                <div className="guided-completion-summary">
+                  <div className="guided-completion-actions">
+                    <Button asChild variant="outline">
+                      <Link to="/">Back to Home</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link to="/mission">Find another break</Link>
+                    </Button>
+                  </div>
+                </div>
+
+                <aside className="guided-competitive-callout">
+                  <span className="guided-competitive-icon">
+                    <Trophy size={21} aria-hidden="true" />
+                  </span>
+                  <p className="guided-competitive-copy">
+                    <strong>Feeling competitive?</strong>
+                    <span>Join a team and turn completed breaks into leaderboard points.</span>
+                  </p>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/team">View teams</Link>
+                  </Button>
+                </aside>
+              </div>
+            </ClickSpark>
           ) : null}
         </Card>
 
@@ -351,7 +471,7 @@ function IndoorGuidedSession() {
           </div>
 
           <ol className="session-activity-list">
-            {activities.map((activity, activityIndex) => {
+            {orderedActivities.map(({ activity, activityIndex }) => {
               const activityStatus = isComplete
                 ? 'done'
                 : activityIndex < currentActivityIndex
@@ -361,7 +481,17 @@ function IndoorGuidedSession() {
                     : 'upcoming'
 
               return (
-                <li className={`session-activity ${activityStatus}`} key={activity.id}>
+                <li
+                  className={`session-activity ${activityStatus}`}
+                  key={activity.id}
+                  ref={(element) => {
+                    if (element) {
+                      exerciseElementsRef.current.set(activity.id, element)
+                    } else {
+                      exerciseElementsRef.current.delete(activity.id)
+                    }
+                  }}
+                >
                   <div className="session-activity-header">
                     <span>{activityIndex + 1}</span>
                     <div>

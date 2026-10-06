@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, TimerReset } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import BlurText from '@/components/react-bits/BlurText'
 
 const breakOptions = [5, 15, 30]
 
@@ -22,7 +23,15 @@ function BreakHero({ durationError, selectedDuration, onDurationChange, onMissin
     <>
       <div className="break-hero">
         <div>
-          <h1>Take a quick movement break. Feel ready to work again.</h1>
+          <BlurText
+            animateBy="words"
+            as="h1"
+            className="home-blur-title"
+            delay={55}
+            direction="bottom"
+            stepDuration={0.28}
+            text="Take a quick movement break. Feel ready to work again."
+          />
           <p>Choose a short reset that fits your time, energy and space. No equipment needed.</p>
         </div>
       </div>

@@ -30,6 +30,7 @@ import Team from './pages/Team.jsx'
 import Planner from './pages/Planner.jsx'
 import Privacy from './pages/Privacy.jsx'
 import { clearActiveBreakSession, getStoredActiveBreak } from './lib/activeBreak'
+import FadeContent from './components/react-bits/FadeContent.jsx'
 
 const navItems = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -112,6 +113,8 @@ function ActiveBreakBanner() {
 }
 
 function App() {
+  const location = useLocation()
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -148,21 +151,30 @@ function App() {
       <ActiveBreakBanner />
 
       <main>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/mission" element={<Mission />} />
-          <Route path="/explore" element={<ExploreMap />} />
-          <Route path="/activities" element={<ActivityLibrary />} />
-          <Route path="/guides" element={<Guides />} />
-          <Route path="/guides/:guideId" element={<GuideDetail />} />
-          <Route path="/activities/:activityId" element={<ActivityDetail />} />
-          <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
-          <Route path="/guided/indoor-session" element={<IndoorGuidedSession />} />
-          <Route path="/guided/outdoor" element={<OutdoorGuidedBreak />} />
-          <Route path="/team" element={<Team />} />
-          <Route path="/planner" element={<Planner />} />
-          <Route path="/privacy" element={<Privacy />} />
-        </Routes>
+        <FadeContent
+          className="route-fade-content"
+          duration={450}
+          ease="power2.out"
+          initialOpacity={0.15}
+          key={location.pathname}
+          threshold={0.01}
+        >
+          <Routes location={location}>
+            <Route path="/" element={<Home />} />
+            <Route path="/mission" element={<Mission />} />
+            <Route path="/explore" element={<ExploreMap />} />
+            <Route path="/activities" element={<ActivityLibrary />} />
+            <Route path="/guides" element={<Guides />} />
+            <Route path="/guides/:guideId" element={<GuideDetail />} />
+            <Route path="/activities/:activityId" element={<ActivityDetail />} />
+            <Route path="/guided/indoor/:activityId" element={<IndoorGuidedBreak />} />
+            <Route path="/guided/indoor-session" element={<IndoorGuidedSession />} />
+            <Route path="/guided/outdoor" element={<OutdoorGuidedBreak />} />
+            <Route path="/team" element={<Team />} />
+            <Route path="/planner" element={<Planner />} />
+            <Route path="/privacy" element={<Privacy />} />
+          </Routes>
+        </FadeContent>
       </main>
 
       <BreakAssistant />
