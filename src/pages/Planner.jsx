@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
 import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
 import { checkPlanConflicts, localDateTime, plannerTimeZone, zonedIso } from '@/lib/assistant'
+import { getActivityMinutes } from '@/lib/activityDuration'
 
 function Planner() {
   const location = useLocation()
@@ -72,7 +73,7 @@ function Planner() {
       const activity = activities.find((item) => item.id === activityId)
       if (!editing && !activity) throw new Error('Choose an activity.')
       const startAt = zonedIso(startTime)
-      const duration = editing ? editing.duration : Math.ceil(Math.max(activity.duration, (activity.steps || []).reduce((sum, step) => sum + step.seconds, 0) / 60))
+      const duration = editing ? editing.duration : getActivityMinutes(activity)
       const item = {
         ...(editing || {}), id: editing?.id || crypto.randomUUID(),
         activity: editing?.activity || activity.title, activityId: editing?.activityId || activity?.id,
@@ -139,7 +140,7 @@ function Planner() {
           {editing ? <p>{editing.activity} · {editing.duration} min</p> : <label>Activity
             <select required value={activityId} onChange={(event) => setActivityId(event.target.value)} disabled={loading}>
               <option value="">{loading ? 'Loading activities…' : 'Choose an activity'}</option>
-              {activities.map((item) => <option key={item.id} value={item.id}>{item.title} · {Math.ceil(Math.max(item.duration, (item.steps || []).reduce((sum, step) => sum + step.seconds, 0) / 60))} min</option>)}
+              {activities.map((item) => <option key={item.id} value={item.id}>{item.title} · {getActivityMinutes(item)} min</option>)}
             </select>
           </label>}
           <label>Start time · Australia/Melbourne<input type="datetime-local" lang="en-AU" required value={startTime} onChange={(event) => setStartTime(event.target.value)} /></label>
