@@ -256,3 +256,7 @@ Then manually check:
 - The backend uses a local SQLite database. Activities come from `backend/data/activities.json`; places are refreshed from City of Melbourne Open Data before development demos or deployment.
 - Planner data is not stored in the backend because the project does not currently include login or user accounts.
 - User-facing recommendation requests read from SQLite and do not call the open-data APIs in real time.
+
+## AI Break Assistant
+
+The assistant adds a global chat panel, time-bounded activity candidates and confirmed Planner previews. It supports a hybrid mode that resolves narrow, high-confidence requests locally and lets a backend-only OpenAI-compatible provider select one of four validated tools for complex language. See [AI setup and frontend/backend handoff](docs/ai-assistant-handoff.md) for mock/hybrid configuration, API contracts and tests. The older Planner notes above describe the Iteration 1 prototype; this branch now uses browser localStorage for plans and enables the Planner navigation.

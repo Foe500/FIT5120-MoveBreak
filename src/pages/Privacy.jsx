@@ -46,11 +46,10 @@ function Privacy() {
           <h2>Location information</h2>
           <p>
             MoveBreak asks for your location only when you select <strong>Use my location</strong>
-            on the map. Your browser controls the permission request.
+            on the map. Your browser controls the permission request. The assistant also lets you choose a public starting point.
           </p>
           <p>
-            If you allow access, the coordinates are used in your browser to centre the map. The
-            current prototype does not save them or send them to the MoveBreak API.
+            If you allow access, coordinates are used to centre the map and sent to the MoveBreak API for location and route estimates. The assistant sends selected starting points to our API for deterministic route calculations, not to the language model.
           </p>
         </Card>
 
@@ -61,8 +60,7 @@ function Privacy() {
           <h2>Your choices and plans</h2>
           <p>
             Break duration, movement preferences and planner changes are used to update the
-            interface. Planner changes exist only during the current page session and reset when
-            the page is reloaded.
+            interface. Plans are saved in this browser’s localStorage and survive a reload. Clear plan removes them. Existing plan times are sent to our API when checking AI suggestions for conflicts, but are not saved in the backend.
           </p>
           <p>
             Mission preferences are sent to the MoveBreak API to return a recommendation. The
@@ -75,7 +73,14 @@ function Privacy() {
           <span className="privacy-card-icon">
             <Server size={22} aria-hidden="true" />
           </span>
-          <h2>External services</h2>
+          <h2>External services and the AI assistant</h2>
+          <p>
+            In NVIDIA mode, your messages and recent conversation are sent through the MoveBreak
+            backend to NVIDIA for language processing. Avoid including personal or sensitive details.
+            AI chat history stays in page memory and clears on reload or when you select Clear chat.
+            Mock mode is a deterministic local demo and makes no external AI calls. Recommendations
+            use existing activity and location data; all plans need your confirmation.
+          </p>
           <p>
             The published frontend is hosted by Vercel, the API is hosted by Render, and map tiles
             are provided by OpenStreetMap. When your browser connects to these services, they may
@@ -120,7 +125,7 @@ function Privacy() {
         </p>
       </div>
 
-      <p className="privacy-updated">Last updated: 3 September 2026</p>
+      <p className="privacy-updated">Last updated: 29 September 2026</p>
     </section>
   )
 }

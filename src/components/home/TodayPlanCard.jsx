@@ -1,13 +1,23 @@
+import { useEffect, useState } from 'react'
+import { getSavedPlannerBreaks } from '@/lib/plannerStorage'
+import { localDateTime } from '@/lib/assistant'
 import { Link } from 'react-router-dom'
 import { CalendarDays } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-const planItems = [
-  { time: '10:30', title: 'Eye reset', duration: '2 min' },
-  { time: '15:00', title: 'Flagstaff Gardens walk', duration: '10 min' },
-]
-
 function TodayPlanCard() {
+  const [planItems, setPlanItems] = useState(() => getSavedPlannerBreaks())
+  const [today] = useState(() => localDateTime(new Date()).slice(0, 10))
+  useEffect(() => {
+    const refresh = () => setPlanItems(getSavedPlannerBreaks())
+    window.addEventListener('movebreak:planner-change', refresh)
+    window.addEventListener('storage', refresh)
+    return () => {
+      window.removeEventListener('movebreak:planner-change', refresh)
+      window.removeEventListener('storage', refresh)
+    }
+  }, [])
+  const todaysItems = planItems.filter((item) => item.date === today).sort((a, b) => a.time.localeCompare(b.time))
   return (
     <Card className="mini-card today-plan-card p-4">
       <CardHeader>
@@ -18,13 +28,14 @@ function TodayPlanCard() {
       </CardHeader>
 
       <CardContent className="plan-timeline">
-        {planItems.map((item) => (
-          <div className="plan-timeline-item" key={`${item.time}-${item.title}`}>
+        {!todaysItems.length && <p>No breaks planned for today. Ask the assistant or add one in Planner.</p>}
+        {todaysItems.map((item) => (
+          <div className="plan-timeline-item" key={item.id}>
             <span className="timeline-dot"></span>
             <strong>{item.time}</strong>
             <div>
-              <p>{item.title}</p>
-              <small>{item.duration}</small>
+              <p>{item.activity}</p>
+              <small>{item.duration} min</small>
             </div>
           </div>
         ))}

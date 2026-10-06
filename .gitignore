@@ -34,3 +34,8 @@ backend/movebreak.db
 *.njsproj
 *.sln
 *.sw?
+
+# Backend provider credentials
+.env
+.env.*
+!.env.example
