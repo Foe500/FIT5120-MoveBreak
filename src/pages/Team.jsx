@@ -1,10 +1,34 @@
 import { useEffect, useState } from 'react'
-import { Award, Copy, Crown, LogOut, Medal, PartyPopper, RefreshCw, Trophy, Users } from 'lucide-react'
+import {
+  Award,
+  Check,
+  Clock3 as PendingClockIcon,
+  Copy,
+  Crown,
+  LogOut,
+  Medal,
+  PartyPopper,
+  RefreshCw,
+  Trophy,
+  UserCheck,
+  Users,
+  X as RejectIcon,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
-import { addMembership, getMemberships, isJoined, leaveTeam } from '@/lib/team'
+import {
+  addMembership,
+  addPendingRequest,
+  getDeviceId,
+  getMemberships,
+  getPendingRequests,
+  isJoined,
+  leaveTeam,
+  removePendingRequest,
+  syncPendingRequests,
+} from '@/lib/team'
 
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
@@ -76,7 +100,7 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
         const createResponse = await fetch(`${API_BASE_URL}/teams`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ teamName: teamName.trim() }),
+          body: JSON.stringify({ teamName: teamName.trim(), deviceId: getDeviceId() }),
         })
 
         if (!createResponse.ok) {
@@ -112,7 +136,7 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
       const joinResponse = await fetch(`${API_BASE_URL}/teams/${code}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nickname: nickname.trim() }),
+        body: JSON.stringify({ nickname: nickname.trim(), deviceId: getDeviceId() }),
       })
 
       if (!joinResponse.ok) {
@@ -126,20 +150,33 @@ function TeamCreateJoinForm({ hasMemberships, onJoined }) {
 
       const joinData = await joinResponse.json()
 
-      const membership = {
-        teamId: joinData.team.id,
-        joinCode: joinData.team.joinCode,
-        teamName: joinData.team.name,
-        memberId: joinData.memberId,
-        memberSecret: joinData.memberSecret,
-        nickname: joinData.nickname,
-      }
-      addMembership(membership)
-
       setTeamName('')
       setJoinCode('')
       setNickname('')
-      onJoined(membership)
+
+      if (joinData.status === 'approved') {
+        // Only the team's own creator gets this immediately — everyone
+        // else's "join" becomes a pending request below.
+        const membership = {
+          teamId: joinData.team.id,
+          joinCode: joinData.team.joinCode,
+          teamName: joinData.team.name,
+          memberId: joinData.memberId,
+          memberSecret: joinData.memberSecret,
+          nickname: joinData.nickname,
+        }
+        addMembership(membership)
+        onJoined({ type: 'joined', membership })
+      } else {
+        addPendingRequest({
+          requestId: joinData.requestId,
+          teamId: joinData.team.id,
+          joinCode: joinData.team.joinCode,
+          teamName: joinData.team.name,
+          memberSecret: joinData.memberSecret,
+        })
+        onJoined({ type: 'pending' })
+      }
     } catch (submitError) {
       setError(submitError.message || 'Something went wrong. Please try again.')
     } finally {
@@ -226,6 +263,114 @@ function rankIcon(index) {
   return <span className="rank-number">{index + 1}</span>
 }
 
+function PendingRequestCard({ pendingRequest, onDismiss }) {
+  return (
+    <Card className="pending-request-card">
+      <div className="title-with-icon">
+        <PendingClockIcon size={18} />
+        <h2>{pendingRequest.teamName}</h2>
+      </div>
+      <p className="team-status-message pending">
+        Request sent — waiting for the team's creator to approve you.
+      </p>
+      <Button onClick={onDismiss} size="sm" type="button" variant="outline">
+        Cancel request
+      </Button>
+    </Card>
+  )
+}
+
+function OwnerRequestsPanel({ joinCode, onDecision }) {
+  const [requests, setRequests] = useState([])
+  const [isOwner, setIsOwner] = useState(null)
+  const [decidingId, setDecidingId] = useState('')
+
+  async function loadRequests() {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/teams/${joinCode}/join-requests?deviceId=${getDeviceId()}`,
+      )
+      if (response.status === 403) {
+        setIsOwner(false)
+        return
+      }
+      if (!response.ok) {
+        return
+      }
+      const data = await response.json()
+      setIsOwner(true)
+      setRequests(data.requests)
+    } catch {
+      // Try again on the next poll.
+    }
+  }
+
+  useEffect(() => {
+    loadRequests()
+    const interval = window.setInterval(loadRequests, 8000)
+    return () => window.clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joinCode])
+
+  async function handleDecision(requestId, decision) {
+    setDecidingId(requestId)
+    try {
+      await fetch(`${API_BASE_URL}/teams/${joinCode}/join-requests/${requestId}/${decision}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: getDeviceId() }),
+      })
+      await loadRequests()
+      onDecision()
+    } finally {
+      setDecidingId('')
+    }
+  }
+
+  if (!isOwner || !requests.length) {
+    return null
+  }
+
+  return (
+    <div className="owner-requests-panel">
+      <div className="title-with-icon">
+        <UserCheck size={16} />
+        <h3>
+          {requests.length} join request{requests.length === 1 ? '' : 's'} waiting
+        </h3>
+      </div>
+      <ul className="owner-requests-list">
+        {requests.map((request) => (
+          <li key={request.id}>
+            <span>{request.nickname}</span>
+            <div>
+              <Button
+                disabled={decidingId === request.id}
+                onClick={() => handleDecision(request.id, 'approve')}
+                size="sm"
+                type="button"
+              >
+                <Check size={14} />
+                Approve
+              </Button>
+              <Button
+                disabled={decidingId === request.id}
+                onClick={() => handleDecision(request.id, 'reject')}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <RejectIcon size={14} />
+                Reject
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function TeamLeaderboard({ identity, onLeave }) {
   const [leaderboard, setLeaderboard] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -308,6 +453,8 @@ function TeamLeaderboard({ identity, onLeave }) {
         {copied ? <small>Copied!</small> : null}
       </button>
 
+      <OwnerRequestsPanel joinCode={identity.joinCode} onDecision={loadLeaderboard} />
+
       {isLoading ? <p className="team-status-message">Loading leaderboard...</p> : null}
       {error ? <p className="team-status-message">{error}</p> : null}
 
@@ -376,14 +523,41 @@ function TeamLeaderboard({ identity, onLeave }) {
 
 function Team() {
   const [memberships, setMemberships] = useState(() => getMemberships())
+  const [pendingRequests, setPendingRequests] = useState(() => getPendingRequests())
 
-  function handleJoined() {
-    setMemberships(getMemberships())
+  useEffect(() => {
+    async function poll() {
+      const didChange = await syncPendingRequests()
+      if (didChange) {
+        setMemberships(getMemberships())
+        setPendingRequests(getPendingRequests())
+      }
+    }
+
+    if (!pendingRequests.length) {
+      return undefined
+    }
+
+    const interval = window.setInterval(poll, 5000)
+    return () => window.clearInterval(interval)
+  }, [pendingRequests.length])
+
+  function handleJoined(result) {
+    if (result.type === 'joined') {
+      setMemberships(getMemberships())
+    } else {
+      setPendingRequests(getPendingRequests())
+    }
   }
 
   async function handleLeave(teamId) {
     await leaveTeam(teamId)
     setMemberships(getMemberships())
+  }
+
+  function handleDismissPending(requestId) {
+    removePendingRequest(requestId)
+    setPendingRequests(getPendingRequests())
   }
 
   return (
@@ -395,6 +569,14 @@ function Team() {
 
       <div className="team-page-layout">
         <TeamCreateJoinForm hasMemberships={memberships.length > 0} onJoined={handleJoined} />
+
+        {pendingRequests.map((pendingRequest) => (
+          <PendingRequestCard
+            key={pendingRequest.requestId}
+            onDismiss={() => handleDismissPending(pendingRequest.requestId)}
+            pendingRequest={pendingRequest}
+          />
+        ))}
 
         {memberships.map((membership) => (
           <TeamLeaderboard

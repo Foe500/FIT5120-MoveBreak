@@ -5525,6 +5525,62 @@ main {
   font-weight: 700;
 }
 
+.pending-request-card {
+  width: min(100%, 32rem);
+  padding: 1.1rem 1.4rem;
+  border: 1px dashed #e6c889;
+  background: #fdf8ec;
+}
+
+.pending-request-card .team-status-message.pending {
+  margin: 0.4rem 0 0.9rem;
+  color: #8a6a12;
+}
+
+.owner-requests-panel {
+  margin-top: 0.9rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid #cfe2d6;
+  border-radius: 0.65rem;
+  background: #f1f8f3;
+}
+
+.owner-requests-panel h3 {
+  font-size: 0.85rem;
+  color: #1f6b45;
+  margin: 0;
+}
+
+.owner-requests-list {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+  padding: 0;
+  list-style: none;
+}
+
+.owner-requests-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  background: #ffffff;
+  border: 1px solid #dfe9e2;
+}
+
+.owner-requests-list li span {
+  font-weight: 650;
+  color: #1a2420;
+  font-size: 0.88rem;
+}
+
+.owner-requests-list li div {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .team-season-banner {
   display: flex;
   align-items: center;
