@@ -103,6 +103,7 @@ export default function BreakAssistant() {
   const inputRef = useRef(null)
   const logRef = useRef(null)
   const launcherRef = useRef(null)
+  const wasOpenRef = useRef(false)
   const controllerRef = useRef(null)
   const navigate = useNavigate()
   const showOrigin = Boolean(origin) || turns.some((turn) => turn.result?.constraints?.setting === 'Outdoor')
@@ -118,8 +119,12 @@ export default function BreakAssistant() {
   useEffect(() => {
     if (open) logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' })
   }, [turns, busy, schedule, open])
+  useEffect(() => {
+    if (wasOpenRef.current && !open) launcherRef.current?.focus()
+    wasOpenRef.current = open
+  }, [open])
 
-  function close() { setOpen(false); launcherRef.current?.focus() }
+  function close() { setOpen(false) }
   function start(item) {
     navigate(item.startPath, item.breakPlan ? { state: { breakPlan: item.breakPlan } } : undefined)
     close()
@@ -159,7 +164,7 @@ export default function BreakAssistant() {
       setTurns((current) => current.filter((turn) => turn.id !== userTurn.id))
     } finally { clearTimeout(timeout); setBusy(false); controllerRef.current = null }
   }
-  return <div className="assistant-widget">
+  return <div className={`assistant-widget${open ? ' is-open' : ''}`}>
     {open && <section className="assistant-panel" role="dialog" aria-modal="false" aria-labelledby="assistant-title" onKeyDown={(event) => { if (event.key === 'Escape') close() }}>
       <header className="assistant-header">
         <span className="assistant-mark"><Sprout size={22} /></span>
@@ -206,8 +211,8 @@ export default function BreakAssistant() {
         <div className="assistant-bottom"><Link to="/planner" onClick={close}>Open Planner</Link><button disabled={busy} onClick={() => { setTurns([]); setSchedule(null); setError(''); setMessage(''); setOrigin('') }}>Clear chat</button></div>
       </div>
     </section>}
-    <button ref={launcherRef} className="assistant-launcher" onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-label={open ? 'Close break assistant' : 'Open break assistant'}>
-      {open ? <X size={20} /> : <MessageCircle size={20} />}<span>Ask MoveBreak</span>
-    </button>
+    {!open && <button ref={launcherRef} className="assistant-launcher" onClick={() => setOpen(true)} aria-expanded="false" aria-label="Open break assistant">
+      <MessageCircle size={20} /><span>Ask MoveBreak</span>
+    </button>}
   </div>
 }

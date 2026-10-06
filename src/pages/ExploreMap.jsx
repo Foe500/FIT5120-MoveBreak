@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet'
+import { MapContainer, Marker, Popup, TileLayer, useMap, ZoomControl } from 'react-leaflet'
 import {
   ArrowLeft,
   Building2,
@@ -177,6 +177,31 @@ function CurrentLocationView({ position }) {
       duration: 0.7,
     })
   }, [map, position])
+
+  return null
+}
+
+function ResponsiveMapView() {
+  const map = useMap()
+
+  useEffect(() => {
+    let frameId
+    const refreshSize = () => {
+      window.cancelAnimationFrame(frameId)
+      frameId = window.requestAnimationFrame(() => map.invalidateSize({ pan: false }))
+    }
+    const resizeObserver = new ResizeObserver(refreshSize)
+
+    resizeObserver.observe(map.getContainer())
+    window.addEventListener('resize', refreshSize)
+    refreshSize()
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      resizeObserver.disconnect()
+      window.removeEventListener('resize', refreshSize)
+    }
+  }, [map])
 
   return null
 }
@@ -472,8 +497,11 @@ function ExploreMap() {
         className="leaflet-workspace-map"
         scrollWheelZoom
         zoom={defaultMapZoom}
+        zoomControl={false}
       >
         <CurrentLocationView position={currentPosition} />
+        <ResponsiveMapView />
+        <ZoomControl position="topright" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

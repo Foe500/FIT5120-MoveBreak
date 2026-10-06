@@ -3769,9 +3769,10 @@ main {
 
   .leaflet-workspace-map,
   .full-map {
-    min-height: 24rem;
-    height: 24rem;
-    order: 2;
+    min-height: 18rem;
+    height: clamp(18rem, 55vh, 24rem);
+    height: clamp(18rem, 55dvh, 24rem);
+    order: 1;
     border: 1px solid #dce8f8;
     border-radius: 1rem;
     overflow: hidden;
@@ -3779,7 +3780,7 @@ main {
 
   .map-control-panel {
     max-height: none;
-    order: 1;
+    order: 2;
   }
 
   .selected-place-card {
