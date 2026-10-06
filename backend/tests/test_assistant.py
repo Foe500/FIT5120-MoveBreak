@@ -71,9 +71,10 @@ def test_exact_limit_and_no_match(db):
     assert result(db, '1 minute indoor')['type'] == 'no_match'
 
 
-def test_chinese_and_follow_up(db):
+def test_chinese_input_gets_english_reply_and_follow_up(db):
     response = result(db, '其实只有8分钟，想待在室内', history=[{'role':'user','content':'我有18分钟，今天很累'}])
-    assert response['language'] == 'zh'
+    assert response['language'] == 'en'
+    assert response['reply'].isascii()
     assert response['constraints']['energy'] == 'low'
     assert response['constraints']['availableMinutes'] == 8
     assert all(i['durationMinutes'] <= 8 for i in response['recommendations'])
@@ -236,7 +237,8 @@ def test_mock_explicit_calendar_date(db):
 def test_mock_chinese_afternoon_schedule(db):
     response = result(db, '明天下午1-2点、5-6点有空，帮我安排休息')
     assert len(response['planItems']) == 2
-    assert response['language'] == 'zh'
+    assert response['language'] == 'en'
+    assert response['reply'].isascii()
     assert 'T13:' in response['planItems'][0]['startAt']
     assert 'T17:' in response['planItems'][1]['startAt']
 

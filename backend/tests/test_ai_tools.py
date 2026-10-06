@@ -105,6 +105,18 @@ def test_clarification_is_a_tool_not_free_text(monkeypatch):
     assert intent.clarification == "How many minutes do you have?"
 
 
+def test_provider_reply_is_english_even_when_it_requests_chinese(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "nvidia")
+    monkeypatch.setenv("NVIDIA_API_KEY", "test-key")
+    reply = provider_reply("ask_clarification", {"language": "zh", "question": "你有多少分钟？"})
+    monkeypatch.setattr(ai_tools.requests, "post", Mock(return_value=reply))
+
+    _, intent = ai_tools.select_tool(ChatRequest(message="我想休息"), NOW)
+
+    assert intent.language == "en"
+    assert intent.clarification == "Please clarify your break request in English."
+
+
 def test_rejects_unknown_or_multiple_tool_calls(monkeypatch):
     monkeypatch.setenv("AI_MODE", "nvidia")
     monkeypatch.setenv("NVIDIA_API_KEY", "test-key")

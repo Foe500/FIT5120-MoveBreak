@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from ai_schemas import ChatRequest, ConfirmRequest
-from ai_service import api_key, extract, is_remote_mode, localize, mode, provider_name
+from ai_service import api_key, is_remote_mode, mode, provider_name
 from ai_tools import select_tool
 from break_planning import make_result, confirm_plan
 
@@ -64,7 +64,7 @@ def chat(body: ChatRequest, request: Request, db: Session = Depends(get_db)):
     result["toolCall"] = tool_name if result["processing"] == "ai" and tool_name in {
         "recommend_break", "create_plan_preview", "ask_clarification", "unsupported_request"
     } else None
-    return localize(result, intent.language)
+    return result
 
 
 @router.post("/confirm")

@@ -105,6 +105,7 @@ export default function BreakAssistant() {
   const launcherRef = useRef(null)
   const controllerRef = useRef(null)
   const navigate = useNavigate()
+  const showOrigin = Boolean(origin) || turns.some((turn) => turn.result?.constraints?.setting === 'Outdoor')
 
   useEffect(() => () => controllerRef.current?.abort(), [])
   useEffect(() => {
@@ -134,9 +135,9 @@ export default function BreakAssistant() {
       },
     })
   }
-  async function send(event, example) {
+  async function send(event) {
     event?.preventDefault()
-    const text = (example || message).trim()
+    const text = message.trim()
     if (!text || busy) return
     setBusy(true); setError(''); setSchedule(null)
     const history = turns.filter((turn) => turn.role === 'user' || turn.result).slice(-10).map((turn) => ({ role: turn.role, content: turn.text }))
@@ -171,9 +172,7 @@ export default function BreakAssistant() {
           <p className="assistant-eyebrow">MAKE TIME FOR YOU</p>
           <h3>What would feel good right now?</h3>
           <p>Tell me your time and how you feel. Find an activity, or make a little space in your day.</p>
-          <button onClick={(e) => send(e, 'I have 18 minutes and feel tired.')} disabled={busy}>I have 18 minutes and feel tired.</button>
-          <button onClick={(e) => send(e, 'Plan breaks tomorrow from 1–2 pm and 5–6 pm.')} disabled={busy}>Plan my breaks for tomorrow.</button>
-          <button onClick={(e) => send(e, 'I need a short indoor break for my shoulders.')} disabled={busy}>I need a short indoor shoulder break.</button>
+          <p className="assistant-examples">e.g. “I have 18 minutes and feel tired.”<br />e.g. “Plan breaks tomorrow from 1–2 pm and 5–6 pm.”</p>
         </div>}
         {turns.map((turn) => <div className={`assistant-turn ${turn.role}`} key={turn.id}>
           <p>{turn.text}</p>
@@ -189,20 +188,20 @@ export default function BreakAssistant() {
       </div>
       <div className="assistant-compose">
         {error && <p className="assistant-error" role="alert">{error}</p>}
-        <label className="assistant-origin">Outdoor starting point
+        {showOrigin && <label className="assistant-origin">Outdoor starting point
           <select value={origin} onChange={(event) => setOrigin(event.target.value)} disabled={busy}>
             <option value="">Not selected · indoor suggestions first</option>
             <option value="townhall">Melbourne Town Hall</option><option value="docklands">Docklands</option><option value="southbank">Southbank</option>
           </select>
-        </label>
+        </label>}
         <form onSubmit={send} className="assistant-input-row">
           <textarea ref={inputRef} value={message} onChange={(event) => setMessage(event.target.value)} maxLength={2000} rows={2}
-            placeholder="How much time do you have?" aria-label="Message the break assistant"
+            placeholder="Type your break request..." aria-label="Message the break assistant"
             onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(event) } }} />
           <button type="submit" disabled={busy || !message.trim()} aria-label="Send message"><ArrowUp size={20} /></button>
         </form>
         <p className="assistant-privacy">{privacyText(status)} <Link to="/privacy" onClick={close}>Privacy</Link></p>
-        <div className="assistant-bottom"><Link to="/planner" onClick={close}>Open Planner</Link><button disabled={busy} onClick={() => { setTurns([]); setSchedule(null); setError(''); setMessage('') }}>Clear chat</button></div>
+        <div className="assistant-bottom"><Link to="/planner" onClick={close}>Open Planner</Link><button disabled={busy} onClick={() => { setTurns([]); setSchedule(null); setError(''); setMessage(''); setOrigin('') }}>Clear chat</button></div>
       </div>
     </section>}
     <button ref={launcherRef} className="assistant-launcher" onClick={() => open ? close() : setOpen(true)} aria-expanded={open} aria-label={open ? 'Close break assistant' : 'Open break assistant'}>
