@@ -50,3 +50,12 @@ test('failed storage cannot be reported as a successful save', async () => {
   await assert.rejects(addConfirmedPlannerItems([makeItem('c', '2099-09-29T04:00:00Z')], checkPlanConflicts), { code: 'STORAGE_FAILED' })
   window.localStorage.setItem = original
 })
+
+test('invalid or silently discarded items are never reported as saved', async () => {
+  savePlannerBreaks([])
+  assert.equal(savePlannerBreaks([{}]), false)
+  const original = window.localStorage.setItem
+  window.localStorage.setItem = () => {}
+  await assert.rejects(addConfirmedPlannerItems([makeItem('discarded')], checkPlanConflicts), { code: 'STORAGE_FAILED' })
+  window.localStorage.setItem = original
+})

@@ -57,8 +57,8 @@ export function getSavedPlannerBreaks(fallback = []) {
 
 export function savePlannerBreaks(plannedBreaks) {
   try {
-    const validBreaks = plannedBreaks.filter(isValidPlannerBreak)
-    window.localStorage.setItem(plannerStorageKey, JSON.stringify(validBreaks))
+    if (!Array.isArray(plannedBreaks) || plannedBreaks.some((item) => !isValidPlannerBreak(item))) return false
+    window.localStorage.setItem(plannerStorageKey, JSON.stringify(plannedBreaks))
     window.dispatchEvent(new Event('movebreak:planner-change'))
     return true
   } catch {
@@ -75,6 +75,12 @@ export async function addConfirmedPlannerItems(items, checkConflicts) {
     const fresh = items.filter((item) => !existing.some((old) => old.id === item.id))
     if (!savePlannerBreaks([...existing, ...fresh])) {
       const error = new Error('Browser storage is unavailable. Your plan was not saved.')
+      error.code = 'STORAGE_FAILED'
+      throw error
+    }
+    const persistedIds = new Set(getSavedPlannerBreaks().map((item) => item.id))
+    if (fresh.some((item) => !persistedIds.has(item.id))) {
+      const error = new Error('The plan could not be verified after saving. Please check browser storage permissions.')
       error.code = 'STORAGE_FAILED'
       throw error
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { CalendarDays, Footprints, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { CalendarDays, CheckCircle2, Footprints, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,6 +9,9 @@ import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
 import { checkPlanConflicts, localDateTime, plannerTimeZone, zonedIso } from '@/lib/assistant'
 
 function Planner() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [assistantNotice, setAssistantNotice] = useState(() => location.state?.assistantPlan || null)
   const [plannedBreaks, setPlannedBreaks] = useState(() => getSavedPlannerBreaks())
   const [activities, setActivities] = useState([])
   const [activityId, setActivityId] = useState('')
@@ -17,6 +20,21 @@ function Planner() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const totalMinutes = plannedBreaks.reduce((sum, item) => sum + item.duration, 0)
+
+  useEffect(() => {
+    if (!location.state?.assistantPlan) return
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
+
+  useEffect(() => {
+    const firstId = assistantNotice?.itemIds?.find((id) => plannedBreaks.some((item) => item.id === id))
+    if (!firstId) return
+    const frame = requestAnimationFrame(() => {
+      const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      document.getElementById(`planner-item-${firstId}`)?.scrollIntoView({ behavior, block: 'center' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [assistantNotice, plannedBreaks])
 
   useEffect(() => {
     const refresh = () => setPlannedBreaks(getSavedPlannerBreaks())
@@ -76,6 +94,14 @@ function Planner() {
       <div><h1>Plan your breaks</h1><p>Short breaks, at a time that works for you. Times shown in Melbourne time.</p></div>
       <div className="planner-heading-actions"><button type="button" onClick={() => save([])} disabled={!plannedBreaks.length}>Clear plan</button></div>
     </div>
+    {assistantNotice && <div className="planner-agent-notice" role="status">
+      <CheckCircle2 aria-hidden="true" size={21} />
+      <div>
+        <strong>{assistantNotice.addedCount > 0 ? `${assistantNotice.addedCount} ${assistantNotice.addedCount === 1 ? 'break' : 'breaks'} added to your plan` : 'Your plan is already up to date'}</strong>
+        <span>{assistantNotice.addedCount > 0 ? 'MoveBreak checked the timing and saved your new schedule.' : 'Those breaks were already saved, so nothing was duplicated.'}</span>
+      </div>
+      <button type="button" aria-label="Dismiss plan update" onClick={() => setAssistantNotice(null)}><X size={17} /></button>
+    </div>}
     {error && <p role="alert" className="activity-status-message">{error}</p>}
     <div className="planner-board-layout">
       <Card className="day-plan-card">
@@ -88,7 +114,7 @@ function Planner() {
             if (!items.length) return null
             return <div className="planner-day-section" key={period}>
               <h3>{period}</h3>
-              {items.map((item) => <article className="planner-row" key={item.id}>
+              {items.map((item) => <article className={`planner-row${assistantNotice?.itemIds?.includes(item.id) ? ' planner-row-agent-added' : ''}`} id={`planner-item-${item.id}`} key={item.id}>
                 <div className="planner-row-time"><span>{item.time}</span><i /></div>
                 <div className="planner-row-card">
                   <span className="planner-row-icon">{item.type === 'Outdoor' ? <Footprints size={20} /> : <CalendarDays size={20} />}</span>
@@ -116,7 +142,7 @@ function Planner() {
               {activities.map((item) => <option key={item.id} value={item.id}>{item.title} · {Math.ceil(Math.max(item.duration, (item.steps || []).reduce((sum, step) => sum + step.seconds, 0) / 60))} min</option>)}
             </select>
           </label>}
-          <label>Start time · Australia/Melbourne<input type="datetime-local" required value={startTime}  onChange={(event) => setStartTime(event.target.value)} /></label>
+          <label>Start time · Australia/Melbourne<input type="datetime-local" lang="en-AU" required value={startTime} onChange={(event) => setStartTime(event.target.value)} /></label>
           <Button type="submit" disabled={!editing && !activityId}><Plus size={16} />{editing ? 'Save new time' : 'Add to Planner'}</Button>
           {editing && <Button variant="outline" type="button" onClick={() => { setEditing(null); setStartTime('') }}>Cancel</Button>}
         </form>

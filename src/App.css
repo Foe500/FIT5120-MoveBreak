@@ -5193,6 +5193,48 @@ main {
   color: #d45f48;
 }
 
+.planner-agent-notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #c8d9c5;
+  border-radius: 0.8rem;
+  color: #315b3c;
+  background: #eef3ea;
+}
+
+.planner-agent-notice > svg {
+  color: #477050;
+}
+
+.planner-agent-notice div {
+  display: grid;
+  gap: 0.14rem;
+}
+
+.planner-agent-notice strong {
+  color: #17365f;
+  font-size: 0.9rem;
+}
+
+.planner-agent-notice span {
+  color: #536c59;
+  font-size: 0.8rem;
+}
+
+.planner-agent-notice button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 0;
+  color: #536c59;
+  background: transparent;
+}
+
 .day-plan-card,
 .activity-add-panel {
   border-radius: 1.25rem;
@@ -5214,6 +5256,12 @@ main {
   border-color: #e7e1d6;
   border-radius: 0.9rem;
   background: #fffdf9;
+}
+
+.planner-row-agent-added .planner-row-card {
+  border-color: #719078;
+  background: #f2f6ef;
+  box-shadow: 0 0 0 2px rgba(113, 144, 120, 0.16);
 }
 
 .planner-row-card:hover,

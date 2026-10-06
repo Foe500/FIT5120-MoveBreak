@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from ai_schemas import ChatRequest, ConfirmRequest
 from ai_service import api_key, extract, is_remote_mode, localize, mode, provider_name
+from ai_tools import select_tool
 from break_planning import make_result, confirm_plan
 
 router = APIRouter(prefix="/ai", tags=["AI Break Assistant"])
