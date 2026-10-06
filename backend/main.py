@@ -5,18 +5,22 @@ import random
 import secrets
 import string
 import uuid
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import requests
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 from sqlalchemy import func, inspect, text
 
 from database import engine, get_db, Base
-from models import Activity, Place, Team, TeamMember, SessionLog, BreakSession, Season
+from models import Activity, Place, Team, TeamMember, SessionLog, BreakSession, Season, JoinRequest
 from recommendations import (
     MELBOURNE_TOWN_HALL,
     build_recommendation_response,
@@ -35,10 +39,18 @@ from ai_routes import router as ai_router
 app.include_router(ai_router)
 DEFAULT_ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
 
+# Rate limiting for the join-code-guessable endpoints (team lookup and
+# join). In-memory, per-process — fine for this single-process deployment,
+# would need a shared store (e.g. Redis) behind multiple workers/instances.
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 JOIN_CODE_ALPHABET = "".join(sorted(set(string.ascii_uppercase + string.digits) - set("0O1I")))
 MEMBER_SECRET_BYTES = 32
 SUPPORTED_DURATIONS = {5, 15, 30}
 SUPPORTED_SETTINGS = {"Indoor", "Outdoor"}
+JOIN_CODE_LENGTH = 8
 
 # Leaderboard scoring: a flat bonus for completing a break, plus a small
 # amount per second actually moved, so showing up often matters more
@@ -48,8 +60,51 @@ POINTS_SECONDS_DIVISOR = 10
 
 SEASON_LENGTH = timedelta(days=7)
 
+# Join codes stay permanent (teams need to be joinable indefinitely), so
+# brute-forcing one is defended against three ways instead: a large code
+# space (8 chars, confusables stripped — ~29^8 possibilities), a per-IP
+# rate limit on the guessable endpoints, and a lockout after repeated bad
+# guesses from the same IP even if they stay under the rate limit by
+# going slowly. In-memory only, like the limiter above.
+JOIN_CODE_MAX_FAILURES = 5
+JOIN_CODE_FAILURE_WINDOW = timedelta(minutes=5)
+JOIN_CODE_LOCKOUT_DURATION = timedelta(minutes=15)
 
-def generate_join_code(length: int = 6) -> str:
+_join_code_failures: dict[str, list[datetime]] = defaultdict(list)
+_join_code_locked_until: dict[str, datetime] = {}
+
+
+def check_join_code_lockout(request: Request) -> None:
+    ip = get_remote_address(request)
+    locked_until = _join_code_locked_until.get(ip)
+    if locked_until and datetime.now(timezone.utc) < locked_until:
+        remaining_minutes = max(1, int((locked_until - datetime.now(timezone.utc)).total_seconds() // 60) + 1)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Too many invalid join codes from this address. Try again in {remaining_minutes} minute(s).",
+        )
+
+
+def record_join_code_failure(request: Request) -> None:
+    ip = get_remote_address(request)
+    now = datetime.now(timezone.utc)
+    recent = [t for t in _join_code_failures[ip] if now - t < JOIN_CODE_FAILURE_WINDOW]
+    recent.append(now)
+
+    if len(recent) >= JOIN_CODE_MAX_FAILURES:
+        _join_code_locked_until[ip] = now + JOIN_CODE_LOCKOUT_DURATION
+        _join_code_failures[ip] = []
+    else:
+        _join_code_failures[ip] = recent
+
+
+def record_join_code_success(request: Request) -> None:
+    ip = get_remote_address(request)
+    _join_code_failures.pop(ip, None)
+    _join_code_locked_until.pop(ip, None)
+
+
+def generate_join_code(length: int = JOIN_CODE_LENGTH) -> str:
     return "".join(secrets.choice(JOIN_CODE_ALPHABET) for _ in range(length))
 
 
@@ -75,6 +130,23 @@ def ensure_team_member_secret_column() -> None:
 
 
 ensure_team_member_secret_column()
+
+
+def ensure_team_owner_device_column() -> None:
+    """Adds teams.owner_device_id to databases created before join approval
+    existed. Legacy teams get an empty owner, which no real device id can
+    match, so their pending requests simply can't be approved."""
+    inspector = inspect(engine)
+    if "teams" not in inspector.get_table_names():
+        return
+    columns = {column["name"] for column in inspector.get_columns("teams")}
+    if "owner_device_id" in columns:
+        return
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE teams ADD COLUMN owner_device_id VARCHAR NOT NULL DEFAULT ''"))
+
+
+ensure_team_owner_device_column()
 
 
 def compute_points(sessions_completed: int, total_seconds: int) -> int:
@@ -191,10 +263,16 @@ class MissionRequest(BaseModel):
 
 class CreateTeamRequest(BaseModel):
     teamName: str
+    deviceId: str
 
 
 class JoinTeamRequest(BaseModel):
     nickname: str
+    deviceId: str
+
+
+class JoinRequestDecisionRequest(BaseModel):
+    deviceId: str
 
 
 class LeaveTeamRequest(BaseModel):
@@ -774,12 +852,16 @@ def create_team(request: CreateTeamRequest, db: Session = Depends(get_db)):
     if not team_name:
         raise HTTPException(status_code=400, detail="Team name is required")
 
+    device_id = request.deviceId.strip()
+    if not device_id:
+        raise HTTPException(status_code=400, detail="deviceId is required")
+
     # Extremely unlikely to collide, but avoid handing out a code already in use.
     join_code = generate_join_code()
     while db.query(Team).filter(Team.join_code == join_code).first():
         join_code = generate_join_code()
 
-    team = Team(id=uuid.uuid4().hex, name=team_name, join_code=join_code)
+    team = Team(id=uuid.uuid4().hex, name=team_name, join_code=join_code, owner_device_id=device_id)
     db.add(team)
     db.commit()
     db.refresh(team)
@@ -841,30 +923,214 @@ def list_teams(db: Session = Depends(get_db)):
 
 
 @app.post("/teams/{join_code}/join")
-def join_team(join_code: str, request: JoinTeamRequest, db: Session = Depends(get_db)):
-    nickname = request.nickname.strip()
+@limiter.limit("5/minute")
+def join_team(
+    join_code: str,
+    payload: JoinTeamRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    check_join_code_lockout(request)
+
+    nickname = payload.nickname.strip()
     if not nickname:
         raise HTTPException(status_code=400, detail="Nickname is required")
 
-    team = get_team_by_code(join_code, db)
+    device_id = payload.deviceId.strip()
+    if not device_id:
+        raise HTTPException(status_code=400, detail="deviceId is required")
+
+    team = db.query(Team).filter(Team.join_code == join_code.upper()).first()
+    if not team:
+        record_join_code_failure(request)
+        raise HTTPException(status_code=404, detail="Team not found")
+    record_join_code_success(request)
 
     member_secret = generate_member_secret()
+
+    # The team's own creator doesn't need approval from themselves — a
+    # valid code still gets anyone else only a pending request, never
+    # instant membership, which is the whole point of this flow.
+    if device_id == team.owner_device_id:
+        member = TeamMember(
+            id=uuid.uuid4().hex,
+            team_id=team.id,
+            nickname=nickname,
+            member_secret_hash=hash_member_secret(member_secret),
+        )
+        db.add(member)
+        db.commit()
+        db.refresh(member)
+
+        return {
+            "status": "approved",
+            "memberId": member.id,
+            "memberSecret": member_secret,
+            "nickname": member.nickname,
+            "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
+        }
+
+    existing_request = (
+        db.query(JoinRequest)
+        .filter(
+            JoinRequest.team_id == team.id,
+            JoinRequest.device_id == device_id,
+            JoinRequest.status == "pending",
+        )
+        .first()
+    )
+    if existing_request:
+        return {
+            "status": "pending",
+            "requestId": existing_request.id,
+            "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
+        }
+
+    # The secret is handed to the requester now and only its hash is kept,
+    # so approval later can create the member without the server ever
+    # needing to hold or re-send the plaintext.
+    join_request = JoinRequest(
+        id=uuid.uuid4().hex,
+        team_id=team.id,
+        requester_nickname=nickname,
+        device_id=device_id,
+        member_secret_hash=hash_member_secret(member_secret),
+    )
+    db.add(join_request)
+    db.commit()
+    db.refresh(join_request)
+
+    return {
+        "status": "pending",
+        "requestId": join_request.id,
+        "memberSecret": member_secret,
+        "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
+    }
+
+
+def join_request_to_dict(join_request: JoinRequest) -> dict:
+    return {
+        "id": join_request.id,
+        "nickname": join_request.requester_nickname,
+        "status": join_request.status,
+        "createdAt": as_utc(join_request.created_at).isoformat(),
+    }
+
+
+@app.get("/teams/{join_code}/join-requests")
+def list_join_requests(join_code: str, deviceId: str = Query(...), db: Session = Depends(get_db)):
+    """Owner-only: the pending requests waiting on this team. Any device
+    that isn't the team's creator gets a 403, not a filtered empty list —
+    there's nothing legitimate for a non-owner to see here."""
+    team = get_team_by_code(join_code, db)
+    if deviceId != team.owner_device_id:
+        raise HTTPException(status_code=403, detail="Only the team's creator can view join requests")
+
+    requests = (
+        db.query(JoinRequest)
+        .filter(JoinRequest.team_id == team.id, JoinRequest.status == "pending")
+        .order_by(JoinRequest.created_at.asc())
+        .all()
+    )
+    return {"requests": [join_request_to_dict(r) for r in requests]}
+
+
+@app.post("/teams/{join_code}/join-requests/{request_id}/approve")
+def approve_join_request(
+    join_code: str,
+    request_id: str,
+    payload: JoinRequestDecisionRequest,
+    db: Session = Depends(get_db),
+):
+    team = get_team_by_code(join_code, db)
+    if payload.deviceId != team.owner_device_id:
+        raise HTTPException(status_code=403, detail="Only the team's creator can approve join requests")
+
+    join_request = (
+        db.query(JoinRequest)
+        .filter(JoinRequest.id == request_id, JoinRequest.team_id == team.id)
+        .first()
+    )
+    if not join_request:
+        raise HTTPException(status_code=404, detail="Join request not found")
+    if join_request.status != "pending":
+        raise HTTPException(status_code=400, detail="This request has already been decided")
+
+    if not join_request.member_secret_hash:
+        raise HTTPException(status_code=400, detail="This request can no longer be approved")
+
     member = TeamMember(
         id=uuid.uuid4().hex,
         team_id=team.id,
-        nickname=nickname,
-        member_secret_hash=hash_member_secret(member_secret),
+        nickname=join_request.requester_nickname,
+        member_secret_hash=join_request.member_secret_hash,
     )
     db.add(member)
-    db.commit()
-    db.refresh(member)
 
-    return {
-        "memberId": member.id,
-        "memberSecret": member_secret,
-        "nickname": member.nickname,
-        "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
-    }
+    join_request.status = "approved"
+    join_request.decided_at = datetime.now(timezone.utc)
+    join_request.member_id = member.id
+    db.commit()
+
+    return {"status": "approved"}
+
+
+@app.post("/teams/{join_code}/join-requests/{request_id}/reject")
+def reject_join_request(
+    join_code: str,
+    request_id: str,
+    payload: JoinRequestDecisionRequest,
+    db: Session = Depends(get_db),
+):
+    team = get_team_by_code(join_code, db)
+    if payload.deviceId != team.owner_device_id:
+        raise HTTPException(status_code=403, detail="Only the team's creator can reject join requests")
+
+    join_request = (
+        db.query(JoinRequest)
+        .filter(JoinRequest.id == request_id, JoinRequest.team_id == team.id)
+        .first()
+    )
+    if not join_request:
+        raise HTTPException(status_code=404, detail="Join request not found")
+    if join_request.status != "pending":
+        raise HTTPException(status_code=400, detail="This request has already been decided")
+
+    join_request.status = "rejected"
+    join_request.decided_at = datetime.now(timezone.utc)
+    db.commit()
+
+    return {"status": "rejected"}
+
+
+@app.get("/teams/{join_code}/join-requests/{request_id}")
+def get_join_request_status(
+    join_code: str,
+    request_id: str,
+    deviceId: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """The requester's own device polls this to find out whether they've
+    been let in yet. Scoped to their own device id — knowing a request's
+    id (an unguessable UUID) still isn't enough to read someone else's."""
+    team = get_team_by_code(join_code, db)
+
+    join_request = (
+        db.query(JoinRequest)
+        .filter(JoinRequest.id == request_id, JoinRequest.team_id == team.id)
+        .first()
+    )
+    if not join_request or join_request.device_id != deviceId:
+        raise HTTPException(status_code=404, detail="Join request not found")
+
+    result = {"status": join_request.status}
+    if join_request.status == "approved" and join_request.member_id:
+        result["membership"] = {
+            "memberId": join_request.member_id,
+            "nickname": join_request.requester_nickname,
+            "team": {"id": team.id, "name": team.name, "joinCode": team.join_code},
+        }
+    return result
 
 
 @app.post("/teams/{join_code}/leave")
@@ -879,8 +1145,16 @@ def leave_team(join_code: str, request: LeaveTeamRequest, db: Session = Depends(
 
 
 @app.get("/teams/{join_code}")
-def get_team(join_code: str, db: Session = Depends(get_db)):
-    team = get_team_by_code(join_code, db)
+@limiter.limit("5/minute")
+def get_team(join_code: str, request: Request, db: Session = Depends(get_db)):
+    check_join_code_lockout(request)
+
+    team = db.query(Team).filter(Team.join_code == join_code.upper()).first()
+    if not team:
+        record_join_code_failure(request)
+        raise HTTPException(status_code=404, detail="Team not found")
+    record_join_code_success(request)
+
     member_count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
 
     return {
