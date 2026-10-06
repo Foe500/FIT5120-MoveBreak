@@ -2991,6 +2991,7 @@ main {
 }
 
 .outdoor-session-shell h1 {
+  justify-content: center;
   margin-top: 0.45rem;
   color: #121826;
   font-size: clamp(1.75rem, 4vw, 2.75rem);
@@ -3005,6 +3006,7 @@ main {
 
 .outdoor-timer-ring {
   display: grid;
+  margin-inline: auto;
   width: min(19rem, 76vw);
   aspect-ratio: 1;
   margin-top: 2rem;
@@ -5789,4 +5791,12 @@ main {
   .team-leaderboard-card {
     width: 100%;
   }
+}
+
+.outdoor-session-moved {
+  margin: 1.1rem 0 0;
+  color: #17365f;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
 }

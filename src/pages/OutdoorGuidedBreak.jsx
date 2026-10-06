@@ -11,6 +11,9 @@ import {
   TimerReset,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import BlurText from '@/components/react-bits/BlurText'
+import ClickSpark from '@/components/react-bits/ClickSpark'
+import CountUp from '@/components/react-bits/CountUp'
 import {
   clearOutdoorBreakSession,
   getStoredOutdoorBreak,
@@ -171,7 +174,19 @@ function OutdoorGuidedBreak() {
 
       <div className="outdoor-session-shell">
         <p className="outdoor-session-kicker">{breakPlan.category}</p>
-        <h1>{isComplete ? 'Outdoor break complete.' : breakPlan.placeName}</h1>
+        {isComplete ? (
+          <BlurText
+            animateBy="words"
+            as="h1"
+            delay={65}
+            direction="bottom"
+            key="outdoor-complete"
+            stepDuration={0.26}
+            text="Outdoor break complete."
+          />
+        ) : (
+          <h1>{breakPlan.placeName}</h1>
+        )}
         <p className="outdoor-session-subtitle">
           {isComplete
             ? 'Nice reset. You stayed inside your planned break window.'
@@ -180,6 +195,15 @@ function OutdoorGuidedBreak() {
               : 'MoveBreak will remind you when it is time to return.'}
         </p>
 
+        <ClickSpark
+          duration={560}
+          extraScale={1.2}
+          sparkColor="#13b981"
+          sparkCount={12}
+          sparkRadius={42}
+          sparkSize={10}
+          triggerKey={isComplete}
+        >
         <div className="outdoor-timer-ring" style={circleStyle}>
           <div>
             {isComplete ? (
@@ -193,6 +217,14 @@ function OutdoorGuidedBreak() {
             <span>{shouldReturn || isComplete ? 'Return window' : 'Until return time'}</span>
           </div>
         </div>
+        </ClickSpark>
+
+        {isComplete ? (
+          <p className="outdoor-session-moved">
+            <CountUp duration={0.8} to={Math.max(1, Math.round(Math.min(elapsedSeconds, totalSeconds) / 60))} /> min
+            away from your desk
+          </p>
+        ) : null}
 
         {!isComplete ? (
           <>
