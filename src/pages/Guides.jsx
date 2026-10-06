@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
 import { guides } from '@/data/guides'
 import './Guides.css'
+import AnimatedContent from '@/components/react-bits/AnimatedContent'
+import BlurText from '@/components/react-bits/BlurText'
 
 const guideIcons = {
   eyes: Eye,
@@ -25,16 +27,17 @@ function Guides() {
           <BookOpen size={17} aria-hidden="true" />
           Everyday wellbeing
         </span>
-        <h1 id="guides-title">Wellbeing guides</h1>
+        <BlurText animateBy="words" as="h1" delay={50} direction="bottom" id="guides-title" stepDuration={0.28} text="Wellbeing guides" />
         <p>Explore five areas of wellbeing, at your desk and beyond.</p>
       </header>
 
       <ul className="guide-category-grid" aria-label="Wellbeing guide categories">
-        {guides.map((category) => {
+        {guides.map((category, index) => {
           const Icon = guideIcons[category.id]
 
           return (
             <li key={category.id}>
+              <AnimatedContent className="motion-card-shell" delay={(index % 3) * 0.08} distance={20} duration={0.5} threshold={0.1}>
               <Link className="guide-category-link" to={`/guides/${category.id}`}>
                 <Card className="guide-category-card" aria-labelledby={`guide-${category.id}`}>
                   <span className={`guide-category-icon guide-category-icon-${category.tone}`}>
@@ -48,6 +51,7 @@ function Guides() {
                   </span>
                 </Card>
               </Link>
+              </AnimatedContent>
             </li>
           )
         })}

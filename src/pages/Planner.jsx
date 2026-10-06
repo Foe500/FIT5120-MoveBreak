@@ -8,6 +8,8 @@ import { API_BASE_URL } from '@/lib/api'
 import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
 import { checkPlanConflicts, localDateTime, plannerTimeZone, zonedIso } from '@/lib/assistant'
 import { getActivityMinutes } from '@/lib/activityDuration'
+import BlurText from '@/components/react-bits/BlurText'
+import CountUp from '@/components/react-bits/CountUp'
 
 function Planner() {
   const location = useLocation()
@@ -92,7 +94,7 @@ function Planner() {
   const dates = [...new Set(plannedBreaks.map((item) => item.date || 'Unscheduled'))].sort()
   return <section className="page planner-page">
     <div className="planner-heading">
-      <div><h1>Plan your breaks</h1><p>Short breaks, at a time that works for you. Times shown in Melbourne time.</p></div>
+      <div><BlurText animateBy="words" as="h1" delay={50} direction="bottom" stepDuration={0.28} text="Plan your breaks" /><p>Short breaks, at a time that works for you. Times shown in Melbourne time.</p></div>
       <div className="planner-heading-actions"><button type="button" onClick={() => save([])} disabled={!plannedBreaks.length}>Clear plan</button></div>
     </div>
     {assistantNotice && <div className="planner-agent-notice" role="status">
@@ -106,7 +108,7 @@ function Planner() {
     {error && <p role="alert" className="activity-status-message">{error}</p>}
     <div className="planner-board-layout">
       <Card className="day-plan-card">
-        <div className="day-plan-summary"><CalendarDays size={18} /><strong>{plannedBreaks.length} breaks planned</strong><span>{totalMinutes} minutes total</span></div>
+        <div className="day-plan-summary"><CalendarDays size={18} /><strong><CountUp duration={0.5} to={plannedBreaks.length} /> breaks planned</strong><span><CountUp duration={0.6} to={totalMinutes} /> minutes total</span></div>
         {!plannedBreaks.length && <div className="planner-day-section"><h2>A little space for yourself</h2><p>Add an activity here or ask the break assistant to suggest a plan.</p></div>}
         {dates.map((date) => <div key={date}>
           <h2 style={{ padding: '18px 20px 0' }}>{date}</h2>

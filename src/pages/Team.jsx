@@ -30,6 +30,7 @@ import {
   removePendingRequest,
   syncPendingRequests,
 } from '@/lib/team'
+import BlurText from '@/components/react-bits/BlurText'
 
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
@@ -572,7 +573,7 @@ function Team() {
   return (
     <section className="page team-page">
       <div className="team-heading">
-        <h1>Team breaks</h1>
+        <BlurText animateBy="words" as="h1" delay={50} direction="bottom" stepDuration={0.28} text="Team breaks" />
         <p>Move together, compete a little, and keep each other accountable.</p>
       </div>
 

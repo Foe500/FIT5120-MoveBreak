@@ -26,7 +26,8 @@ const BlurText = ({
   easing = t => t,
   onAnimationComplete,
   stepDuration = 0.35,
-  as: Component = 'p'
+  as: Component = 'p',
+  id
 }) => {
   const elements = animateBy === 'words' ? text.split(' ') : text.split('');
   const [inView, setInView] = useState(false);
@@ -75,14 +76,14 @@ const BlurText = ({
 
   if (shouldReduceMotion) {
     return (
-      <Component ref={ref} className={className}>
+      <Component ref={ref} className={className} id={id}>
         {text}
       </Component>
     );
   }
 
   return (
-    <Component ref={ref} className={className} style={{ display: 'flex', flexWrap: 'wrap' }}>
+    <Component ref={ref} className={className} id={id} style={{ display: 'flex', flexWrap: 'wrap' }}>
       {elements.map((segment, index) => {
         const animateKeyframes = buildKeyframes(fromSnapshot, toSnapshots);
 
