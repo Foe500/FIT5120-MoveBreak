@@ -7,7 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 import ai_tools
-from ai_schemas import ChatRequest
+from ai_schemas import ChatRequest, Intent
 
 NOW = datetime(2026, 10, 2, 12, 0, tzinfo=ZoneInfo("Australia/Melbourne"))
 
@@ -121,3 +121,68 @@ def test_rejects_unknown_or_multiple_tool_calls(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         ai_tools.select_tool(ChatRequest(message="15 minutes"), NOW)
     assert exc.value.detail["code"] == "AI_INVALID_TOOL_CALL"
+
+
+def test_hybrid_handles_simple_recommendation_locally(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "hybrid")
+    remote = Mock(side_effect=AssertionError("remote provider should not be called"))
+    monkeypatch.setattr(ai_tools, "extract", remote)
+
+    name, intent = ai_tools.select_tool(ChatRequest(message="I have 15 minutes and feel tired indoors"), NOW)
+
+    assert name == "local_recommend_break"
+    assert intent.availableMinutes == 15
+    assert intent.energy == "low"
+    assert intent.setting == "Indoor"
+    remote.assert_not_called()
+
+
+def test_hybrid_handles_explicit_plan_locally(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "hybrid")
+    remote = Mock(side_effect=AssertionError("remote provider should not be called"))
+    monkeypatch.setattr(ai_tools, "extract", remote)
+
+    name, intent = ai_tools.select_tool(ChatRequest(message="Plan breaks tomorrow from 1-2 pm and 5-6 pm"), NOW)
+
+    assert name == "local_create_plan_preview"
+    assert len(intent.windows) == 2
+    remote.assert_not_called()
+
+
+def test_hybrid_sends_complex_language_to_provider(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "hybrid")
+    remote_intent = Intent(intent="recommend", language="en", availableMinutes=10, energy="low")
+    remote = Mock(return_value=remote_intent)
+    monkeypatch.setattr(ai_tools, "extract", remote)
+    request = ChatRequest(message="I've been staring at code all morning. What would help me reset?")
+
+    name, intent = ai_tools.select_tool(request, NOW)
+
+    assert name == "provider_extract"
+    assert intent is remote_intent
+    remote.assert_called_once_with(request, NOW)
+
+
+def test_hybrid_does_not_resolve_follow_up_references_locally(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "hybrid")
+    remote = Mock(return_value=Intent(intent="plan", language="en", windows=[]))
+    monkeypatch.setattr(ai_tools, "extract", remote)
+    request = ChatRequest(message="Move the second one earlier and keep the first one")
+
+    name, _ = ai_tools.select_tool(request, NOW)
+
+    assert name == "provider_extract"
+    remote.assert_called_once_with(request, NOW)
+
+
+def test_hybrid_does_not_drop_unknown_activity_requirements(monkeypatch):
+    monkeypatch.setenv("AI_MODE", "hybrid")
+    remote = Mock(return_value=Intent(intent="clarify", language="en", clarification="Would you like a catalog activity instead?"))
+    monkeypatch.setattr(ai_tools, "extract", remote)
+    request = ChatRequest(message="I need a 15 minute yoga break")
+
+    name, intent = ai_tools.select_tool(request, NOW)
+
+    assert name == "provider_extract"
+    assert intent.intent == "clarify"
+    remote.assert_called_once_with(request, NOW)

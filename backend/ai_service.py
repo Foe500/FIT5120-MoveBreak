@@ -1,4 +1,4 @@
-"""Provider adapter. Mock is opt-in; provider failures never masquerade as AI replies."""
+"""Local and remote intent adapters; provider failures never masquerade as local results."""
 import json
 import os
 import re
@@ -12,6 +12,15 @@ from ai_schemas import Intent, Window
 
 DEFAULT_AI_BASE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 DEFAULT_AI_MODEL = "moonshotai/kimi-k3"
+LOCAL_VOCABULARY = frozenset({
+    "a", "activity", "afternoon", "am", "and", "anywhere", "at", "available", "back", "body", "break",
+    "breaks", "either", "energy", "evening", "exhausted", "eyes", "eye", "feel", "find", "for", "from",
+    "full", "have", "i", "in", "indoor", "indoors",
+    "inside", "leg", "legs", "low", "me", "min", "mins", "minute", "minutes", "my", "neck", "need",
+    "not", "only", "outdoor", "outdoors", "outside", "plan", "please", "pm", "recommend", "rest",
+    "schedule", "seated", "short", "shoulder", "shoulders", "sitting", "standing", "stay", "suggest",
+    "the", "tired", "to", "today", "tomorrow", "morning", "very", "wrist", "wrists",
+})
 
 
 def mode():
@@ -19,8 +28,8 @@ def mode():
 
 
 def is_remote_mode():
-    """provider is the generic remote mode; nvidia remains supported for old .env files."""
-    return mode() in {"provider", "nvidia"}
+    """Hybrid and provider use generic remote inference; nvidia supports old .env files."""
+    return mode() in {"hybrid", "provider", "nvidia"}
 
 
 def provider_name():
@@ -180,6 +189,50 @@ def mock_extract(request, now):
     if not intent.availableMinutes and not re.search(r"break|rest|休息|活动|活動|tired|累|minute|分钟", text):
         intent.intent = "unsupported"
     return intent
+
+
+def try_local_extract(request, now):
+    """Return an Intent only when the deterministic parser has a narrow, reliable match."""
+    intent = mock_extract(request, now)
+    latest = request.message.lower().strip()
+    planning_cue = bool(re.search(r"\b(?:plan|schedule)\b|安排|规划|規劃|有空|空闲", latest))
+    explicit_duration = bool(re.search(r"\b\d{1,3}\s*(?:min(?:ute)?s?)\b|\d{1,3}\s*(?:分钟|分鐘)", latest))
+    bare_duration = bool(re.fullmatch(r"\s*\d{1,3}\s*", latest))
+    recommendation_cue = bool(re.search(
+        r"\b(?:break|rest|activity|recommend|suggest|find|tired|exhausted|indoor|outdoor|eyes?|neck|shoulders?|back|wrists?|legs?|seated|standing)\b|"
+        r"休息|活动|活動|推荐|推薦|建议|建議|累|疲劳|疲勞|室内|室內|户外|戶外|眼|颈|頸|肩|背|腕|腿|坐|站",
+        latest,
+    ))
+    complex_reference = bool(re.search(
+        r"\b(?:first|second|later|earlier|instead|previous|same one|meeting|calendar|after lunch|before i leave)\b|"
+        r"第一个|第二个|后一个|前一个|改成|会议|日历|午饭后|下班前",
+        latest,
+    ))
+    english_words = re.findall(r"[a-z]+", latest)
+    known_vocabulary = not english_words or all(word in LOCAL_VOCABULARY for word in english_words)
+
+    if complex_reference or not known_vocabulary:
+        return None
+    if intent.intent == "plan":
+        return intent if planning_cue and bool(intent.windows) else None
+    if intent.intent == "clarify":
+        known_safety_limit = bool(re.search(r"step.free|wheelchair|无障碍|無障礙", latest))
+        has_time_range = bool(re.search(r"\d{1,2}(?::\d{2})?\s*(?:am|pm|点|點)?\s*(?:-|–|—|to|到|至)", latest))
+        return intent if known_safety_limit or explicit_duration or (planning_cue and has_time_range) else None
+    if intent.intent != "recommend":
+        return None
+
+    simple_duration_only = bool(re.fullmatch(
+        r"(?:i\s+(?:only\s+)?have\s+)?\d{1,3}\s*(?:min(?:ute)?s?)?|(?:我)?(?:只有)?\d{1,3}\s*(?:分钟|分鐘)",
+        latest,
+    ))
+    if simple_duration_only or (bare_duration and bool(request.history)):
+        return intent
+    if explicit_duration and recommendation_cue:
+        return intent
+    if recommendation_cue and len(latest.split()) <= 14:
+        return intent
+    return None
 
 
 def localize(result, language):

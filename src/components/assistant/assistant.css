@@ -14,6 +14,8 @@
 .assistant-turn { margin-bottom:20px; font-size:14px; line-height:1.55; overflow-wrap:anywhere; }
 .assistant-turn.user { background:var(--color-soft-green); border-radius:12px 12px 3px 12px; margin-left:35px; padding:12px 14px; }
 .assistant-turn.assistant>p { margin-bottom:12px; white-space:pre-wrap; }
+.assistant-processing { display:inline-flex; align-items:center; min-height:20px; margin:-4px 0 8px; padding:2px 7px; border:1px solid var(--color-border); border-radius:999px; color:var(--color-muted); background:white; font-size:10px; font-weight:650; }
+.assistant-processing.local { color:var(--color-success-hover); background:var(--color-soft-green); }
 .assistant-candidate { border:1px solid var(--color-border); border-radius:12px; padding:14px; margin:10px 0; background:white; }
 .assistant-candidate-meta { display:flex; justify-content:space-between; font-size:11px; color:var(--color-success); }
 .assistant-candidate h3 { margin:8px 0 6px; font-size:15px; color:var(--color-heading); }

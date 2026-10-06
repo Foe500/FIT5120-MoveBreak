@@ -12,7 +12,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from ai_schemas import Intent
-from ai_service import extract, mode
+from ai_service import extract, mode, try_local_extract
 
 
 def _nullable(schema):
@@ -155,14 +155,31 @@ def _intent_from_call(name, arguments):
     raise ValueError("Unknown tool")
 
 
+def _local_tool_name(intent):
+    return {
+        "recommend": "local_recommend_break",
+        "plan": "local_create_plan_preview",
+        "clarify": "local_ask_clarification",
+        "unsupported": "local_unsupported_request",
+    }[intent.intent]
+
+
 def select_tool(request, now):
     """Return (tool_name, validated Intent).
 
-    Mock mode keeps the deterministic parser for local/offline testing. In
-    NVIDIA mode the provider must issue exactly one function/tool call.
+    Mock mode always uses the deterministic parser. Hybrid mode uses it only
+    for high-confidence requests and otherwise calls the configured provider.
+    In NVIDIA mode the provider must issue exactly one function/tool call.
     """
-    if mode() != "nvidia":
-        return "mock_extract", extract(request, now)
+    current_mode = mode()
+    if current_mode == "hybrid":
+        local_intent = try_local_extract(request, now)
+        if local_intent is not None:
+            return _local_tool_name(local_intent), local_intent
+        return "provider_extract", extract(request, now)
+    if current_mode != "nvidia":
+        tool_name = "mock_extract" if current_mode == "mock" else "provider_extract"
+        return tool_name, extract(request, now)
 
     instruction = (
         "You are the MoveBreak assistant action router. You MUST call exactly one provided tool and never answer in plain text. "

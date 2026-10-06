@@ -1,6 +1,6 @@
 # MoveBreak AI Break Assistant
 
-This branch adds a global bottom-right chat panel, existing-activity recommendations and a confirmed Planner workflow. Local development uses an explicitly labelled **mock mode**, with no external inference. NVIDIA support is implemented but a real API key and live inference validation are still required.
+This branch adds a global bottom-right chat panel, existing-activity recommendations and a confirmed Planner workflow. Local development can use an explicitly labelled **mock mode**, with no external inference. The recommended production-style setup is **hybrid mode**: narrow, high-confidence requests are parsed locally and complex language falls back to an OpenAI-compatible provider.
 
 ## Local setup
 
@@ -33,18 +33,22 @@ npm run dev -- --host 127.0.0.1 --port 5173
 - Frontend API base: `VITE_API_BASE_URL`, default `http://127.0.0.1:8000`.
 - After initial setup, `bash scripts/start-local.sh` starts both processes. It also supports the bundled runtimes on the current development computer.
 
-## Switching to NVIDIA
+## Switching to hybrid AI
 
-Create a key on the NVIDIA model page yourself; do not put it in chat, Git, frontend code or any `VITE_` variable. Edit the ignored `backend/.env` locally:
+Create a provider key yourself; do not put it in chat, Git, frontend code or any `VITE_` variable. Edit the ignored `backend/.env` locally:
 
 ```dotenv
-AI_MODE=nvidia
-NVIDIA_API_KEY=YOUR_KEY_HERE
-NVIDIA_MODEL=moonshotai/kimi-k3
+AI_MODE=hybrid
+AI_PROVIDER=nvidia
+AI_BASE_URL=https://integrate.api.nvidia.com/v1/chat/completions
+AI_API_KEY=YOUR_KEY_HERE
+AI_MODEL=moonshotai/kimi-k3
 AI_SIGNING_SECRET=YOUR_LONG_RANDOM_SECRET
 ```
 
-Generate the signing secret locally with `python -c "import secrets; print(secrets.token_hex(32))"`. Restart the backend after changing the environment. The signing secret must be shared by all workers; without one the prototype creates an in-memory secret and previews expire on restart. No credentials are needed in mock mode.
+Generate the signing secret locally with `python -c "import secrets; print(secrets.token_hex(32))"`. Restart the backend after changing the environment. The signing secret must be shared by all workers; without one the prototype creates an in-memory secret and previews expire on restart. No credentials are needed in mock mode. Legacy `AI_MODE=nvidia`, `NVIDIA_API_KEY` and `NVIDIA_MODEL` configuration remains supported.
+
+Hybrid mode keeps explicit, deterministic requests local, including simple duration-based recommendations and fully specified planning windows. Follow-up references, complex free-form language and requests the local parser cannot classify reliably go to the provider. Provider failures are surfaced; the system never silently treats a failed AI call as a successful local parse.
 
 Verified provider references:
 
@@ -68,8 +72,9 @@ Model access, free usage and provider quotas depend on the current NVIDIA accoun
 - Preview start times can be edited within the original availability windows. Activity replacements can be requested through a new preference message; no direct named-activity command execution is implemented.
 - Nothing is added until confirmation. The server rechecks signed preview tokens, duration, time window and overlaps; the frontend rechecks the latest browser plan and then saves. A repeated confirmation does not duplicate the same item.
 - Plans are stored in **localStorage**, matching the existing code, and survive reload. This intentionally differs from the older sessionStorage requirements draft. No account or server-side Planner persistence was added.
-- Conversation stays in page memory and is cleared by reload or Clear chat. NVIDIA mode sends user messages and bounded recent history to NVIDIA; existing plan times and selected origin are handled by our backend, not included in the model extraction request. Model-generated text is rendered as text, not HTML.
+- Conversation stays in page memory and is cleared by reload or Clear chat. In hybrid mode, locally handled requests are not sent to the provider; fallback requests send the user message and bounded recent history. Existing plan times and selected origin are handled by our backend, not included in the model extraction request. Model-generated text is rendered as text, not HTML.
 - NVIDIA replies follow the detected user language; catalog activity names remain canonical. Mock mode supports English/Chinese sample phrasing only and is not a general conversational model.
+- Assistant replies expose `processing: "local" | "ai"`; the panel labels each answer as `Handled locally` or `AI-assisted` for demo and privacy transparency.
 
 ## Code ownership and locations
 
@@ -77,7 +82,8 @@ Backend:
 
 - `ai_routes.py`: status/chat/confirmation routes, local rate limiting.
 - `ai_schemas.py`: validated request and intent schemas.
-- `ai_service.py`: mock parser and NVIDIA adapter; no automatic mock fallback on provider errors.
+- `ai_service.py`: deterministic parser, high-confidence routing gate and generic provider adapter.
+- `ai_tools.py`: hybrid routing and the legacy NVIDIA tool-calling adapter.
 - `break_planning.py`: actual catalog selection, exact budget checks, interval scheduling and signed previews.
 - `main.py`: registers the router.
 
@@ -96,10 +102,10 @@ Frontend:
 ### GET /ai/status
 
 ```json
-{"mode":"mock","available":true,"provider":null}
+{"mode":"hybrid","available":true,"provider":"nvidia","providerAvailable":true}
 ```
 
-Modes: `disabled` (default), `mock` (explicit demo), `nvidia` (real provider). A missing key in NVIDIA mode is an error, not a silent fallback.
+Modes: `disabled` (default), `mock` (local demo), `hybrid` (local first, provider fallback), `provider` (provider for every request) and `nvidia` (legacy tool-calling mode). Hybrid mode remains available for local matches when the key is missing, while complex requests return `AI_NOT_CONFIGURED` instead of being guessed locally.
 
 ### POST /ai/chat
 
@@ -121,7 +127,7 @@ Modes: `disabled` (default), `mock` (explicit demo), `nvidia` (real provider). A
 Response fields:
 
 - `type`: `recommendations`, `plan_preview`, `clarification` or `no_match`.
-- `mode`, `language`, `timezone`, `reply`: presentation context.
+- `mode`, `processing`, `language`, `timezone`, `reply`: presentation context. `processing` is `local` or `ai`.
 - `constraints`: parsed preferences for inspection and debugging.
 - `recommendations`: candidates, each with `activityId` or `placeId`, `title`, `setting`, `durationMinutes`, `reason`, `startPath`, `token`. Indoor also includes `detailPath`, `intensity` and `posture`; outdoor includes `origin`, `directionsUrl` and a `breakPlan` for the existing guided route.
 - `planItems`: the same candidate data plus `proposalItemId`, `startAt`, `endAt`, `windowStart`, `windowEnd`, `token`.

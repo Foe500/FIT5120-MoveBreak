@@ -151,6 +151,25 @@ def test_http_contract_and_limits(db):
     assert client.post('/ai/chat', json={'message':'18 minutes'}).status_code == 429
 
 
+def test_hybrid_http_uses_local_then_requires_configured_fallback(db, monkeypatch):
+    monkeypatch.setenv('AI_MODE', 'hybrid')
+    monkeypatch.delenv('AI_API_KEY', raising=False)
+    monkeypatch.delenv('NVIDIA_API_KEY', raising=False)
+    app = FastAPI(); app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db
+    client = TestClient(app)
+
+    status = client.get('/ai/status').json()
+    assert status['available'] is True
+    assert status['providerAvailable'] is False
+    local = client.post('/ai/chat', json={'message': 'I have 15 minutes and feel tired indoors'})
+    assert local.status_code == 200
+    assert local.json()['processing'] == 'local'
+    fallback = client.post('/ai/chat', json={'message': "I've been staring at code all morning. What would help me reset?"})
+    assert fallback.status_code == 503
+    assert fallback.json()['detail']['code'] == 'AI_NOT_CONFIGURED'
+
+
 def test_nvidia_adapter_failure_and_structured_output(monkeypatch):
     monkeypatch.setenv('AI_MODE','nvidia'); monkeypatch.setenv('NVIDIA_API_KEY','test-not-a-real-key')
     mock = Mock()

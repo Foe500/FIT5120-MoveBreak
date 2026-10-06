@@ -40,11 +40,14 @@ def check_rate_limit(request):
 
 @router.get("/status")
 def status():
-    configured = mode() == "mock" or (is_remote_mode() and bool(api_key()))
+    current_mode = mode()
+    provider_available = is_remote_mode() and bool(api_key())
+    configured = current_mode in {"mock", "hybrid"} or provider_available
     return {
-        "mode": mode(),
+        "mode": current_mode,
         "available": configured,
         "provider": provider_name() if is_remote_mode() else None,
+        "providerAvailable": provider_available,
     }
 
 
@@ -54,9 +57,11 @@ def chat(body: ChatRequest, request: Request, db: Session = Depends(get_db)):
     now = datetime.now(ZoneInfo(body.timezone))
     tool_name, intent = select_tool(body, now)
     result = make_result(body, intent, db, now)
-    result["mode"] = mode()
+    current_mode = mode()
+    result["mode"] = current_mode
+    result["processing"] = "local" if current_mode == "mock" or tool_name.startswith("local_") else "ai"
     # Exposed for debugging/testing only. The client does not need to execute it.
-    result["toolCall"] = tool_name if mode() == "nvidia" else None
+    result["toolCall"] = tool_name if current_mode == "nvidia" else None
     return localize(result, intent.language)
 
 

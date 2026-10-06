@@ -35,6 +35,16 @@ function previewEnd(time, duration) {
   catch { return '' }
 }
 
+function privacyText(status) {
+  if (status?.mode === 'mock') return 'Messages stay with your local demo backend.'
+  if (status?.mode === 'hybrid') {
+    return status.providerAvailable
+      ? `Simple requests stay local. Complex requests may be processed by ${status.provider || 'the configured AI provider'}.`
+      : 'Simple requests stay local. AI fallback is not configured.'
+  }
+  return `Messages and recent conversation are processed by ${status?.provider || 'the configured AI provider'}.`
+}
+
 function PlanPreview({ items, onSaved }) {
   const [times, setTimes] = useState(() => items.map((item) => item.startAt ? localDateTime(item.startAt) : ''))
   const [busy, setBusy] = useState(false)
@@ -160,6 +170,7 @@ export default function BreakAssistant() {
         </div>}
         {turns.map((turn) => <div className={`assistant-turn ${turn.role}`} key={turn.id}>
           <p>{turn.text}</p>
+          {turn.result?.processing && <small className={`assistant-processing ${turn.result.processing}`}>{turn.result.processing === 'local' ? 'Handled locally' : 'AI-assisted'}</small>}
           {turn.result?.recommendations.map((item) => <CandidateCard key={item.token} item={item} onSchedule={setSchedule} onNavigate={start} />)}
           {turn.result?.planItems.length > 0 && <PlanPreview items={turn.result.planItems} onSaved={openSavedPlan} />}
         </div>)}
@@ -180,7 +191,7 @@ export default function BreakAssistant() {
             onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(event) } }} />
           <button type="submit" disabled={busy || !message.trim()} aria-label="Send message"><ArrowUp size={20} /></button>
         </form>
-        <p className="assistant-privacy">{status?.mode === 'mock' ? 'Messages stay with your local demo backend.' : 'Messages and recent conversation are processed by NVIDIA when AI is enabled.'} <Link to="/privacy" onClick={close}>Privacy</Link></p>
+        <p className="assistant-privacy">{privacyText(status)} <Link to="/privacy" onClick={close}>Privacy</Link></p>
         <div className="assistant-bottom"><Link to="/planner" onClick={close}>Open Planner</Link><button disabled={busy} onClick={() => { setTurns([]); setSchedule(null); setError(''); setMessage('') }}>Clear chat</button></div>
       </div>
     </section>}

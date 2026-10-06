@@ -259,4 +259,4 @@ Then manually check:
 
 ## AI Break Assistant
 
-The assistant adds a global chat panel, time-bounded activity candidates and confirmed Planner previews. See [AI setup and frontend/backend handoff](docs/ai-assistant-handoff.md) for local mock mode, NVIDIA configuration, API contracts and tests. Real inference requires a backend-only NVIDIA key. The older Planner notes above describe the Iteration 1 prototype; this branch now uses browser localStorage for plans and enables the Planner navigation.
+The assistant adds a global chat panel, time-bounded activity candidates and confirmed Planner previews. It supports a hybrid mode that resolves narrow, high-confidence requests locally and sends complex language to a backend-only OpenAI-compatible provider. See [AI setup and frontend/backend handoff](docs/ai-assistant-handoff.md) for mock/hybrid configuration, API contracts and tests. The older Planner notes above describe the Iteration 1 prototype; this branch now uses browser localStorage for plans and enables the Planner navigation.
