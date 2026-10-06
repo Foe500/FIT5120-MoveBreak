@@ -20,6 +20,7 @@ import {
   saveOutdoorBreakSession,
 } from '@/lib/outdoorBreak'
 import { completeTeamBreakSessions, startTeamBreakSessions } from '@/lib/team'
+import Magnet from '@/components/react-bits/Magnet'
 
 function formatClock(totalSeconds) {
   const safeSeconds = Math.max(0, Math.round(totalSeconds))
@@ -277,9 +278,11 @@ function OutdoorGuidedBreak() {
               <RotateCcw size={16} />
               Restart
             </Button>
-            <Button asChild>
-              <Link to="/explore">Find another place</Link>
-            </Button>
+            <Magnet magnetStrength={4} padding={40}>
+              <Button asChild>
+                <Link to="/explore">Find another place</Link>
+              </Button>
+            </Magnet>
             <Button asChild variant="outline">
               <Link to="/team">Explore teams</Link>
             </Button>

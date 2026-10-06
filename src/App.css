@@ -5800,3 +5800,72 @@ main {
   font-weight: 700;
   text-align: center;
 }
+
+.guided-exercise-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.4rem 0 0.2rem;
+  padding: 0;
+  list-style: none;
+}
+
+.guided-exercise-step {
+  display: flex;
+  align-items: center;
+}
+
+.guided-exercise-step + .guided-exercise-step::before {
+  content: '';
+  width: 1.6rem;
+  height: 2px;
+  background: #d5dfd2;
+  transition: background 0.4s ease;
+}
+
+.guided-exercise-step.done + .guided-exercise-step::before,
+.guided-exercise-step.current::before {
+  background: #55735b;
+}
+
+.guided-exercise-step span {
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border: 2px solid #d5dfd2;
+  border-radius: 999px;
+  color: #6b7f72;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition:
+    background 0.35s ease,
+    border-color 0.35s ease,
+    color 0.35s ease,
+    transform 0.35s ease;
+}
+
+.guided-exercise-step.done span {
+  border-color: #55735b;
+  color: #fff;
+  background: #55735b;
+}
+
+.guided-exercise-step.current span {
+  border-color: #f06d52;
+  color: #f06d52;
+  transform: scale(1.12);
+  box-shadow: 0 0 0 4px rgba(240, 109, 82, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guided-exercise-step span,
+  .guided-exercise-step::before {
+    transition: none;
+  }
+
+  .guided-exercise-step.current span {
+    transform: none;
+  }
+}

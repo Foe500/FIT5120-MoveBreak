@@ -389,6 +389,28 @@ function IndoorGuidedSession() {
                 <span>{currentStepText}</span>
               </>
             )}
+            {activities.length > 1 ? (
+              <ol className="guided-exercise-stepper" aria-label="Exercises in this session">
+                {activities.map((activity, index) => {
+                  const state = isComplete || index < currentActivityIndex
+                    ? 'done'
+                    : index === currentActivityIndex
+                      ? 'current'
+                      : 'upcoming'
+
+                  return (
+                    <li
+                      aria-current={state === 'current' ? 'step' : undefined}
+                      className={`guided-exercise-step ${state}`}
+                      key={activity.id}
+                      title={activity.title}
+                    >
+                      <span>{state === 'done' ? <CheckCircle2 size={15} /> : index + 1}</span>
+                    </li>
+                  )
+                })}
+              </ol>
+            ) : null}
             <div className="guided-progress-track" aria-label="Guided session progress">
               <div style={{ width: `${progressPercent}%` }} />
             </div>

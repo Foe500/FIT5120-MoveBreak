@@ -30,6 +30,7 @@ import { useActivityMusic } from '@/lib/useActivityMusic'
 import BlurText from '@/components/react-bits/BlurText'
 import ClickSpark from '@/components/react-bits/ClickSpark'
 import CountUp from '@/components/react-bits/CountUp'
+import Magnet from '@/components/react-bits/Magnet'
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -333,9 +334,11 @@ function IndoorGuidedBreak() {
                   <Button asChild variant="outline">
                     <Link to="/">Back to Home</Link>
                   </Button>
-                  <Button asChild>
-                    <Link to="/activities">Activity Library</Link>
-                  </Button>
+                  <Magnet magnetStrength={4} padding={40}>
+                    <Button asChild>
+                      <Link to="/activities">Activity Library</Link>
+                    </Button>
+                  </Magnet>
                 </div>
               </div>
             </ClickSpark>
