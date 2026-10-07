@@ -10,7 +10,7 @@
 .assistant-welcome h3 { font-size:26px; line-height:1.2; letter-spacing:-.5px; color:var(--color-heading); margin:9px 0 12px; font-weight:600; }
 .assistant-welcome>p:not(.assistant-eyebrow) { font-size:14px; line-height:1.6; color:var(--color-muted); margin-bottom:20px; }
 .assistant-eyebrow { color:var(--color-success); letter-spacing:1.5px; font-size:10px; font-weight:700; }
-.assistant-welcome>button { display:block; text-align:left; width:100%; padding:12px 14px; margin-top:8px; border:1px solid var(--color-border); border-radius:10px; background:white; font-size:13px; }
+.assistant-welcome .assistant-examples { font-size:12px; font-weight:400; line-height:1.7; color:var(--color-muted); }
 .assistant-turn { margin-bottom:20px; font-size:14px; line-height:1.55; overflow-wrap:anywhere; }
 .assistant-turn.user { background:var(--color-soft-green); border-radius:12px 12px 3px 12px; margin-left:35px; padding:12px 14px; }
 .assistant-turn.assistant>p { margin-bottom:12px; white-space:pre-wrap; }

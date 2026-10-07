@@ -135,9 +135,9 @@ export default function BreakAssistant() {
       },
     })
   }
-  async function send(event, example) {
+  async function send(event) {
     event?.preventDefault()
-    const text = (example || message).trim()
+    const text = message.trim()
     if (!text || busy) return
     setBusy(true); setError(''); setSchedule(null)
     const history = turns.filter((turn) => turn.role === 'user' || turn.result).slice(-10).map((turn) => ({ role: turn.role, content: turn.text }))
@@ -172,9 +172,7 @@ export default function BreakAssistant() {
           <p className="assistant-eyebrow">MAKE TIME FOR YOU</p>
           <h3>What would feel good right now?</h3>
           <p>Tell me your time and how you feel. Find an activity, or make a little space in your day.</p>
-          <button onClick={(e) => send(e, 'I have 18 minutes and feel tired.')} disabled={busy}>I have 18 minutes and feel tired.</button>
-          <button onClick={(e) => send(e, 'Plan breaks tomorrow from 1–2 pm and 5–6 pm.')} disabled={busy}>Plan my breaks for tomorrow.</button>
-          <button onClick={(e) => send(e, 'I need a short indoor break for my shoulders.')} disabled={busy}>I need a short indoor shoulder break.</button>
+          <p className="assistant-examples">e.g. “I have 18 minutes and feel tired.”<br />e.g. “Plan breaks tomorrow from 1–2 pm and 5–6 pm.”</p>
         </div>}
         {turns.map((turn) => <div className={`assistant-turn ${turn.role}`} key={turn.id}>
           <p>{turn.text}</p>
@@ -198,7 +196,7 @@ export default function BreakAssistant() {
         </label>}
         <form onSubmit={send} className="assistant-input-row">
           <textarea ref={inputRef} value={message} onChange={(event) => setMessage(event.target.value)} maxLength={2000} rows={2}
-            placeholder="How much time do you have?" aria-label="Message the break assistant"
+            placeholder="Type your break request..." aria-label="Message the break assistant"
             onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(event) } }} />
           <button type="submit" disabled={busy || !message.trim()} aria-label="Send message"><ArrowUp size={20} /></button>
         </form>

@@ -19,7 +19,7 @@ def _nullable(schema):
 
 def _preference_properties(include_windows=False):
     props = {
-        "language": {"type": "string", "description": "BCP47 language code matching the latest user message."},
+        "language": {"type": "string", "enum": ["en"], "description": "Always use English for MoveBreak responses."},
         "availableMinutes": _nullable({"type": "integer", "minimum": 1, "maximum": 120}),
         "energy": {"type": "string", "enum": ["low", "any"]},
         "setting": {"type": "string", "enum": ["Indoor", "Outdoor", "Any"]},
@@ -79,8 +79,8 @@ TOOLS = [
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
-                    "language": {"type": "string"},
-                    "question": {"type": "string", "minLength": 1, "maxLength": 500},
+                    "language": {"type": "string", "enum": ["en"]},
+                    "question": {"type": "string", "minLength": 1, "maxLength": 500, "description": "Ask in English only."},
                 },
                 "required": ["language", "question"],
             },
@@ -94,7 +94,7 @@ TOOLS = [
             "parameters": {
                 "type": "object",
                 "additionalProperties": False,
-                "properties": {"language": {"type": "string"}},
+                "properties": {"language": {"type": "string", "enum": ["en"]}},
                 "required": ["language"],
             },
         },
@@ -146,13 +146,18 @@ def _intent_from_call(name, arguments):
         raise ValueError("Tool arguments must be an object")
 
     if name == "recommend_break":
-        return Intent.model_validate({**arguments, "intent": "recommend", "windows": [], "clarification": ""})
+        return Intent.model_validate({**arguments, "language": "en", "intent": "recommend", "windows": [], "clarification": ""})
     if name == "create_plan_preview":
-        return Intent.model_validate({**arguments, "intent": "plan", "clarification": ""})
+        return Intent.model_validate({**arguments, "language": "en", "intent": "plan", "clarification": ""})
     if name == "ask_clarification":
-        return Intent(intent="clarify", language=arguments.get("language", "en"), clarification=arguments["question"])
+        question = arguments["question"]
+        if not isinstance(question, str):
+            raise ValueError("Clarification must be a string")
+        if not question.isascii():
+            question = "Please clarify your break request in English."
+        return Intent(intent="clarify", language="en", clarification=question)
     if name == "unsupported_request":
-        return Intent(intent="unsupported", language=arguments.get("language", "en"))
+        return Intent(intent="unsupported", language="en")
     raise ValueError("Unknown tool")
 
 
@@ -176,6 +181,7 @@ def _provider_tool_call(request, now):
         "or an exact requested activity cannot be expressed by the tool schema, call ask_clarification. "
         "For planning, windows must be local ISO datetimes with explicit dates and times resolved from today/tomorrow using the supplied clock. "
         "Fatigue means energy=low; it does not imply a body area or Indoor. Unspecified setting is Any. "
+        "Always set language=en and write clarification questions in English, even if the user writes in another language. "
         "Requests outside break recommendation/planning use unsupported_request. Never diagnose medical conditions and never claim anything was saved."
     )
     messages = [{"role": "system", "content": instruction}]

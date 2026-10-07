@@ -58,7 +58,7 @@ Verified provider references:
 - https://docs.api.nvidia.com/nim/reference/llm-apis
 - Hosted endpoint: `https://integrate.api.nvidia.com/v1/chat/completions`
 
-Model access, free usage and provider quotas depend on the current NVIDIA account and offering. The app does not assume a guaranteed free tier or 40 requests/minute. Provider 429 responses are surfaced. The prototype additionally caps chat requests at 6/client/minute and 15/process/minute; non-English/Chinese responses may use a second provider request for translation. Before wider deployment use a shared limiter at the gateway (the current in-memory limits are per worker), enforce appropriate API access, and verify the selected model with real calls. The existing site password gate is frontend access control, not authentication for the separate FastAPI server.
+Model access, free usage and provider quotas depend on the current NVIDIA account and offering. The app does not assume a guaranteed free tier or 40 requests/minute. Provider 429 responses are surfaced. The prototype additionally caps chat requests at 6/client/minute and 15/process/minute. Before wider deployment use a shared limiter at the gateway (the current in-memory limits are per worker), enforce appropriate API access, and verify the selected model with real calls. The existing site password gate is frontend access control, not authentication for the separate FastAPI server.
 
 ## User-facing behaviour
 
@@ -75,7 +75,8 @@ Model access, free usage and provider quotas depend on the current NVIDIA accoun
 - Nothing is added until confirmation. The server rechecks signed preview tokens, duration, time window and overlaps; the frontend rechecks the latest browser plan and then saves. A repeated confirmation does not duplicate the same item.
 - Plans are stored in **localStorage**, matching the existing code, and survive reload. This intentionally differs from the older sessionStorage requirements draft. No account or server-side Planner persistence was added.
 - Conversation stays in page memory and is cleared by reload or Clear chat. In hybrid mode, locally handled requests are not sent to the provider; fallback requests send the user message and bounded recent history. Existing plan times and selected origin are handled by our backend, not included in the model extraction request. Model-generated text is rendered as text, not HTML.
-- NVIDIA replies follow the detected user language; catalog activity names remain canonical. Mock mode supports English/Chinese sample phrasing only and is not a general conversational model.
+- The assistant interface, replies and clarification questions use English only. Mock mode can still recognize some Chinese sample phrasing, but always replies in English; it is not a general conversational model.
+- The initial chat panel has a free-text input and plain-text examples rather than example choice buttons. The outdoor starting-point selector appears only after an outdoor request.
 - Assistant replies expose `processing: "local" | "ai"`; the panel labels each answer as `Handled locally` or `AI-assisted` for demo and privacy transparency. AI-assisted replies also expose a display-only allowlisted `toolCall` name, while raw model arguments and tool execution stay on the backend.
 
 ## Code ownership and locations
@@ -181,7 +182,7 @@ npm run build
 Manual examples:
 
 1. “I have 18 minutes and feel tired.” → up to three candidates, each ≤18 min.
-2. “我只有18分钟，今天很累。” → Chinese reply and low-intensity candidates.
+2. “I have 8 minutes and prefer indoors.” → English reply and indoor candidates within 8 minutes.
 3. “Actually, only 8 minutes, indoors.” → revised budget and retained low energy.
 4. “Plan breaks tomorrow from 1–2 pm and 5–6 pm.” → two preview windows; confirm, open Planner, reload.
 5. “Plan breaks tomorrow from 1–2 and 5–6.” → AM/PM clarification.
