@@ -21,6 +21,7 @@ backend/
 ├── main.py                             modified
 ├── models.py                           existing SQLAlchemy models
 ├── prepare_footfall_model_assets.py    new validation/install command
+├── recommendation_contract.py          new FastAPI response schema
 ├── recommendations.py                  modified
 ├── requirements.txt                    modified
 └── model/
@@ -132,6 +133,12 @@ Example request:
 GET /recommendations?lat=-37.8136&lng=144.9732&break_time=15&limit=20&request_time=2026-10-07T12:00:00+11:00
 ```
 
+The response includes `contract_version: 1` and is validated against
+`RecommendationResponse`. The React client rejects unknown contract versions,
+reads `data_status` and `footfall_model`, and only applies the crowd preference
+to locations with a usable `footfall_percentile`. When model assets are absent,
+the page states that the ranking is using a balanced fallback.
+
 ## localStorage contract
 
 The browser key is:
@@ -150,6 +157,7 @@ has enforced the time-safe filter.
 - Python syntax compilation passed.
 - Model-asset validation and atomic installation passed with an isolated fixture.
 - Backend fallback ranking contract passed without model files.
+- FastAPI exposes and validates the versioned `RecommendationResponse` schema.
 - localStorage save/read/re-ranking contract passed.
 - Both notebook files passed JSON validation.
 - ESLint passed.

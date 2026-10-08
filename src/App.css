@@ -1822,6 +1822,21 @@ main {
   background: #08713f;
 }
 
+.crowd-model-status {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  color: #66758d;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.crowd-model-status svg {
+  flex: 0 0 auto;
+  margin-top: 0.08rem;
+  color: #477050;
+}
+
 .map-location-search {
   position: relative;
   display: grid;

@@ -15,6 +15,7 @@ import {
   Navigation,
   Play,
   Search,
+  Users,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -132,6 +133,31 @@ function getPlaceTotalTimeLabel(place) {
   return place.estimated_total_time ? `${place.estimated_total_time} min total` : 'Total time unavailable'
 }
 
+function getCrowdEstimateLabel(place) {
+  const percentile = Number(place.footfall_percentile)
+
+  if (!place.footfall_available || !Number.isFinite(percentile)) {
+    return 'Typical crowd estimate unavailable for this location'
+  }
+  if (percentile <= 0.33) {
+    return 'Typically quieter at this time'
+  }
+  if (percentile >= 0.67) {
+    return 'Typically livelier at this time'
+  }
+  return 'Typically moderate activity at this time'
+}
+
+function getCrowdModelMessage(status) {
+  if (status?.exact_model_inference_available) {
+    return 'Crowd preference is applied using the historical footfall model for the selected time.'
+  }
+  if (status?.modelled_hourly_profile_available) {
+    return 'Crowd preference is applied using typical activity for this weekday and time.'
+  }
+  return 'Crowd estimates are unavailable right now, so results use a balanced crowd score.'
+}
+
 function getShortLocationLabel(label) {
   return label.split(',').slice(0, 2).join(',').trim()
 }
@@ -214,6 +240,7 @@ function ExploreMap() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [recommendationDataStatus, setRecommendationDataStatus] = useState(null)
+  const [footfallModelStatus, setFootfallModelStatus] = useState(null)
   const [recommendationPreferences, setRecommendationPreferences] = useState(
     getRecommendationPreferences,
   )
@@ -310,9 +337,14 @@ function ExploreMap() {
         }
 
         const data = await response.json()
-        const recommendations = data.recommendations ?? []
+        if (data.contract_version !== 1 || !Array.isArray(data.recommendations)) {
+          throw new Error('Unsupported recommendation response')
+        }
+
+        const recommendations = data.recommendations
         setPlaces(recommendations)
         setRecommendationDataStatus(data.data_status ?? null)
+        setFootfallModelStatus(data.footfall_model ?? null)
         setSelectedPlace(
           recommendations.find((place) => String(place.id) === requestedPlaceId) ?? null,
         )
@@ -321,6 +353,7 @@ function ExploreMap() {
         // once the user actively picks one from the map or the list.
       } catch {
         setRecommendationDataStatus(null)
+        setFootfallModelStatus(null)
         setError('Time-safe recommendations are unavailable right now.')
       } finally {
         setIsLoading(false)
@@ -637,6 +670,10 @@ function ExploreMap() {
               </button>
             ))}
           </div>
+          <small className="crowd-model-status">
+            <Users size={14} aria-hidden="true" />
+            {getCrowdModelMessage(footfallModelStatus)}
+          </small>
         </div>
 
         <div className="category-tabs" aria-label="Map category filters">
@@ -742,6 +779,10 @@ function ExploreMap() {
             <span>
               <MapPin size={16} />
               {selectedPlace.address ?? 'Address unavailable'}
+            </span>
+            <span>
+              <Users size={16} />
+              {getCrowdEstimateLabel(selectedPlace)}
             </span>
           </div>
 

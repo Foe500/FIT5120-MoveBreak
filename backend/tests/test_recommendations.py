@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from database import Base
 from models import Place
+from recommendation_contract import RecommendationResponse
 from recommendations import build_recommendation_response
 
 
@@ -53,6 +54,7 @@ def test_recommendations_keep_working_without_model_assets(db):
     )
 
     assert response["request_time"] == request_time.isoformat()
+    assert response["contract_version"] == 1
     assert response["ranking"]["weights"]["footfall_suitability"] == 0.40
     assert response["data_status"]["record_count"] == 1
 
@@ -65,6 +67,32 @@ def test_recommendations_keep_working_without_model_assets(db):
     assert recommendation["recommendation_score"] == pytest.approx(
         recommendation["base_recommendation_score"] * 100
     )
+
+    # These are the exact fields consumed by ExploreMap and its local
+    # preference re-ranking. The response model also protects the OpenAPI
+    # contract from accidental backend-only renames.
+    frontend_fields = {
+        "id",
+        "name",
+        "category",
+        "dataset_type",
+        "position",
+        "markerTone",
+        "distance_m",
+        "walking_distance_m",
+        "walking_time_one_way",
+        "walking_time_one_way_label",
+        "activity_time",
+        "buffer_time",
+        "estimated_total_time",
+        "remaining_time",
+        "base_recommendation_score",
+        "ranking_signals",
+        "footfall_available",
+        "footfall_percentile",
+    }
+    assert frontend_fields <= recommendation.keys()
+    assert RecommendationResponse.model_validate(response).contract_version == 1
 
 
 def test_recommendation_response_reports_model_fallback_status(db):

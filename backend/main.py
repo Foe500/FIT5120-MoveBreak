@@ -27,6 +27,7 @@ from recommendations import (
     calculate_recommendations,
     load_recommendation_places,
 )
+from recommendation_contract import RecommendationResponse
 
 # Creates any tables that don't exist yet (e.g. the team/leaderboard
 # tables added after activities/places already existed) without
@@ -452,7 +453,7 @@ def get_places(db: Session = Depends(get_db)):
     return load_recommendation_places(db)
 
 
-@app.get("/recommendations")
+@app.get("/recommendations", response_model=RecommendationResponse)
 def get_recommendations(
     lat: float = Query(MELBOURNE_TOWN_HALL[0]),
     lng: float = Query(MELBOURNE_TOWN_HALL[1]),

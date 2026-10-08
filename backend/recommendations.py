@@ -316,6 +316,7 @@ def build_recommendation_response(latitude, longitude, break_time, db, limit=5,
         request_time=request_time,
     )
     return {
+        "contract_version": 1,
         "origin": {"latitude": latitude, "longitude": longitude},
         "available_break_time": break_time,
         "request_time": request_time.isoformat() if request_time else None,
