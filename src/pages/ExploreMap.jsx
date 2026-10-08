@@ -24,12 +24,23 @@ import { API_BASE_URL } from '@/lib/api'
 import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
 import { saveOutdoorBreakSession } from '@/lib/outdoorBreak'
 import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
+import {
+  getRecommendationPreferences,
+  personaliseRecommendations,
+  recordRecommendationSelection,
+  saveRecommendationPreferences,
+} from '@/lib/recommendationPreferences'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
 const defaultOutdoorBreakDuration = 15
 const maxVisiblePlaces = 40
 const durationOptions = [5, 15, 30]
+const crowdPreferenceOptions = [
+  { value: 'quiet', label: 'Quieter' },
+  { value: 'balanced', label: 'Balanced' },
+  { value: 'lively', label: 'Livelier' },
+]
 const locationSuggestions = [
   {
     label: 'Flagstaff Gardens',
@@ -202,22 +213,30 @@ function ExploreMap() {
   const [isGeocoding, setIsGeocoding] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [recommendationDataStatus, setRecommendationDataStatus] = useState(null)
+  const [recommendationPreferences, setRecommendationPreferences] = useState(
+    getRecommendationPreferences,
+  )
   const [plannedPlaceIds, setPlannedPlaceIds] = useState(
     () => new Set(getSavedPlannerBreaks().map((plannedBreak) => plannedBreak.placeId).filter(Boolean)),
   )
+  const personalisedPlaces = useMemo(
+    () => personaliseRecommendations(places, recommendationPreferences),
+    [places, recommendationPreferences],
+  )
   const categoryOptions = useMemo(
     // Build category buttons from place data so new DS categories appear without frontend changes.
-    () => ['All', ...new Set(places.map((place) => getPlaceCategory(place)).filter(Boolean))],
-    [places],
+    () => ['All', ...new Set(personalisedPlaces.map((place) => getPlaceCategory(place)).filter(Boolean))],
+    [personalisedPlaces],
   )
   const filteredPlaces = useMemo(
     () =>
-      places.filter((place) => {
+      personalisedPlaces.filter((place) => {
         const category = getPlaceCategory(place)
 
         return selectedCategory === 'All' || category === selectedCategory
       }),
-    [places, selectedCategory],
+    [personalisedPlaces, selectedCategory],
   )
   const visiblePlaces = useMemo(
     () =>
@@ -278,7 +297,8 @@ function ExploreMap() {
           lat: String(origin[0]),
           lng: String(origin[1]),
           break_time: String(selectedDuration),
-          limit: '5',
+          request_time: new Date().toISOString(),
+          limit: '20',
         })
         if (selectedNeed) {
           query.set('need', selectedNeed)
@@ -292,6 +312,7 @@ function ExploreMap() {
         const data = await response.json()
         const recommendations = data.recommendations ?? []
         setPlaces(recommendations)
+        setRecommendationDataStatus(data.data_status ?? null)
         setSelectedPlace(
           recommendations.find((place) => String(place.id) === requestedPlaceId) ?? null,
         )
@@ -299,6 +320,7 @@ function ExploreMap() {
         // No place is selected by default — the detail card only opens
         // once the user actively picks one from the map or the list.
       } catch {
+        setRecommendationDataStatus(null)
         setError('Time-safe recommendations are unavailable right now.')
       } finally {
         setIsLoading(false)
@@ -370,6 +392,11 @@ function ExploreMap() {
     nextSearchParams.set('duration', String(duration))
     setSearchParams(nextSearchParams)
     setSelectedPlace(null)
+  }
+
+  function handleCrowdPreferenceChange(crowdPreference) {
+    const nextPreferences = saveRecommendationPreferences({ crowdPreference })
+    setRecommendationPreferences(nextPreferences)
   }
 
   async function handleLocationSearch(event) {
@@ -452,6 +479,7 @@ function ExploreMap() {
 
       savePlannerBreaks([...planItems, savedBreak])
       setPlannedPlaceIds((currentIds) => new Set(currentIds).add(selectedPlace.id))
+      setRecommendationPreferences(recordRecommendationSelection(selectedPlace))
     } catch {
       setError('This break could not be added to your planner.')
     }
@@ -463,6 +491,7 @@ function ExploreMap() {
     }
 
     saveOutdoorBreakSession(getOutdoorBreakPlan(selectedPlace, selectedDuration, currentPosition))
+    setRecommendationPreferences(recordRecommendationSelection(selectedPlace))
   }
 
   return (
@@ -591,6 +620,25 @@ function ExploreMap() {
           </div>
         </div>
 
+        <div className="map-duration-control" aria-label="Choose preferred crowd level">
+          <span>Preferred crowd level</span>
+          <div>
+            {crowdPreferenceOptions.map((option) => (
+              <button
+                aria-pressed={option.value === recommendationPreferences.crowdPreference}
+                className={
+                  option.value === recommendationPreferences.crowdPreference ? 'selected' : ''
+                }
+                key={option.value}
+                onClick={() => handleCrowdPreferenceChange(option.value)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="category-tabs" aria-label="Map category filters">
           {categoryOptions.map((category) => (
             <button
@@ -608,7 +656,13 @@ function ExploreMap() {
 
         {error ? <p className="map-status-message">{error}</p> : null}
         {!isLoading && !error && filteredPlaces.length === 0 ? (
-          <p className="map-status-message">No locations match the current category.</p>
+          <p className="map-status-message">
+            {recommendationDataStatus?.record_count === 0
+              ? 'Nearby location data has not been loaded into the MoveBreak API yet.'
+              : selectedCategory === 'All'
+              ? `No time-safe locations were found nearby for a ${selectedDuration}-minute break.`
+              : `No time-safe locations match the ${selectedCategory} category.`}
+          </p>
         ) : null}
 
         <div className="map-result-list">
