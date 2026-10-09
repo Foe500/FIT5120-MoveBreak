@@ -152,7 +152,7 @@ function getCrowdModelMessage(status) {
   if (status?.exact_model_inference_available) {
     return 'Crowd preference is applied using the historical footfall model for the selected time.'
   }
-  if (status?.modelled_hourly_profile_available) {
+  if (status?.sqlite_profile_available || status?.modelled_hourly_profile_available) {
     return 'Crowd preference is applied using typical activity for this weekday and time.'
   }
   return 'Crowd estimates are unavailable right now, so results use a balanced crowd score.'

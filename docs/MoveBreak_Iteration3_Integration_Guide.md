@@ -19,7 +19,7 @@ backend/
 ├── database.py                         existing database setup
 ├── footfall_service.py                 new
 ├── main.py                             modified
-├── models.py                           existing SQLAlchemy models
+├── models.py                           adds two SQLite footfall tables
 ├── prepare_footfall_model_assets.py    new validation/install command
 ├── recommendation_contract.py          new FastAPI response schema
 ├── recommendations.py                  modified
@@ -40,11 +40,10 @@ notebooks/
 └── MoveBreak_Iteration3_Footfall_Model_Tuning.ipynb
 ```
 
-`models.py`, `database.py` and `build_places_to_db.py` are included for a complete
-backend handoff but are unchanged. `build_places_to_db.py` is the original
-download, cleaning, normalisation and SQLite-loading process for recommendation
-places. With only three supported pedestrian sensors, calculating the nearest
-sensor at runtime is inexpensive and avoids an unnecessary SQLite migration.
+`database.py` and `build_places_to_db.py` retain the current project versions.
+`models.py` adds `pedestrian_sensors` and `footfall_profiles` without replacing
+the existing team security, join approval or server-authoritative break-session
+models. `build_places_to_db.py` remains the original place-data ETL.
 
 ## Data download and processing flow
 
@@ -59,7 +58,7 @@ There are two separate data pipelines:
    and exports `model_ready_data.csv`. The tuning notebook then performs the
    chronological validation search, final holdout evaluation and model export.
 
-## Model and data files that must be copied manually
+## Install the model and SQLite profile
 
 The notebooks export these paths but the handoff archive does not embed the
 generated binary model or CSV files. On the computer or notebook environment
@@ -73,41 +72,30 @@ movebreak_footfall_model_outputs/
     └── final_test_predictions.csv
 ```
 
-Copy and rename nothing:
-
-```text
-backend/model/
-├── footfall_model_selected.joblib
-├── model_ready_data.csv
-└── final_test_predictions.csv
-```
-
-The recommended installation command is:
+Do not copy the CSV files into the API. Run:
 
 ```bash
 python backend/prepare_footfall_model_assets.py \
   --outputs-dir /path/to/movebreak_footfall_model_outputs
 ```
 
-The command validates required columns, timestamps, sensor IDs and the saved
-model contract before copying the assets. It also writes
-`backend/model/asset_manifest.json` with byte sizes and SHA-256 hashes.
+The command validates the model contract, prediction values, sensor IDs and
+complete weekday/hour coverage. It aggregates the final-test predictions into
+504 compact profiles, replaces only the `pedestrian_sensors` and
+`footfall_profiles` rows in `backend/movebreak.db`, copies the Joblib artifact,
+and writes `backend/model/asset_manifest.json` with its SHA-256 hash and SQLite
+audit counts. The CSV files remain offline modelling evidence.
 
 The API continues to work before these files are copied. Its response will show
 `footfall_available: false` and the ranking will use neutral footfall suitability.
 
-## Why the API has two prediction modes
+## Runtime prediction mode
 
-The selected Random Forest is a rolling one-hour-ahead model. It requires recent
-pedestrian lags and cannot honestly predict an arbitrary current hour using only
-a `.joblib` file.
-
-- If the requested historical hour has an exact feature row, the saved model is
-  used directly.
-- For current website requests, the API uses a weekday/hour profile generated
-  from the tuned model's untouched final-test predictions.
-- Both outputs are clearly labelled as historical/model-informed rather than a
-  live crowd measurement.
+The selected Random Forest is a rolling one-hour-ahead model and requires recent
+pedestrian lags. Website requests therefore query the installed SQLite profile
+for the Melbourne weekday and hour. Each request loads the three sensors and the
+three relevant profiles once, then reuses them while ranking all candidate
+places. The result is labelled historical/model-informed, not live crowd data.
 
 ## Install and run
 
@@ -117,6 +105,10 @@ pip install -r backend/requirements.txt
 cd backend
 python migrate_json_to_db.py
 python build_places_to_db.py
+cd ..
+python backend/prepare_footfall_model_assets.py \
+  --outputs-dir /path/to/movebreak_footfall_model_outputs
+cd backend
 python -m uvicorn main:app --reload
 ```
 
@@ -155,16 +147,17 @@ has enforced the time-safe filter.
 ## Integration validation completed
 
 - Python syntax compilation passed.
-- Model-asset validation and atomic installation passed with an isolated fixture.
+- Model validation and SQLite installation of 3 sensors and 504 profiles passed.
 - Backend fallback ranking contract passed without model files.
+- SQLite-backed weekday/hour recommendation contract passed.
 - FastAPI exposes and validates the versioned `RecommendationResponse` schema.
 - localStorage save/read/re-ranking contract passed.
 - Both notebook files passed JSON validation.
 - ESLint passed.
 - Vite production build passed.
 
-Modelled weekday/hour profile inference still needs to be validated after the
-three generated model files are supplied.
+The real model profile still needs to be installed from the notebook outputs;
+until then the API and UI continue with the explicit neutral fallback.
 
 The Vite build reports only its existing large-chunk performance warning; it is
 not a build failure.

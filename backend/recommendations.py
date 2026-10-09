@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from footfall_service import footfall_service
-from models import Place
+from models import FootfallProfile, PedestrianSensor, Place
 
 
 MELBOURNE_TOWN_HALL = (-37.8150, 144.9669)
@@ -213,6 +213,7 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
     source_places = places if places is not None else load_recommendation_places(
         db, latitude, longitude, break_time
     )
+    footfall_context = footfall_service.prepare_context(db, request_time)
     recommendations = []
 
     for place in source_places:
@@ -234,7 +235,11 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
         )
         remaining_display = max(0, break_time - total_display)
         footfall = footfall_service.estimate(
-            place["latitude"], place["longitude"], request_time=request_time
+            db,
+            place["latitude"],
+            place["longitude"],
+            request_time=request_time,
+            context=footfall_context,
         )
         ranking_signals = {
             "footfall_suitability": _balanced_footfall_suitability(
@@ -329,7 +334,7 @@ def build_recommendation_response(latitude, longitude, break_time, db, limit=5,
                 "localStorage may apply a limited preference re-ranking."
             ),
         },
-        "footfall_model": footfall_service.status(),
+        "footfall_model": footfall_service.status(db),
         "calculation": {
             "distance_method": (
                 "Approximate walking distance using Haversine and city-grid detours"
@@ -342,8 +347,14 @@ def build_recommendation_response(latitude, longitude, break_time, db, limit=5,
             "formula": "2 * walking_time_one_way + activity_time + buffer_time",
         },
         "data_status": {
-            "source": "City of Melbourne Open Data stored in SQLite",
+            "source": "City of Melbourne Open Data and modelled profiles stored in SQLite",
             "record_count": db.query(Place).count(),
-            "message": "Recommendations are queried from the places table, not CSV.",
+            "place_record_count": db.query(Place).count(),
+            "pedestrian_sensor_count": db.query(PedestrianSensor).count(),
+            "footfall_profile_count": db.query(FootfallProfile).count(),
+            "message": (
+                "Places, pedestrian sensors and modelled weekday/hour profiles "
+                "are queried from SQLite; the API does not read CSV files at runtime."
+            ),
         },
     }

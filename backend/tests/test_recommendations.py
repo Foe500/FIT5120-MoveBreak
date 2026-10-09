@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from database import Base
-from models import Place
+from models import FootfallProfile, PedestrianSensor, Place
 from recommendation_contract import RecommendationResponse
 from recommendations import build_recommendation_response
 
@@ -106,5 +106,68 @@ def test_recommendation_response_reports_model_fallback_status(db):
 
     status = response["footfall_model"]
     assert status["supported_sensor_ids"] == [17, 19, 79]
+    assert status["installed_sensor_ids"] == []
+    assert status["sqlite_profile_available"] is False
+    assert status["modelled_hourly_profile_available"] is False
+    assert status["expected_profile_count"] == 504
     assert status["maximum_sensor_distance_m"] == 500.0
     assert isinstance(response["recommendations"][0]["footfall_available"], bool)
+
+
+def test_recommendations_use_complete_sqlite_footfall_profile(db):
+    sensor_locations = {
+        17: (-37.813625, 144.973236),
+        19: (-37.812372, 144.965507),
+        79: (-37.817940, 144.966167),
+    }
+    db.add_all([
+        PedestrianSensor(
+            sensor_id=sensor_id,
+            latitude=latitude,
+            longitude=longitude,
+            source_dataset="test-sensors",
+        )
+        for sensor_id, (latitude, longitude) in sensor_locations.items()
+    ])
+    db.flush()
+    db.add_all([
+        FootfallProfile(
+            sensor_id=sensor_id,
+            weekday=weekday,
+            hour=hour,
+            predicted_footfall=100 + hour + sensor_id,
+            footfall_percentile=hour / 23,
+            sample_count=4,
+            model_name="test-model",
+            source="test-profile",
+        )
+        for sensor_id in sensor_locations
+        for weekday in range(7)
+        for hour in range(24)
+    ])
+    db.commit()
+
+    request_time = datetime(2026, 10, 8, 12, tzinfo=ZoneInfo("Australia/Melbourne"))
+    response = build_recommendation_response(
+        -37.8150,
+        144.9669,
+        15,
+        db=db,
+        limit=5,
+        need="quiet space",
+        request_time=request_time,
+    )
+
+    status = response["footfall_model"]
+    assert status["sqlite_profile_available"] is True
+    assert status["modelled_hourly_profile_available"] is True
+    assert status["installed_sensor_ids"] == [17, 19, 79]
+    assert status["sensor_count"] == 3
+    assert status["profile_count"] == 504
+    assert status["model_names"] == ["test-model"]
+
+    recommendation = response["recommendations"][0]
+    assert recommendation["footfall_available"] is True
+    assert recommendation["footfall_source"] == "sqlite_modelled_weekday_hour_profile"
+    assert recommendation["footfall_percentile"] == pytest.approx(12 / 23, abs=1e-4)
+    assert RecommendationResponse.model_validate(response).contract_version == 1

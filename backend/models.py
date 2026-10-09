@@ -7,7 +7,7 @@ so the frontend and Mission API don't need any changes.
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Integer, Float, JSON, Index, Text
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, String, Integer, Float, JSON, Index, Text
 from database import Base
 
 
@@ -53,6 +53,46 @@ class Place(Base):
 
     __table_args__ = (
         Index("ix_places_latitude_longitude", "latitude", "longitude"),
+    )
+
+
+class PedestrianSensor(Base):
+    """Official pedestrian sensor locations used by the footfall profile."""
+
+    __tablename__ = "pedestrian_sensors"
+
+    sensor_id = Column(Integer, primary_key=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    source_dataset = Column(String, nullable=False)
+
+
+class FootfallProfile(Base):
+    """Typical modelled footfall for one sensor, weekday and local hour."""
+
+    __tablename__ = "footfall_profiles"
+
+    sensor_id = Column(
+        Integer,
+        ForeignKey("pedestrian_sensors.sensor_id"),
+        primary_key=True,
+    )
+    weekday = Column(Integer, primary_key=True)  # Monday=0, Sunday=6
+    hour = Column(Integer, primary_key=True)  # Melbourne local hour, 0-23
+    predicted_footfall = Column(Float, nullable=False)
+    footfall_percentile = Column(Float, nullable=False)
+    sample_count = Column(Integer, nullable=False)
+    model_name = Column(String, nullable=True)
+    source = Column(String, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("weekday >= 0 AND weekday <= 6", name="ck_footfall_weekday"),
+        CheckConstraint("hour >= 0 AND hour <= 23", name="ck_footfall_hour"),
+        CheckConstraint(
+            "footfall_percentile >= 0 AND footfall_percentile <= 1",
+            name="ck_footfall_percentile",
+        ),
+        Index("ix_footfall_profiles_lookup", "sensor_id", "weekday", "hour"),
     )
 
 

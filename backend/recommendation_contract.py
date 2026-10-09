@@ -76,8 +76,16 @@ class RankingMetadata(BaseModel):
 class FootfallModelStatus(BaseModel):
     exact_model_inference_available: bool
     modelled_hourly_profile_available: bool
+    sqlite_profile_available: bool
+    model_artifact_installed: bool
     supported_sensor_ids: list[int]
+    installed_sensor_ids: list[int]
+    sensor_count: int = Field(ge=0)
+    profile_count: int = Field(ge=0)
+    expected_profile_count: int = Field(ge=0)
+    model_names: list[str]
     maximum_sensor_distance_m: float = Field(gt=0)
+    is_live_forecast: bool
     messages: list[str]
 
 
@@ -94,6 +102,9 @@ class RecommendationCalculation(BaseModel):
 class RecommendationDataStatus(BaseModel):
     source: str
     record_count: int = Field(ge=0)
+    place_record_count: int = Field(ge=0)
+    pedestrian_sensor_count: int = Field(ge=0)
+    footfall_profile_count: int = Field(ge=0)
     message: str
 
 
