@@ -20,6 +20,10 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
 import { createMarkerIcon } from '@/lib/mapMarkers'
+import {
+  getRecommendationPreferences,
+  saveRecommendationPreferences,
+} from '@/lib/recommendationPreferences'
 import greenSpaceImage from '@/assets/home/green-space-reset.jpg'
 import shoulderReleaseImage from '@/assets/home/shoulder-release.png'
 
@@ -143,8 +147,12 @@ function getRandomOption(options) {
 function Mission() {
   const [searchParams] = useSearchParams()
   const [duration, setDuration] = useState(() => getInitialDuration(searchParams))
-  const [movementType, setMovementType] = useState('Indoor')
-  const [need, setNeed] = useState('Low energy')
+  const [movementType, setMovementType] = useState(() =>
+    getRecommendationPreferences().preferredSetting === 'outdoor' ? 'Outdoor' : 'Indoor',
+  )
+  const [need, setNeed] = useState(() =>
+    getRecommendationPreferences().preferredSetting === 'outdoor' ? 'Fresh air' : 'Low energy',
+  )
   const [userLocation, setUserLocation] = useState(null)
   const [locationStatus, setLocationStatus] = useState('idle')
   const locationRequestRef = useRef(null)
@@ -259,6 +267,7 @@ function Mission() {
 
   function handleMovementTypeChange(nextMovementType) {
     setMovementType(nextMovementType)
+    saveRecommendationPreferences({ preferredSetting: nextMovementType.toLowerCase() })
     setMission(null)
     setSessionActivities([])
     setSessionTotalSeconds(0)
@@ -305,6 +314,7 @@ function Mission() {
           duration,
           setting: nextMovementType,
           need: apiNeedByLabel[nextNeed] ?? nextNeed,
+          request_time: new Date().toISOString(),
           ...locationPayload,
         }),
       })

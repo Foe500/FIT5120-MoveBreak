@@ -50,6 +50,7 @@ function Privacy() {
           </p>
           <p>
             If you allow access, coordinates are used to centre the map and sent to the MoveBreak API for location and route estimates. The assistant sends selected starting points to our API for deterministic route calculations, not to the language model.
+            MoveBreak does not save those coordinates in localStorage or create a location-history record in its database.
           </p>
         </Card>
 
@@ -60,12 +61,17 @@ function Privacy() {
           <h2>Your choices and plans</h2>
           <p>
             Break duration, movement preferences and planner changes are used to update the
-            interface. Plans are saved in this browser’s localStorage and survive a reload. Clear plan removes them. Existing plan times are sent to our API when checking AI suggestions for conflicts, but are not saved in the backend.
+            interface. Recommendation preferences and planner items are saved in this browser’s
+            localStorage and survive a reload. They do not synchronise across devices and can be
+            removed by clearing browser data. Clear plan removes saved planner items. Existing plan
+            times are sent to our API when checking AI suggestions for conflicts, but are not saved
+            in the backend.
           </p>
           <p>
             Mission preferences are sent to the MoveBreak API to return a recommendation. The
             current backend processes that request without creating a user profile or database
-            record.
+            record. Saved crowd and place preferences are applied in the browser and are not used
+            to retrain the pedestrian-footfall model.
           </p>
         </Card>
 
@@ -90,6 +96,11 @@ function Privacy() {
           <p>
             MoveBreak does not currently add advertising cookies or analytics trackers to the
             application.
+          </p>
+          <p>
+            Where model assets are available, nearby-place rankings may include historical,
+            model-informed pedestrian activity. This is not a live crowd measurement. If the
+            assets are unavailable, recommendations continue using neutral pedestrian activity.
           </p>
         </Card>
       </div>
@@ -125,7 +136,7 @@ function Privacy() {
         </p>
       </div>
 
-      <p className="privacy-updated">Last updated: 29 September 2026</p>
+      <p className="privacy-updated">Last updated: 8 October 2026</p>
     </section>
   )
 }

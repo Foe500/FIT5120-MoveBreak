@@ -15,6 +15,7 @@ import {
   Navigation,
   Play,
   Search,
+  Users,
   X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,12 +25,23 @@ import { API_BASE_URL } from '@/lib/api'
 import { createCurrentLocationIcon, createMarkerIcon } from '@/lib/mapMarkers'
 import { saveOutdoorBreakSession } from '@/lib/outdoorBreak'
 import { getSavedPlannerBreaks, savePlannerBreaks } from '@/lib/plannerStorage'
+import {
+  getRecommendationPreferences,
+  personaliseRecommendations,
+  recordRecommendationSelection,
+  saveRecommendationPreferences,
+} from '@/lib/recommendationPreferences'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
 const defaultOutdoorBreakDuration = 15
 const maxVisiblePlaces = 40
 const durationOptions = [5, 15, 30]
+const crowdPreferenceOptions = [
+  { value: 'quiet', label: 'Quieter' },
+  { value: 'balanced', label: 'Balanced' },
+  { value: 'lively', label: 'Livelier' },
+]
 const locationSuggestions = [
   {
     label: 'Flagstaff Gardens',
@@ -121,6 +133,31 @@ function getPlaceTotalTimeLabel(place) {
   return place.estimated_total_time ? `${place.estimated_total_time} min total` : 'Total time unavailable'
 }
 
+function getCrowdEstimateLabel(place) {
+  const percentile = Number(place.footfall_percentile)
+
+  if (!place.footfall_available || !Number.isFinite(percentile)) {
+    return 'Typical crowd estimate unavailable for this location'
+  }
+  if (percentile <= 0.33) {
+    return 'Typically quieter at this time'
+  }
+  if (percentile >= 0.67) {
+    return 'Typically livelier at this time'
+  }
+  return 'Typically moderate activity at this time'
+}
+
+function getCrowdModelMessage(status) {
+  if (status?.exact_model_inference_available) {
+    return 'Crowd preference is applied using the historical footfall model for the selected time.'
+  }
+  if (status?.sqlite_profile_available || status?.modelled_hourly_profile_available) {
+    return 'Crowd preference is applied using typical activity for this weekday and time.'
+  }
+  return 'Crowd estimates are unavailable right now, so results use a balanced crowd score.'
+}
+
 function getShortLocationLabel(label) {
   return label.split(',').slice(0, 2).join(',').trim()
 }
@@ -202,22 +239,31 @@ function ExploreMap() {
   const [isGeocoding, setIsGeocoding] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
+  const [recommendationDataStatus, setRecommendationDataStatus] = useState(null)
+  const [footfallModelStatus, setFootfallModelStatus] = useState(null)
+  const [recommendationPreferences, setRecommendationPreferences] = useState(
+    getRecommendationPreferences,
+  )
   const [plannedPlaceIds, setPlannedPlaceIds] = useState(
     () => new Set(getSavedPlannerBreaks().map((plannedBreak) => plannedBreak.placeId).filter(Boolean)),
   )
+  const personalisedPlaces = useMemo(
+    () => personaliseRecommendations(places, recommendationPreferences),
+    [places, recommendationPreferences],
+  )
   const categoryOptions = useMemo(
     // Build category buttons from place data so new DS categories appear without frontend changes.
-    () => ['All', ...new Set(places.map((place) => getPlaceCategory(place)).filter(Boolean))],
-    [places],
+    () => ['All', ...new Set(personalisedPlaces.map((place) => getPlaceCategory(place)).filter(Boolean))],
+    [personalisedPlaces],
   )
   const filteredPlaces = useMemo(
     () =>
-      places.filter((place) => {
+      personalisedPlaces.filter((place) => {
         const category = getPlaceCategory(place)
 
         return selectedCategory === 'All' || category === selectedCategory
       }),
-    [places, selectedCategory],
+    [personalisedPlaces, selectedCategory],
   )
   const visiblePlaces = useMemo(
     () =>
@@ -278,7 +324,8 @@ function ExploreMap() {
           lat: String(origin[0]),
           lng: String(origin[1]),
           break_time: String(selectedDuration),
-          limit: '5',
+          request_time: new Date().toISOString(),
+          limit: '20',
         })
         if (selectedNeed) {
           query.set('need', selectedNeed)
@@ -290,8 +337,14 @@ function ExploreMap() {
         }
 
         const data = await response.json()
-        const recommendations = data.recommendations ?? []
+        if (data.contract_version !== 1 || !Array.isArray(data.recommendations)) {
+          throw new Error('Unsupported recommendation response')
+        }
+
+        const recommendations = data.recommendations
         setPlaces(recommendations)
+        setRecommendationDataStatus(data.data_status ?? null)
+        setFootfallModelStatus(data.footfall_model ?? null)
         setSelectedPlace(
           recommendations.find((place) => String(place.id) === requestedPlaceId) ?? null,
         )
@@ -299,6 +352,8 @@ function ExploreMap() {
         // No place is selected by default — the detail card only opens
         // once the user actively picks one from the map or the list.
       } catch {
+        setRecommendationDataStatus(null)
+        setFootfallModelStatus(null)
         setError('Time-safe recommendations are unavailable right now.')
       } finally {
         setIsLoading(false)
@@ -370,6 +425,11 @@ function ExploreMap() {
     nextSearchParams.set('duration', String(duration))
     setSearchParams(nextSearchParams)
     setSelectedPlace(null)
+  }
+
+  function handleCrowdPreferenceChange(crowdPreference) {
+    const nextPreferences = saveRecommendationPreferences({ crowdPreference })
+    setRecommendationPreferences(nextPreferences)
   }
 
   async function handleLocationSearch(event) {
@@ -452,6 +512,7 @@ function ExploreMap() {
 
       savePlannerBreaks([...planItems, savedBreak])
       setPlannedPlaceIds((currentIds) => new Set(currentIds).add(selectedPlace.id))
+      setRecommendationPreferences(recordRecommendationSelection(selectedPlace))
     } catch {
       setError('This break could not be added to your planner.')
     }
@@ -463,6 +524,7 @@ function ExploreMap() {
     }
 
     saveOutdoorBreakSession(getOutdoorBreakPlan(selectedPlace, selectedDuration, currentPosition))
+    setRecommendationPreferences(recordRecommendationSelection(selectedPlace))
   }
 
   return (
@@ -591,6 +653,29 @@ function ExploreMap() {
           </div>
         </div>
 
+        <div className="map-duration-control" aria-label="Choose preferred crowd level">
+          <span>Preferred crowd level</span>
+          <div>
+            {crowdPreferenceOptions.map((option) => (
+              <button
+                aria-pressed={option.value === recommendationPreferences.crowdPreference}
+                className={
+                  option.value === recommendationPreferences.crowdPreference ? 'selected' : ''
+                }
+                key={option.value}
+                onClick={() => handleCrowdPreferenceChange(option.value)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <small className="crowd-model-status">
+            <Users size={14} aria-hidden="true" />
+            {getCrowdModelMessage(footfallModelStatus)}
+          </small>
+        </div>
+
         <div className="category-tabs" aria-label="Map category filters">
           {categoryOptions.map((category) => (
             <button
@@ -608,7 +693,13 @@ function ExploreMap() {
 
         {error ? <p className="map-status-message">{error}</p> : null}
         {!isLoading && !error && filteredPlaces.length === 0 ? (
-          <p className="map-status-message">No locations match the current category.</p>
+          <p className="map-status-message">
+            {recommendationDataStatus?.record_count === 0
+              ? 'Nearby location data has not been loaded into the MoveBreak API yet.'
+              : selectedCategory === 'All'
+              ? `No time-safe locations were found nearby for a ${selectedDuration}-minute break.`
+              : `No time-safe locations match the ${selectedCategory} category.`}
+          </p>
         ) : null}
 
         <div className="map-result-list">
@@ -688,6 +779,10 @@ function ExploreMap() {
             <span>
               <MapPin size={16} />
               {selectedPlace.address ?? 'Address unavailable'}
+            </span>
+            <span>
+              <Users size={16} />
+              {getCrowdEstimateLabel(selectedPlace)}
             </span>
           </div>
 

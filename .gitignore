@@ -17,6 +17,12 @@ dist-ssr
 __pycache__
 *.py[cod]
 .pytest_cache
+.ipynb_checkpoints
+
+# Generated footfall model assets and notebook outputs
+backend/model/*
+!backend/model/README.md
+movebreak_footfall_model_outputs/
 
 # Local database files
 backend/movebreak.db

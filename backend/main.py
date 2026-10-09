@@ -27,6 +27,7 @@ from recommendations import (
     calculate_recommendations,
     load_recommendation_places,
 )
+from recommendation_contract import RecommendationResponse
 
 # Creates any tables that don't exist yet (e.g. the team/leaderboard
 # tables added after activities/places already existed) without
@@ -259,6 +260,7 @@ class MissionRequest(BaseModel):
     need: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    request_time: Optional[datetime] = None
 
 
 class CreateTeamRequest(BaseModel):
@@ -451,13 +453,14 @@ def get_places(db: Session = Depends(get_db)):
     return load_recommendation_places(db)
 
 
-@app.get("/recommendations")
+@app.get("/recommendations", response_model=RecommendationResponse)
 def get_recommendations(
     lat: float = Query(MELBOURNE_TOWN_HALL[0]),
     lng: float = Query(MELBOURNE_TOWN_HALL[1]),
     break_time: int = Query(15),
     need: Optional[str] = Query(None),
-    limit: int = Query(5, ge=1, le=10),
+    request_time: Optional[datetime] = Query(None),
+    limit: int = Query(5, ge=1, le=40),
     db: Session = Depends(get_db),
 ):
     validate_supported_duration(break_time, "break_time")
@@ -466,7 +469,13 @@ def get_recommendations(
 
     try:
         return build_recommendation_response(
-            lat, lng, break_time, db=db, limit=limit, need=need
+            lat,
+            lng,
+            break_time,
+            db=db,
+            limit=limit,
+            need=need,
+            request_time=request_time,
         )
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
@@ -551,6 +560,7 @@ def recommend_mission(request: MissionRequest, db: Session = Depends(get_db)):
                 db=db,
                 limit=1,
                 need=request.need,
+                request_time=request.request_time,
             )
         except ValueError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error

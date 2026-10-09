@@ -306,9 +306,12 @@ function OwnerRequestsPanel({ joinCode, onDecision }) {
   }
 
   useEffect(() => {
-    loadRequests()
+    const initialLoad = window.setTimeout(loadRequests, 0)
     const interval = window.setInterval(loadRequests, 8000)
-    return () => window.clearInterval(interval)
+    return () => {
+      window.clearTimeout(initialLoad)
+      window.clearInterval(interval)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [joinCode])
 

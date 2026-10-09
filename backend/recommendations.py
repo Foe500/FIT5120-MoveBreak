@@ -1,8 +1,10 @@
 import math
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from models import Place
+from footfall_service import footfall_service
+from models import FootfallProfile, PedestrianSensor, Place
 
 
 MELBOURNE_TOWN_HALL = (-37.8150, 144.9669)
@@ -31,6 +33,14 @@ CATEGORY_WEIGHTS = {
         "drinking_fountain": 16, "supermarket": 10,
     },
 }
+
+RANKING_WEIGHTS = {
+    "footfall_suitability": 0.40,
+    "distance_score": 0.30,
+    "weather_comfort_score": 0.15,
+    "amenity_score": 0.15,
+}
+MAX_NEED_ADJUSTMENT = 0.10
 
 MARKER_TONES = {
     "park": "green",
@@ -127,20 +137,23 @@ def load_recommendation_places(db: Session, latitude=None, longitude=None,
 
 def _distance_score(distance_m):
     if distance_m <= 80:
-        return 40
+        return 1.0
     if distance_m >= 1600:
-        return 0
-    return round(40 * (1 - ((distance_m - 80) / 1520)), 2)
+        return 0.0
+    return round(1 - ((distance_m - 80) / 1520), 4)
 
 
-def _duration_fit_score(remaining_time):
-    if remaining_time < 0:
-        return 0
-    if remaining_time <= 2:
-        return 10
-    if remaining_time <= 8:
-        return 18
-    return 14
+def _amenity_score(dataset_type, break_time):
+    weights = CATEGORY_WEIGHTS[break_time]
+    highest_weight = max(weights.values())
+    return round(weights.get(dataset_type, 6) / highest_weight, 4)
+
+
+def _balanced_footfall_suitability(percentile):
+    """Prefer moderate pedestrian activity until the browser applies a preference."""
+    if percentile is None:
+        return 0.5
+    return round(max(0.0, 1 - abs(float(percentile) - 0.5) * 2), 4)
 
 
 def _need_score(place, need, straight_distance):
@@ -188,7 +201,8 @@ def _display_minute_label(value):
 
 
 def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
-                              places=None, need=None):
+                              places=None, need=None,
+                              request_time: datetime | None = None):
     if break_time not in BREAK_CONFIG:
         raise ValueError("break_time must be one of 5, 15 or 30")
     _validate_finite_coordinate(latitude, "latitude", -90, 90)
@@ -199,6 +213,7 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
     source_places = places if places is not None else load_recommendation_places(
         db, latitude, longitude, break_time
     )
+    footfall_context = footfall_service.prepare_context(db, request_time)
     recommendations = []
 
     for place in source_places:
@@ -219,12 +234,37 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
             round_trip_display + config["activity_time"] + config["buffer_time"]
         )
         remaining_display = max(0, break_time - total_display)
-        score = round(
-            _distance_score(straight_distance)
-            + CATEGORY_WEIGHTS[break_time].get(place["dataset_type"], 6)
-            + _duration_fit_score(remaining_exact)
-            + _need_score(place, need, straight_distance),
-            2,
+        footfall = footfall_service.estimate(
+            db,
+            place["latitude"],
+            place["longitude"],
+            request_time=request_time,
+            context=footfall_context,
+        )
+        ranking_signals = {
+            "footfall_suitability": _balanced_footfall_suitability(
+                footfall.footfall_percentile
+            ),
+            "distance_score": _distance_score(walking_distance),
+            # No request-time weather provider is installed yet. A neutral
+            # value is explicit and avoids presenting historical weather as live.
+            "weather_comfort_score": 0.5,
+            "amenity_score": _amenity_score(place["dataset_type"], break_time),
+        }
+        objective_score = sum(
+            RANKING_WEIGHTS[signal] * value
+            for signal, value in ranking_signals.items()
+        )
+        need_adjustment = max(
+            -MAX_NEED_ADJUSTMENT,
+            min(
+                MAX_NEED_ADJUSTMENT,
+                _need_score(place, need, straight_distance) / 100,
+            ),
+        )
+        base_score = round(
+            min(1.0, max(0.0, objective_score + need_adjustment)),
+            4,
         )
 
         recommendations.append({
@@ -240,7 +280,19 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
             "available_break_time": break_time,
             "remaining_time": remaining_display,
             "is_time_safe": True,
-            "recommendation_score": score,
+            # Keep the legacy 0-100 field while exposing the new 0-1 contract.
+            "recommendation_score": round(base_score * 100, 2),
+            "base_recommendation_score": base_score,
+            "ranking_signals": ranking_signals,
+            "need_adjustment": round(need_adjustment, 4),
+            "predicted_footfall": footfall.predicted_footfall,
+            "footfall_percentile": footfall.footfall_percentile,
+            "footfall_available": footfall.available,
+            "footfall_sensor_id": footfall.sensor_id,
+            "footfall_sensor_distance_m": footfall.sensor_distance_m,
+            "footfall_source": footfall.source,
+            "footfall_note": footfall.reason,
+            "weather_available": False,
             "distance": f"{_display_minute_label(one_way_exact)} each way",
             "explanation": (
                 f"Fits within your {break_time}-minute break with "
@@ -257,14 +309,32 @@ def calculate_recommendations(latitude, longitude, break_time, db, limit=5,
 
 
 def build_recommendation_response(latitude, longitude, break_time, db, limit=5,
-                                  need=None):
+                                  need=None,
+                                  request_time: datetime | None = None):
     recommendations = calculate_recommendations(
-        latitude, longitude, break_time, db=db, limit=limit, need=need
+        latitude,
+        longitude,
+        break_time,
+        db=db,
+        limit=limit,
+        need=need,
+        request_time=request_time,
     )
     return {
+        "contract_version": 1,
         "origin": {"latitude": latitude, "longitude": longitude},
         "available_break_time": break_time,
+        "request_time": request_time.isoformat() if request_time else None,
         "recommendations": recommendations,
+        "ranking": {
+            "weights": RANKING_WEIGHTS,
+            "maximum_need_adjustment": MAX_NEED_ADJUSTMENT,
+            "personalisation": (
+                "The API produces the time-safe base ranking; browser "
+                "localStorage may apply a limited preference re-ranking."
+            ),
+        },
+        "footfall_model": footfall_service.status(db),
         "calculation": {
             "distance_method": (
                 "Approximate walking distance using Haversine and city-grid detours"
@@ -277,8 +347,14 @@ def build_recommendation_response(latitude, longitude, break_time, db, limit=5,
             "formula": "2 * walking_time_one_way + activity_time + buffer_time",
         },
         "data_status": {
-            "source": "City of Melbourne Open Data stored in SQLite",
+            "source": "City of Melbourne Open Data and modelled profiles stored in SQLite",
             "record_count": db.query(Place).count(),
-            "message": "Recommendations are queried from the places table, not CSV.",
+            "place_record_count": db.query(Place).count(),
+            "pedestrian_sensor_count": db.query(PedestrianSensor).count(),
+            "footfall_profile_count": db.query(FootfallProfile).count(),
+            "message": (
+                "Places, pedestrian sensors and modelled weekday/hour profiles "
+                "are queried from SQLite; the API does not read CSV files at runtime."
+            ),
         },
     }
