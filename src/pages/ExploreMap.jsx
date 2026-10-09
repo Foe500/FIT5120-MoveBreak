@@ -31,6 +31,7 @@ import {
   recordRecommendationSelection,
   saveRecommendationPreferences,
 } from '@/lib/recommendationPreferences'
+import BlurText from '@/components/react-bits/BlurText'
 
 const defaultMapZoom = 14
 const currentLocationZoom = 16
@@ -574,7 +575,7 @@ function ExploreMap() {
       </MapContainer>
 
       <Card className="map-control-panel">
-        <h1>Explore nearby breaks</h1>
+        <BlurText animateBy="words" as="h1" delay={50} direction="bottom" stepDuration={0.28} text="Explore nearby breaks" />
 
         <div className="near-heading-row">
           <h2>

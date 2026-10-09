@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { API_BASE_URL } from '@/lib/api'
+import CountUp from '@/components/react-bits/CountUp'
 import {
   addMembership,
   addPendingRequest,
@@ -29,6 +30,7 @@ import {
   removePendingRequest,
   syncPendingRequests,
 } from '@/lib/team'
+import BlurText from '@/components/react-bits/BlurText'
 
 function formatMinutes(totalSeconds) {
   const minutes = Math.round(totalSeconds / 60)
@@ -464,13 +466,16 @@ function TeamLeaderboard({ identity, onLeave }) {
       {leaderboard ? (
         <div className={`team-season-banner ${leaderboard.season.isActive ? 'active' : 'ended'}`}>
           <div>
-            <strong>Week {leaderboard.season.weekNumber}</strong>
+            <strong>
+              Week <CountUp duration={0.7} to={leaderboard.season.weekNumber} />
+            </strong>
             {leaderboard.season.isActive ? (
               <span>{formatTimeRemaining(leaderboard.season.endAt)}</span>
             ) : leaderboard.season.winner ? (
               <span>
                 <PartyPopper size={14} />
-                {leaderboard.season.winner.nickname} won with {leaderboard.season.winner.points} pts!
+                {leaderboard.season.winner.nickname} won with{' '}
+                <CountUp duration={0.8} separator="," to={leaderboard.season.winner.points} /> pts!
               </span>
             ) : (
               <span>No sessions were logged this week.</span>
@@ -505,11 +510,13 @@ function TeamLeaderboard({ identity, onLeave }) {
                   ) : null}
                 </strong>
                 <small>
-                  {member.sessionsCompleted} session{member.sessionsCompleted === 1 ? '' : 's'} ·{' '}
+                  <CountUp duration={0.65} to={member.sessionsCompleted} /> session{member.sessionsCompleted === 1 ? '' : 's'} ·{' '}
                   {formatMinutes(member.totalSeconds)} moved
                 </small>
               </div>
-              <Badge variant="success">{member.points} pts</Badge>
+              <Badge variant="success">
+                <CountUp duration={0.8} separator="," to={member.points} /> pts
+              </Badge>
             </li>
           ))}
         </ol>
@@ -566,7 +573,7 @@ function Team() {
   return (
     <section className="page team-page">
       <div className="team-heading">
-        <h1>Team breaks</h1>
+        <BlurText animateBy="words" as="h1" delay={50} direction="bottom" stepDuration={0.28} text="Team breaks" />
         <p>Move together, compete a little, and keep each other accountable.</p>
       </div>
 

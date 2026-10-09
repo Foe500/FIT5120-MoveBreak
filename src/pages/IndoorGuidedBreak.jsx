@@ -11,6 +11,8 @@ import {
   SkipForward,
   Square,
   TimerReset,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,6 +26,11 @@ import {
   startTeamBreakSessions,
 } from '@/lib/team'
 import { formatActivityDuration } from '@/lib/activityDuration'
+import { useActivityMusic } from '@/lib/useActivityMusic'
+import BlurText from '@/components/react-bits/BlurText'
+import ClickSpark from '@/components/react-bits/ClickSpark'
+import CountUp from '@/components/react-bits/CountUp'
+import Magnet from '@/components/react-bits/Magnet'
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -44,9 +51,19 @@ function IndoorGuidedBreak() {
   const [isComplete, setIsComplete] = useState(false)
   const [teamBreakSessions, setTeamBreakSessions] = useState([])
   const hasCompletedTeamBreakSessions = useRef(false)
+  const {
+    isMusicEnabled,
+    musicError,
+    pauseMusic,
+    playMusic,
+    resetMusic,
+    toggleMusic,
+  } = useActivityMusic()
 
   useEffect(() => {
     async function loadActivity() {
+      resetMusic()
+
       try {
         const response = await fetch(`${API_BASE_URL}/activities/${activityId}`)
 
@@ -77,7 +94,7 @@ function IndoorGuidedBreak() {
     }
 
     loadActivity()
-  }, [activityId, location.pathname, location.search])
+  }, [activityId, location.pathname, location.search, resetMusic])
 
   const steps = useMemo(() => activity?.steps ?? [], [activity])
   const currentStepDurationSeconds = steps[currentStepIndex]?.seconds ?? 0
@@ -93,6 +110,7 @@ function IndoorGuidedBreak() {
 
   useEffect(() => {
     if (isComplete && activity && !hasCompletedTeamBreakSessions.current) {
+      resetMusic()
       hasCompletedTeamBreakSessions.current = true
       completeTeamBreakSessions(teamBreakSessions)
       clearIndoorBreakSession()
@@ -144,6 +162,7 @@ function IndoorGuidedBreak() {
 
   async function handleStartPause() {
     if (isComplete) {
+      playMusic({ restart: true })
       saveIndoorBreakSession({
         label: activity?.title ?? 'Indoor guided break',
         path: `${location.pathname}${location.search}`,
@@ -164,11 +183,13 @@ function IndoorGuidedBreak() {
     }
 
     if (isTimerRunning) {
+      pauseMusic()
       await pauseTeamBreakSessions(teamBreakSessions)
       setIsTimerRunning(false)
       return
     }
 
+    playMusic()
     const sessions = await ensureTeamBreakSessions()
     await resumeTeamBreakSessions(sessions)
     setIsTimerRunning(true)
@@ -180,6 +201,7 @@ function IndoorGuidedBreak() {
     }
 
     if (currentStepIndex >= steps.length - 1) {
+      resetMusic()
       setIsTimerRunning(false)
       setIsComplete(true)
       setStepSecondsLeft(0)
@@ -192,6 +214,7 @@ function IndoorGuidedBreak() {
   }
 
   function handleFinish() {
+    resetMusic()
     setIsTimerRunning(false)
     setIsComplete(true)
     setStepSecondsLeft(0)
@@ -230,15 +253,29 @@ function IndoorGuidedBreak() {
 
       <div className="guided-break-layout">
         <Card className="guided-break-main">
-          <div className="guided-break-status">
-            <Badge variant="success">
-              <Armchair size={13} />
-              Indoor guided break
-            </Badge>
-            <Badge variant="secondary">
-              <Clock3 size={13} />
-              {formatActivityDuration(activity)}
-            </Badge>
+          <div className="guided-break-header">
+            <div className="guided-break-status">
+              <Badge variant="success">
+                <Armchair size={13} />
+                Indoor guided break
+              </Badge>
+              <Badge variant="secondary">
+                <Clock3 size={13} />
+                {formatActivityDuration(activity)}
+              </Badge>
+            </div>
+            <Button
+              aria-label={isMusicEnabled ? 'Turn music off' : 'Turn music on'}
+              aria-pressed={isMusicEnabled}
+              className="guided-music-toggle"
+              onClick={() => toggleMusic(isTimerRunning && !isComplete)}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {isMusicEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+              {isMusicEnabled ? 'Music on' : 'Music off'}
+            </Button>
           </div>
 
           <h1>{activity.title}</h1>
@@ -251,7 +288,7 @@ function IndoorGuidedBreak() {
             <div className="guided-progress-track" aria-label="Guided break progress">
               <div style={{ width: `${progressPercent}%` }} />
             </div>
-            <small>{progressPercent}% complete</small>
+            <small><CountUp duration={0.35} to={progressPercent} />% complete</small>
           </div>
 
           <div className="guided-break-actions">
@@ -269,19 +306,42 @@ function IndoorGuidedBreak() {
             </Button>
           </div>
 
+          {musicError ? (
+            <p className="guided-music-status" role="status">{musicError}</p>
+          ) : null}
+
           {isComplete ? (
-            <div className="guided-completion-panel">
-              <strong>Break complete. Nice reset.</strong>
-              <p>You can return to the start or choose another indoor activity.</p>
-              <div className="guided-completion-actions">
-                <Button asChild variant="outline">
-                  <Link to="/">Back to Home</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/activities">Activity Library</Link>
-                </Button>
+            <ClickSpark
+              duration={520}
+              extraScale={1.15}
+              sparkColor="#f06d52"
+              sparkCount={10}
+              sparkRadius={34}
+              sparkSize={9}
+              triggerKey={isComplete}
+            >
+              <div className="guided-completion-panel">
+                <BlurText
+                  animateBy="words"
+                  as="strong"
+                  delay={65}
+                  direction="bottom"
+                  stepDuration={0.24}
+                  text="Break complete. Nice reset."
+                />
+                <p>You can return to the start or choose another indoor activity.</p>
+                <div className="guided-completion-actions">
+                  <Button asChild variant="outline">
+                    <Link to="/">Back to Home</Link>
+                  </Button>
+                  <Magnet magnetStrength={4} padding={40}>
+                    <Button asChild>
+                      <Link to="/activities">Activity Library</Link>
+                    </Button>
+                  </Magnet>
+                </div>
               </div>
-            </div>
+            </ClickSpark>
           ) : null}
         </Card>
 

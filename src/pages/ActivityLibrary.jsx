@@ -15,6 +15,8 @@ import { Card } from '@/components/ui/card'
 import { activityVisuals } from '@/data/activityVisuals'
 import { API_BASE_URL } from '@/lib/api'
 import { formatActivityDuration, getActivitySeconds } from '@/lib/activityDuration'
+import AnimatedContent from '@/components/react-bits/AnimatedContent'
+import BlurText from '@/components/react-bits/BlurText'
 
 const durationFilters = [5, 15, 30, 'Any']
 const postureFilters = ['Any posture', 'Seated', 'Standing']
@@ -93,7 +95,7 @@ function ActivityLibrary() {
     <section className="page activities-page">
       <div className="activities-heading">
         <div>
-          <h1>Indoor activity library</h1>
+          <BlurText animateBy="words" as="h1" delay={50} direction="bottom" stepDuration={0.28} text="Indoor activity library" />
           <p>Short guided breaks for your desk or workspace.</p>
         </div>
 
@@ -174,12 +176,13 @@ function ActivityLibrary() {
       ) : null}
 
       <div className="indoor-activity-grid" aria-busy={isLoading}>
-        {filteredActivities.map((activity) => {
+        {filteredActivities.map((activity, index) => {
           const visual = activityVisuals[activity.id] ?? { icon: Dumbbell }
           const Icon = visual.icon
 
           return (
-            <Card className="indoor-activity-card" key={activity.id}>
+            <AnimatedContent className="motion-card-shell" delay={(index % 3) * 0.07} distance={20} duration={0.5} key={activity.id} threshold={0.1}>
+            <Card className="indoor-activity-card">
               <div className="activity-illustration">
                 {visual.image ? (
                   <img src={visual.image} alt={visual.alt} width="600" height="600" loading="lazy" decoding="async" />
@@ -220,6 +223,7 @@ function ActivityLibrary() {
                 </Button>
               </div>
             </Card>
+            </AnimatedContent>
           )
         })}
       </div>

@@ -512,3 +512,23 @@
     transition: none;
   }
 }
+
+.card-spotlight.guide-spotlight {
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 1.25rem;
+  background: transparent;
+  overflow: visible;
+}
+
+.card-spotlight.guide-spotlight::before {
+  border-radius: 1.25rem;
+}
+
+.guides-kicker .guides-kicker-text {
+  margin: 0;
+  backdrop-filter: none;
+  cursor: inherit;
+  font-weight: 800;
+}
